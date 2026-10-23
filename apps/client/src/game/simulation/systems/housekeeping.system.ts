@@ -45,6 +45,7 @@ function eliminateDeadEmpires(state: GameState): void {
     empire.eliminatedAt = state.elapsed;
     empire.civilians = 0;
     empire.civilianBalance = 0;
+    empire.troopBalance = 0;
     for (const other of state.empires) {
       if (other.id !== empire.id) endFrontsBetween(state, empire.id, other.id);
     }

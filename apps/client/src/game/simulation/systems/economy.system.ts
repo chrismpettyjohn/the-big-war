@@ -79,7 +79,6 @@ export function stepEconomy(state: GameState, dt: number): void {
     }
     const landGrowth = (passive + farmGrowth) * staffing;
     const growth = resolveModifier(landGrowth + cityGrowth, empire.bonuses.growth);
-    empire.civilians = Math.max(0, empire.civilians + growth * dt);
     civilianGrowthRate[empire.id] = growth;
   }
 }

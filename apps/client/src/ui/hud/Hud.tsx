@@ -1,7 +1,7 @@
 import './Hud.css';
 import { gameStore } from '../../game/store/store.service';
 import type { GameSpeed } from '../../game/config/config.types';
-import { createEffect, createSignal, For, onCleanup } from 'solid-js';
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js';
 import { FaAtom, FaUsers, GiCoin, GiCrossedSwords } from '@the-big-war/frontend/ui/icons/icons';
 
 const SPEEDS: readonly GameSpeed[] = [1, 2, 4];
@@ -47,16 +47,21 @@ export const Hud = () => {
           <FaUsers class="hud-res-icon" />
           <span class="street-label">Civilians</span>
           <strong>{Math.floor(me().civilians)}</strong>
-          <span class={me().civilianBalance < 0 ? 'is-danger kit-num' : 'is-success kit-num'}>
-            {me().civilianBalance >= 0 ? '+' : ''}
-            {me().civilianBalance.toFixed(1)}
-          </span>
+          <Show when={me().troopBalance <= 0}>
+            <span class={me().civilianBalance < 0 ? 'is-danger kit-num' : 'is-success kit-num'}>
+              {me().civilianBalance >= 0 ? '+' : ''}
+              {me().civilianBalance.toFixed(1)}
+            </span>
+          </Show>
         </div>
         <div class="street-stat">
           <GiCrossedSwords class="hud-res-icon is-troops" />
           <span class="street-label">Troops</span>
           <strong>{Math.floor(me().soldiers)}</strong>
           <span>/ {Math.floor(me().reserveCap)}</span>
+          <Show when={me().troopBalance > 0}>
+            <span class="is-success kit-num">+{me().troopBalance.toFixed(1)}</span>
+          </Show>
         </div>
       </div>
 

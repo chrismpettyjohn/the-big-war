@@ -128,6 +128,10 @@ export interface RecruitConfig {
   readonly barracksReserveCap: number;
 
   readonly targetReserveRatio: number;
+
+  readonly draftSecondsPerSoldier: number;
+
+  readonly draftUntilRatio: number;
 }
 
 export interface BotConfig {

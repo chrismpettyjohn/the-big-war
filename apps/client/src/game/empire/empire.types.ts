@@ -32,9 +32,13 @@ export interface Empire {
 
   civilianBalance: number;
 
+  troopBalance: number;
+
   soldiers: number;
 
   reserveCap: number;
+
+  drafting: boolean;
 
   bonuses: ModifierTotals;
   research: EmpireResearch;

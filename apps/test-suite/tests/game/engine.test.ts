@@ -54,8 +54,10 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
       science: config.start.science,
       civilians: config.start.civilians,
       civilianBalance: 0,
+      troopBalance: 0,
       soldiers: config.start.soldiers,
       reserveCap: config.recruit.baseReserveCap,
+      drafting: false,
       bonuses: emptyModifierTotals(),
       research: { completed: [], chosen: {}, active: null },
       unlocks: [],
@@ -231,11 +233,39 @@ describe('engine economy', () => {
     const state = makeState();
     const empire = state.empires[0]!;
     empire.civilians = 50;
-    empire.soldiers = 0;
     run(state, 0.5);
+    empire.soldiers = empire.reserveCap;
 
     run(state, 60);
     expect(empire.civilianBalance).toBeGreaterThanOrEqual(0);
+  });
+
+  test('training draws from civilian growth, not the population', () => {
+    const state = makeState();
+    const empire = state.empires[0]!;
+    empire.civilians = 1000;
+    empire.soldiers = 10;
+    run(state, 0.5);
+    const civilians = empire.civilians;
+    const soldiers = empire.soldiers;
+    run(state, 1);
+    expect(empire.soldiers).toBeGreaterThan(soldiers);
+    expect(empire.civilians).toBeGreaterThanOrEqual(civilians);
+    expect(empire.drafting).toBe(false);
+  });
+
+  test('drafts civilians rapidly when troops hit zero, up to the draft ratio', () => {
+    const state = makeState();
+    const empire = state.empires[0]!;
+    empire.civilians = 1000;
+    empire.soldiers = 0;
+    run(state, 0.1);
+    expect(empire.drafting).toBe(true);
+    run(state, 2);
+    expect(empire.drafting).toBe(false);
+    const draftTarget = empire.reserveCap * state.config.recruit.draftUntilRatio;
+    expect(empire.soldiers).toBeGreaterThanOrEqual(draftTarget);
+    expect(empire.civilians).toBeLessThan(1000);
   });
 
   test('civilianBalance is exactly one stage write (deterministic per tick)', () => {

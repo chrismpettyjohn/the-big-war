@@ -25,7 +25,7 @@ export function createControllers(deps: ControllerDeps): Controllers {
   const [selectedHex, setSelectedHex] = createSignal<Axial | null>(null);
   const [hoverHex, setHoverHex] = createSignal<Axial | null>(null);
   const [tool, setToolSignal] = createSignal<Tool>({ kind: 'idle' });
-  const [troopPercent, setTroopPercentSignal] = createSignal(50);
+  const [troopPercent, setTroopPercentSignal] = createSignal(30);
   const [contextMenu, setContextMenu] = createSignal<ContextMenuState | null>(null);
   const [notices, setNotices] = createSignal<readonly CommandNotice[]>([]);
 

@@ -58,11 +58,13 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     minerRadius: 2,
   },
   recruit: {
-    civiliansPerSoldier: 0.5,
+    civiliansPerSoldier: 1,
     secondsPerSoldier: 2,
     baseReserveCap: 50,
     barracksReserveCap: 25,
-    targetReserveRatio: 0.5,
+    targetReserveRatio: 1,
+    draftSecondsPerSoldier: 0.1,
+    draftUntilRatio: 0.25,
   },
   bot: { tickSeconds: 0.5 },
   diplomacy: {
