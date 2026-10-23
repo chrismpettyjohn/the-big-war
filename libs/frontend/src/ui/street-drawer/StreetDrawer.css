@@ -1,0 +1,451 @@
+.nitro-sidebar,
+.street-drawer-tier-panel,
+.street-drawer-panel {
+    border: 1px solid var(--street-border);
+    border-radius: var(--street-radius);
+    background: var(--street-surface);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px) saturate(120%);
+}
+
+.street-drawer {
+    --street-drawer-tier: 46px;
+    --street-drawer-tier-open: 212px;
+    --street-drawer-gap: 2px;
+    --street-drawer-tiers: 1;
+    --street-drawer-labeled: 0;
+    --street-drawer-labeled-max: 200px;
+    --street-drawer-panel: 204px;
+    --street-drawer-left: calc(var(--ui-rail-clearance) + var(--street-drawer-gap));
+    position: fixed;
+    top: calc(50% - var(--ui-rail-height, 320px) / 2);
+    left: var(--street-drawer-left);
+    height: var(--ui-rail-height, 320px);
+    z-index: 610;
+    display: flex;
+    align-items: stretch;
+    gap: var(--street-drawer-gap);
+    color: var(--street-text);
+    font-family: var(--street-font);
+    animation: street-drawer-in 160ms ease-out;
+}
+
+.street-drawer-tier {
+    position: relative;
+    flex: 0 0 var(--street-drawer-tier);
+    animation: street-drawer-tier-in 140ms ease-out;
+}
+
+.street-drawer-tier.is-pinned {
+    z-index: 5;
+}
+
+.street-drawer-tier.is-pinned .street-drawer-tier-panel {
+    width: var(--street-drawer-tier-open);
+    background: var(--street-surface-hover);
+}
+
+.street-drawer-tier.is-pinned .street-drawer-label,
+.street-drawer-tier.is-pinned .street-drawer-caret,
+.street-drawer-tier.is-pinned .street-drawer-note,
+.street-drawer-tier.is-pinned .street-drawer-search input {
+    opacity: 1;
+}
+
+.street-drawer-tier.is-pinned .has-children .street-drawer-glyph::after {
+    opacity: 0;
+}
+
+.street-drawer-tier.is-labeled {
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: 110px;
+    max-width: var(--street-drawer-labeled-max);
+}
+
+.street-drawer-tier.is-labeled .street-drawer-tier-panel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.street-drawer-tier-panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--street-drawer-tier);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition:
+        width 140ms ease,
+        background-color 140ms ease;
+}
+
+.street-drawer-tier-head {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 3px;
+    border-bottom: 1px solid var(--street-border);
+}
+
+.street-drawer-tier-list {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 3px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--street-scrollbar) transparent;
+}
+
+.street-drawer-row {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 2px;
+    color: var(--street-muted);
+    background: none;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-shadow: var(--street-text-shadow);
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+        color 120ms ease,
+        background-color 120ms ease;
+}
+
+.street-drawer-row:hover,
+.street-drawer-row:focus-visible {
+    outline: none;
+    color: var(--street-text);
+    background: var(--street-hover);
+}
+
+.street-drawer-row.is-path {
+    color: var(--street-text);
+    box-shadow: inset 2px 0 0 var(--street-border-hover);
+}
+
+.street-drawer-row.is-selected {
+    color: var(--street-select);
+    background: var(--street-accent-dim);
+    box-shadow: inset 2px 0 0 var(--street-accent);
+}
+
+.street-drawer-row.is-disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.street-drawer-row.is-text {
+    padding: 0 12px 0 10px;
+}
+
+.street-drawer-row.is-text .street-drawer-label {
+    opacity: 1;
+}
+
+.street-drawer-row.is-text .street-drawer-caret {
+    margin-right: 0;
+    opacity: 0.6;
+}
+
+.street-drawer-glyph {
+    position: relative;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: calc(var(--street-drawer-tier) - 8px);
+    height: 100%;
+    font-size: 14px;
+}
+
+.street-drawer-glyph img {
+    object-fit: contain;
+}
+
+.has-children .street-drawer-glyph::after {
+    content: '';
+    position: absolute;
+    right: 2px;
+    bottom: 3px;
+    border-bottom: 4px solid currentColor;
+    border-left: 4px solid transparent;
+    opacity: 0.55;
+    transition: opacity 120ms ease;
+}
+
+.street-drawer-badge {
+    position: absolute;
+    top: 2px;
+    right: 1px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    border-radius: 7px;
+    color: #000;
+    background: var(--street-success);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 14px;
+    text-align: center;
+    text-shadow: none;
+}
+
+.street-drawer-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+.street-drawer-count {
+    flex: 0 0 auto;
+    min-width: 16px;
+    height: 14px;
+    padding: 0 4px;
+    border-radius: 7px;
+    color: #000;
+    background: var(--street-success);
+    font-size: 9px;
+    letter-spacing: 0;
+    line-height: 14px;
+    text-align: center;
+    text-shadow: none;
+}
+
+.street-drawer-caret {
+    flex: 0 0 auto;
+    margin-right: 8px;
+    font-size: 8px;
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+.street-drawer-hint {
+    position: absolute;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 240px;
+    padding: 5px 9px;
+    border: 1px solid var(--street-border);
+    border-radius: var(--street-radius);
+    color: var(--street-text);
+    background: rgba(0, 0, 0, 0.88);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-shadow: var(--street-text-shadow);
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateY(-50%);
+    animation: street-drawer-hint-in 90ms ease-out;
+}
+
+.street-drawer-hint::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    border: 5px solid transparent;
+    border-right-color: rgba(0, 0, 0, 0.88);
+    transform: translateY(-50%);
+}
+
+.street-drawer-hint svg {
+    flex: 0 0 auto;
+    color: var(--street-muted);
+    font-size: 7px;
+}
+
+.street-drawer-panel {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    width: min(
+        var(--street-drawer-panel),
+        100vw - var(--street-drawer-left) - var(--street-drawer-tiers) *
+            (var(--street-drawer-tier) + var(--street-drawer-gap)) - var(--street-drawer-labeled) *
+            var(--street-drawer-labeled-max) - 8px
+    );
+    min-height: 0;
+    padding: 8px;
+    overflow: hidden;
+    animation: street-drawer-tier-in 140ms ease-out;
+}
+
+.street-drawer-panel-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 22px;
+    padding-bottom: 7px;
+    margin-bottom: 7px;
+    border-bottom: 1px solid var(--street-border);
+}
+
+.street-drawer-panel-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--street-text);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-overflow: ellipsis;
+    text-shadow: var(--street-text-shadow);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.street-drawer-panel-count {
+    flex: 0 0 auto;
+    color: var(--street-muted);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
+.street-drawer-panel-count.is-full {
+    color: var(--street-danger);
+}
+
+.street-drawer-panel-close {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 2px;
+    color: var(--street-muted);
+    background: none;
+    font-size: 11px;
+    cursor: pointer;
+    transition:
+        color 120ms ease,
+        background-color 120ms ease;
+}
+
+.street-drawer-panel-close:hover,
+.street-drawer-panel-close:focus-visible {
+    outline: none;
+    color: var(--street-text);
+    background: var(--street-hover);
+}
+
+.street-drawer-panel-kind {
+    flex: 0 0 auto;
+    margin: -2px 0 7px;
+    color: var(--street-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.street-drawer-tier-head.is-row {
+    flex-direction: row;
+    align-items: center;
+    padding-left: 8px;
+}
+
+@media (max-width: 480px) {
+    .street-drawer {
+        --street-drawer-tier: 42px;
+        --street-drawer-tier-open: 188px;
+    }
+}
+
+@keyframes street-drawer-in {
+    from {
+        opacity: 0;
+        transform: translateX(-18px);
+    }
+}
+
+@keyframes street-drawer-tier-in {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+}
+
+@keyframes street-drawer-hint-in {
+    from {
+        opacity: 0;
+        transform: translate(-4px, -50%);
+    }
+}
+
+.street-drawer-tier-foot {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 3px;
+    border-top: 1px solid var(--street-border);
+}
+
+.street-drawer-note {
+    padding: 8px 6px;
+    color: var(--street-muted);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0;
+}
+
+.street-drawer {
+    --street-drawer-panel: var(--street-panel);
+}
+
+.street-drawer-panel-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--street-scrollbar) transparent;
+}
+
+.street-drawer-glyph .hud-card-swatch {
+    width: 14px;
+    height: 14px;
+}

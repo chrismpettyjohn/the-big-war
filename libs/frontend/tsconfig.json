@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@the-big-war/game-engine/*": ["../game-engine/src/*"]
+    }
+  },
+  "include": ["src"]
+}

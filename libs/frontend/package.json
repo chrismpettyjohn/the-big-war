@@ -1,0 +1,10 @@
+{
+  "name": "@the-big-war/frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@the-big-war/game-engine": "workspace:*",
+    "solid-js": "^1.9.17"
+  }
+}

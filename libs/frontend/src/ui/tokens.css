@@ -1,0 +1,97 @@
+@font-face {
+  font-family: Ubuntu;
+  src: url('/webfonts/Ubuntu.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: Ubuntu;
+  src: url('/webfonts/Ubuntu-m.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: Ubuntu;
+  src: url('/webfonts/Ubuntu-b.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: Ubuntu;
+  src: url('/webfonts/Ubuntu-i.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: Ubuntu;
+  src: url('/webfonts/Ubuntu-ib.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Ubuntu Condensed';
+  src: url('/webfonts/Ubuntu-C.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+:root {
+  --street-surface: rgba(0, 0, 0, 0.6);
+  --street-surface-hover: rgba(0, 0, 0, 0.8);
+  --street-solid: #111;
+  --street-well: rgba(0, 0, 0, 0.35);
+  --street-tile: rgba(255, 255, 255, 0.03);
+  --street-hover: rgba(255, 255, 255, 0.07);
+  --street-scrollbar: rgba(255, 255, 255, 0.2);
+  --street-border: rgba(255, 255, 255, 0.1);
+  --street-border-hover: rgba(255, 255, 255, 0.55);
+  --street-text: #f0f0f0;
+  --street-muted: #9b9b9b;
+  --street-select: #ffffff;
+
+  --street-accent: #f0c850;
+  --street-accent-dim: rgba(240, 200, 80, 0.26);
+  --street-danger: #e03232;
+  --street-danger-dim: rgba(224, 50, 50, 0.3);
+  --street-success: #72cc72;
+  --street-success-dim: rgba(114, 204, 114, 0.26);
+  --street-info: #5db6e5;
+  --street-info-dim: rgba(93, 182, 229, 0.26);
+  --street-rank: #2d6eb9;
+  --street-map-sea: #2f86d6;
+
+  --street-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.7);
+  --street-font: Ubuntu, 'Segoe UI', system-ui, sans-serif;
+  --street-radius: 3px;
+  --street-control: clamp(42px, 3.2vw, 50px);
+  --street-slot: clamp(42px, 3.2vw, 50px);
+  --street-slot-gap: 5px;
+  --street-tray-well: rgba(255, 255, 255, 0.06);
+  --street-tray-well-hover: rgba(255, 255, 255, 0.12);
+
+  --ui-edge: 12px;
+  --ui-safe-inset: var(--ui-edge);
+  --ui-rail-padding: 5px;
+  --ui-rail-width: calc(var(--street-control) + 24px);
+  --ui-tray-height: calc(var(--street-control) + 2 * var(--ui-rail-padding) + 2px);
+  --ui-rail-left: var(--ui-edge);
+  --ui-hotbar-bottom: var(--ui-edge);
+  --ui-rail-clearance: calc(var(--ui-rail-left) + var(--ui-rail-width));
+  --ui-safe-inset-left: calc(var(--ui-rail-clearance) + var(--ui-edge));
+  --ui-hud-top: var(--ui-edge);
+  --ui-panel-top: calc(var(--ui-hud-top) + var(--ui-tray-height) + var(--ui-edge));
+  --ui-panel-bottom: calc(var(--ui-hotbar-bottom) + var(--ui-tray-height) + var(--ui-edge));
+
+  --street-panel: clamp(240px, 22vw, 300px);
+}
+
+:root {
+  --faction-0: #e8302a;
+  --faction-1: #2a6cf0;
+  --faction-2: #ff8a1c;
+  --faction-3: #f5d22a;
+  --faction-4: #9b4de0;
+  --faction-5: #22d3ee;
+  --faction-6: #ff3fb4;
+  --faction-7: #f4f4f4;
+}

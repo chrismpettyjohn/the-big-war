@@ -1,0 +1,75 @@
+:root:root {
+  --street-surface: rgba(20, 28, 56, 0.38);
+  --street-surface-hover: rgba(34, 44, 84, 0.5);
+  --street-solid: rgba(18, 24, 48, 0.72);
+  --street-well: rgba(255, 255, 255, 0.06);
+  --street-tile: rgba(255, 255, 255, 0.05);
+  --street-hover: rgba(255, 255, 255, 0.12);
+  --street-border: rgba(255, 255, 255, 0.22);
+  --street-border-hover: rgba(255, 255, 255, 0.5);
+  --street-tray-well: rgba(255, 255, 255, 0.07);
+  --street-tray-well-hover: rgba(255, 255, 255, 0.15);
+  --street-text: #fff4d6;
+  --street-muted: #c4c3dc;
+  --street-accent: #ffd35c;
+  --street-danger: #ff6b6b;
+  --street-success: #8be28b;
+  --street-info: #7fd4ff;
+  --street-map-sea: #1b3a78;
+  --street-radius: 10px;
+  --street-glass-blur: blur(14px) saturate(160%);
+  --street-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --faction-0: #ef5b5b;
+  --faction-1: #4f9bff;
+  --faction-2: #6fd36f;
+  --faction-3: #ffcf4a;
+  --faction-4: #a98bff;
+  --faction-5: #4fe0c8;
+  --faction-6: #ff8fc8;
+  --faction-7: #b4b4c8;
+}
+
+html,
+body {
+  font-family: var(--street-font);
+  image-rendering: pixelated;
+}
+
+canvas {
+  image-rendering: pixelated;
+}
+
+.nitro-sidebar,
+.street-drawer-tier-panel,
+.street-drawer-panel,
+.nitro-context-menu,
+.kit-glass {
+  border: 1px solid var(--street-border);
+  border-radius: var(--street-radius);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02) 48px), var(--street-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 24px rgba(0, 0, 0, 0.25);
+  backdrop-filter: var(--street-glass-blur);
+  -webkit-backdrop-filter: var(--street-glass-blur);
+}
+
+.nitro-sidebar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 48px), rgba(6, 9, 20, 0.82);
+}
+
+button,
+input,
+select {
+  font-family: var(--street-font);
+}
+
+.street-icon-button,
+.street-action-badge {
+  border-radius: var(--street-radius);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+[class*='bar-fill'],
+[class*='progress'] {
+  border-radius: 0;
+  image-rendering: pixelated;
+}

@@ -1,0 +1,194 @@
+
+
+import type { InputHost, PointerState } from './input.types';
+import type { Pixel } from '@the-big-war/game-engine/world-tile/world-tile.types';
+
+export type * from './input.types';
+
+export const DRAG_THRESHOLD = 6;
+
+export const HELD_LONG_MS = 420;
+
+const WHEEL_STEP = 1.0015;
+
+const PINCH_STEP = 0.006;
+
+export function attachInput(host: InputHost): () => void {
+  const pointers = new Map<number, PointerState>();
+  let pinchSpan = 0;
+
+  const localPoint = (event: PointerEvent): Pixel => {
+    const rect = host.element.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  };
+
+  const clearTimer = (state: PointerState) => {
+    if (state.timer !== null) {
+      clearTimeout(state.timer);
+      state.timer = null;
+    }
+  };
+
+  const onPointerDown = (event: PointerEvent) => {
+    const at = localPoint(event);
+    const button = event.button === 2 ? 'secondary' : 'primary';
+    const state: PointerState = {
+      id: event.pointerId,
+      startX: at.x,
+      startY: at.y,
+      lastX: at.x,
+      lastY: at.y,
+      dragging: false,
+      button,
+      timer: null,
+      consumed: false,
+    };
+    pointers.set(event.pointerId, state);
+    host.element.setPointerCapture?.(event.pointerId);
+
+    if (pointers.size === 2) {
+      
+      const [a, b] = [...pointers.values()];
+      if (a && b) {
+        pinchSpan = Math.hypot(a.lastX - b.lastX, a.lastY - b.lastY);
+        for (const pointer of pointers.values()) {
+          clearTimer(pointer);
+          pointer.dragging = true;
+        }
+      }
+      return;
+    }
+
+    if (button === 'primary') {
+      state.timer = setTimeout(() => {
+        state.timer = null;
+        if (!state.dragging) {
+          state.consumed = true;
+          host.onIntent({ kind: 'longPress', at: { x: state.startX, y: state.startY } });
+        }
+      }, HELD_LONG_MS);
+    }
+  };
+
+  const onPointerMove = (event: PointerEvent) => {
+    const at = localPoint(event);
+    const state = pointers.get(event.pointerId);
+
+    if (pointers.size >= 2) {
+      const ids = [...pointers.keys()];
+      const first = pointers.get(ids[0]!);
+      const second = pointers.get(ids[1]!);
+      if (first && second) {
+        
+        if (state) {
+          state.lastX = at.x;
+          state.lastY = at.y;
+          state.dragging = true;
+        }
+        const span = Math.hypot(first.lastX - second.lastX, first.lastY - second.lastY);
+        if (pinchSpan > 0 && span > 0) {
+          host.onIntent({
+            kind: 'zoom',
+            factor: 1 + (span - pinchSpan) * PINCH_STEP,
+            anchor: { x: (first.lastX + second.lastX) / 2, y: (first.lastY + second.lastY) / 2 },
+          });
+        }
+        pinchSpan = span;
+      }
+      return;
+    }
+
+    if (!state) {
+      host.onIntent({ kind: 'hover', at });
+      return;
+    }
+
+    const dx = at.x - state.lastX;
+    const dy = at.y - state.lastY;
+    const travelled = Math.hypot(at.x - state.startX, at.y - state.startY);
+    state.lastX = at.x;
+    state.lastY = at.y;
+
+    if (!state.dragging && travelled > DRAG_THRESHOLD) {
+      state.dragging = true;
+      clearTimer(state);
+      host.element.classList.add('is-dragging');
+    }
+    if (state.dragging) host.onIntent({ kind: 'pan', dx, dy });
+  };
+
+  const finish = (event: PointerEvent, cancelled: boolean) => {
+    const state = pointers.get(event.pointerId);
+    pointers.delete(event.pointerId);
+    host.element.releasePointerCapture?.(event.pointerId);
+    if (!state) return;
+
+    clearTimer(state);
+    if (pointers.size < 2) pinchSpan = 0;
+
+    if (cancelled) return;
+    if (state.consumed) return;
+
+    if (state.dragging) {
+      if (pointers.size === 0) {
+        host.element.classList.remove('is-dragging');
+        host.onIntent({ kind: 'panEnd' });
+      }
+      return;
+    }
+
+    const at = localPoint(event);
+    if (state.button === 'secondary') {
+      host.onIntent({ kind: 'tap', at, button: 'secondary' });
+      return;
+    }
+    
+    if (Math.hypot(at.x - state.startX, at.y - state.startY) <= DRAG_THRESHOLD) {
+      host.onIntent({ kind: 'tap', at, button: 'primary' });
+    }
+  };
+
+  const onPointerUp = (event: PointerEvent) => finish(event, false);
+  const onPointerCancel = (event: PointerEvent) => finish(event, true);
+  const onPointerLeave = (event: PointerEvent) => {
+    if (!pointers.has(event.pointerId)) host.onIntent({ kind: 'leave' });
+  };
+  const onWheel = (event: WheelEvent) => {
+    event.preventDefault();
+    const rect = host.element.getBoundingClientRect();
+    host.onIntent({
+      kind: 'zoom',
+      factor: Math.pow(WHEEL_STEP, -event.deltaY),
+      anchor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+    });
+  };
+  const onContextMenu = (event: MouseEvent) => event.preventDefault();
+  const onKeyDown = (event: KeyboardEvent) => {
+    
+    const target = event.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+    host.onIntent({ kind: 'key', key: event.key });
+  };
+
+  host.element.addEventListener('pointerdown', onPointerDown);
+  host.element.addEventListener('pointermove', onPointerMove);
+  host.element.addEventListener('pointerup', onPointerUp);
+  host.element.addEventListener('pointercancel', onPointerCancel);
+  host.element.addEventListener('pointerleave', onPointerLeave);
+  host.element.addEventListener('wheel', onWheel, { passive: false });
+  host.element.addEventListener('contextmenu', onContextMenu);
+  window.addEventListener('keydown', onKeyDown);
+
+  return () => {
+    for (const state of pointers.values()) clearTimer(state);
+    pointers.clear();
+    host.element.removeEventListener('pointerdown', onPointerDown);
+    host.element.removeEventListener('pointermove', onPointerMove);
+    host.element.removeEventListener('pointerup', onPointerUp);
+    host.element.removeEventListener('pointercancel', onPointerCancel);
+    host.element.removeEventListener('pointerleave', onPointerLeave);
+    host.element.removeEventListener('wheel', onWheel);
+    host.element.removeEventListener('contextmenu', onContextMenu);
+    window.removeEventListener('keydown', onKeyDown);
+  };
+}
