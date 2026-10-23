@@ -1,0 +1,1 @@
+export const MAX_GAME_SECONDS_PER_STEP = 0.25;

@@ -1,0 +1,9 @@
+{
+  "name": "@the-big-war/game-engine",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "solid-js": "^1.9.17"
+  }
+}
