@@ -20,6 +20,10 @@ export const Hud = () => {
     onCleanup(() => document.removeEventListener('pointerdown', closeOnOutside));
   });
 
+  const currentSpeed = () => {
+    store.version();
+    return store.state.speed;
+  };
   const me = () => {
     store.version();
     return store.state.empires[store.state.playerEmpire] ?? store.state.empires[0]!;
@@ -95,7 +99,7 @@ export const Hud = () => {
               setSpeedOpen(false);
             }}
           >
-            <span>{store.paused() ? '▶' : `${store.state.speed}×`}</span>
+            <span>{store.paused() ? '▶' : `${currentSpeed()}×`}</span>
           </button>
           <button
             type="button"
@@ -114,8 +118,8 @@ export const Hud = () => {
                 <button
                   type="button"
                   role="menuitemradio"
-                  aria-checked={store.state.speed === speed && !store.paused()}
-                  class={`street-action hud-speed${store.state.speed === speed && !store.paused() ? ' is-active' : ''}`}
+                  aria-checked={currentSpeed() === speed && !store.paused()}
+                  class={`street-action hud-speed${currentSpeed() === speed && !store.paused() ? ' is-active' : ''}`}
                   aria-label={`Speed ${speed}×`}
                   onClick={event => {
                     store.setPaused(false);
