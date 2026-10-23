@@ -4,7 +4,7 @@ import type { HexRange } from './terrain-layer';
 import type { HexCell } from '../game/map/map.types';
 import type { PlacementGhost } from './overlay-layer.types';
 import { BUILDING_SPRITES, SPRITE_PALETTE, SPRITE_SIZE } from './pixel-sprites';
-import { axialToPixel } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import { axialToPixel, hexCorners } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import type { AxialGrid } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import type { Building, BuildingKind, BuildingId } from '../game/building/building.types';
 
@@ -17,6 +17,9 @@ const BAR_WIDTH = 0.7;
 const BAR_HEIGHT = 0.1;
 const BAR_BACK = 0x1b1330;
 const BAR_FILL = 0xffd35c;
+const BORDER_COLOR = 0xffd35c;
+const BORDER_ALPHA = 0.7;
+const BORDER_INSET = 0.92;
 
 interface GlyphEntry {
   readonly object: Graphics;
@@ -86,6 +89,7 @@ export class BuildingsLayer {
         const entry = this.acquire(building, hexSize);
         const center = axialToPixel({ q, r }, hexSize);
         entry.object.position.set(center.x, center.y);
+        this.drawBorder(center.x, center.y, hexSize);
         const demolishing = building.demolishAt !== null;
         const levelChanged = entry.level !== building.level;
         const kindChanged = entry.kind !== building.kind;
@@ -113,6 +117,12 @@ export class BuildingsLayer {
       this.release(id, entry);
     }
     this.container.addChild(this.progress);
+  }
+
+  private drawBorder(x: number, y: number, hexSize: number): void {
+    const points = hexCorners({ x, y }, hexSize * BORDER_INSET).flatMap(corner => [corner.x, corner.y]);
+    this.progress.poly(points);
+    this.progress.stroke({ color: BORDER_COLOR, alpha: BORDER_ALPHA, width: Math.max(1, hexSize * 0.06) });
   }
 
   private drawProgress(x: number, y: number, hexSize: number, done: number): void {
