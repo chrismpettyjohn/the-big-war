@@ -1,0 +1,138 @@
+import type { TerrainColorMap, TerrainMixMap } from './theme.types';
+
+export type * from './theme.types';
+
+export function parseCssColor(value: string): number | null {
+  const text = value.trim();
+  if (text.length === 0) return null;
+  if (text.startsWith('#')) {
+    const hex = text.slice(1);
+    if (hex.length === 3) {
+      const r = hex[0];
+      const g = hex[1];
+      const b = hex[2];
+      if (r === undefined || g === undefined || b === undefined) return null;
+      return (parseInt(r + r, 16) << 16) | (parseInt(g + g, 16) << 8) | parseInt(b + b, 16);
+    }
+    if (hex.length === 6 || hex.length === 8) {
+      const value6 = parseInt(hex.slice(0, 6), 16);
+      return Number.isNaN(value6) ? null : value6;
+    }
+    return null;
+  }
+  const rgb = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/i.exec(text);
+  if (rgb) {
+    const r = Math.round(Number(rgb[1]));
+    const g = Math.round(Number(rgb[2]));
+    const b = Math.round(Number(rgb[3]));
+    return ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
+  }
+  return null;
+}
+
+function cssVar(name: string, fallback: number): number {
+  if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') return fallback;
+  const root = document.documentElement;
+  if (!root) return fallback;
+  const raw = getComputedStyle(root).getPropertyValue(name);
+  return parseCssColor(raw) ?? fallback;
+}
+
+const FACTION_FALLBACKS: readonly number[] = [
+  0xe8302a, 0x2a6cf0, 0xff8a1c, 0xf5d22a, 0x9b4de0, 0x22d3ee, 0xff3fb4, 0xf4f4f4,
+];
+
+const SEA_FALLBACK = 0x2f86d6;
+
+export const FACTION_COLORS: readonly number[] = FACTION_FALLBACKS.map((fallback, index) =>
+  cssVar(`--faction-${index}`, fallback),
+);
+
+export const SEA_COLOR = cssVar('--street-map-sea', SEA_FALLBACK);
+
+export const NEUTRAL_COLOR = 0x5fa84a;
+
+export const TERRAIN_TINTS: TerrainColorMap = {
+  plain: 0x000000,
+  forest: 0x0f3a1c,
+  mountain: 0x6e6a62,
+};
+
+export const TERRAIN_FILL_MIX: TerrainMixMap = {
+  plain: 1.0,
+  forest: 0.72,
+  mountain: 0.6,
+};
+
+export const HEX_SHADE_MIN = -0.06;
+export const HEX_SHADE_MAX = 0.06;
+
+export const HEX_BORDER_WIDTH = 3;
+export const HEX_BORDER_DARKEN = 0.35;
+export const NEUTRAL_BORDER_COLOR = 0x4a8a3a;
+
+export const FRONT_EDGE_COLOR = 0xff6a3d;
+export const FRONT_EDGE_WIDTH = 2.5;
+
+export const SELECTION_COLOR = 0xffffff;
+export const SELECTION_WIDTH = 3;
+export const HOVER_COLOR = 0xf0f0f0;
+export const HOVER_WIDTH = 1.5;
+
+export const ACCENT_COLOR = 0xf0c850;
+export const DANGER_COLOR = 0xe03232;
+export const INFO_COLOR = 0x5db6e5;
+export const SUCCESS_COLOR = 0x72cc72;
+
+export const DEMOLISH_DIM = 0.35;
+
+export const VOID_COLOR = 0x060a16;
+export const WORLD_BORDER_COLOR = 0xd4a83a;
+export const WORLD_BORDER_WIDTH = 3;
+
+const NEUTRAL_STATE_COLORS: readonly number[] = [0x9a8f7e, 0x7d8590, 0xa39a8a, 0x6f7a72, 0x8c8077, 0x858a96];
+
+let neutralStateStart = Number.POSITIVE_INFINITY;
+
+export function setNeutralStateStart(firstId: number): void {
+  neutralStateStart = firstId;
+}
+
+export function ownerColor(owner: number): number {
+  if (owner < 0) return NEUTRAL_COLOR;
+  if (owner >= neutralStateStart) {
+    return NEUTRAL_STATE_COLORS[(owner - neutralStateStart) % NEUTRAL_STATE_COLORS.length]!;
+  }
+  const color = FACTION_COLORS[owner % FACTION_COLORS.length];
+  return color ?? NEUTRAL_COLOR;
+}
+
+export function mixColor(a: number, b: number, t: number): number {
+  const clamped = t < 0 ? 0 : t > 1 ? 1 : t;
+  const ar = (a >> 16) & 0xff;
+  const ag = (a >> 8) & 0xff;
+  const ab = a & 0xff;
+  const br = (b >> 16) & 0xff;
+  const bg = (b >> 8) & 0xff;
+  const bb = b & 0xff;
+  const r = (ar + (br - ar) * clamped) | 0;
+  const g = (ag + (bg - ag) * clamped) | 0;
+  const bl = (ab + (bb - ab) * clamped) | 0;
+  return (r << 16) | (g << 8) | bl;
+}
+
+export function shadeColor(color: number, factor: number): number {
+  const r = Math.min(255, Math.max(0, Math.round(((color >> 16) & 0xff) * factor)));
+  const g = Math.min(255, Math.max(0, Math.round(((color >> 8) & 0xff) * factor)));
+  const b = Math.min(255, Math.max(0, Math.round((color & 0xff) * factor)));
+  return (r << 16) | (g << 8) | b;
+}
+
+export function hexShade(q: number, r: number): number {
+  
+  let h = (q * 374761393 + r * 668265263) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  h = (h ^ (h >>> 16)) >>> 0;
+  const unit = h / 0xffffffff;
+  return 1 + HEX_SHADE_MIN + unit * (HEX_SHADE_MAX - HEX_SHADE_MIN);
+}

@@ -1,0 +1,207 @@
+
+
+import { createSignal } from 'solid-js';
+import type { FrontId } from '../game/front/front.types';
+import type { EmpireId } from '../game/empire/empire.types';
+import type { BuildingKind } from '../game/building/building.types';
+import type { CommandError } from '../game/commands/commands.types';
+import type { Axial, Pixel } from '@the-big-war/game-engine/world-tile/world-tile.types';
+import { distance, gridAt, neighbors, pixelToHex } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import type {
+  CommandNotice,
+  ContextMenuState,
+  ControllerDeps,
+  Controllers,
+  Tool,
+} from './controllers.types';
+
+export type * from './controllers.types';
+
+let noticeId = 0;
+
+export function createControllers(deps: ControllerDeps): Controllers {
+  const { store } = deps;
+  const [selectedHex, setSelectedHex] = createSignal<Axial | null>(null);
+  const [hoverHex, setHoverHex] = createSignal<Axial | null>(null);
+  const [tool, setToolSignal] = createSignal<Tool>({ kind: 'idle' });
+  const [troopPercent, setTroopPercentSignal] = createSignal(50);
+  const [contextMenu, setContextMenu] = createSignal<ContextMenuState | null>(null);
+  const [notices, setNotices] = createSignal<readonly CommandNotice[]>([]);
+
+  const state = () => store.state;
+  const player = (): EmpireId => state().playerEmpire;
+
+  const notice = (reason: CommandError) => {
+    const entry: CommandNotice = { id: ++noticeId, reason };
+    setNotices(current => [...current, entry]);
+    setTimeout(() => {
+      setNotices(current => current.filter(item => item.id !== entry.id));
+    }, 2600);
+  };
+
+  const dismissNotice = (id: number) => setNotices(current => current.filter(item => item.id !== id));
+
+  const hexAtScreen = (at: Pixel): Axial | null => deps.screenToHex(at);
+
+  const own = (hex: Axial): boolean => gridAt(state().grid, hex)?.owner === player();
+  const foreign = (hex: Axial): boolean => {
+    const cell = gridAt(state().grid, hex);
+    return !!cell && cell.owner !== player();
+  };
+
+  const attackFromFor = (target: Axial): Axial | null => {
+    for (const candidate of neighbors(target)) {
+      if (gridAt(state().grid, candidate)?.owner === player()) return candidate;
+    }
+    return null;
+  };
+
+  const sendTroops = (target: Axial) => {
+    const from = attackFromFor(target);
+    if (!from) {
+      notice('invalid_target');
+      return;
+    }
+    const result = store.dispatch({
+      type: 'SendTroops',
+      empire: player(),
+      hex: from,
+      target,
+      percent: troopPercent(),
+      intent: 'attack',
+    });
+    if (result.ok) deps.onTroopsSent?.(from, target);
+    else notice(result.reason);
+  };
+
+  const placeBuilding = (hex: Axial, building: BuildingKind) => {
+    const result = store.dispatch({ type: 'PlaceBuilding', empire: player(), hex, kind: building });
+    if (result.ok) setToolSignal({ kind: 'idle' });
+    else notice(result.reason);
+  };
+
+  const fireCannon = (from: Axial, target: Axial) => {
+    const result = store.dispatch({ type: 'FireCannon', empire: player(), from, target });
+    if (result.ok) setToolSignal({ kind: 'idle' });
+    else notice(result.reason);
+  };
+
+  const selectHex = (hex: Axial | null) => {
+    setSelectedHex(hex);
+    setContextMenu(null);
+  };
+
+  const setTool = (next: Tool) => {
+    setToolSignal(next);
+    deps.onToolChanged?.(next);
+  };
+
+  const cancelTool = () => {
+    if (tool().kind !== 'idle') setTool({ kind: 'idle' });
+    else setSelectedHex(null);
+    setContextMenu(null);
+  };
+
+  const tap = (at: Pixel, button: 'primary' | 'secondary') => {
+    setContextMenu(null);
+    const hex = hexAtScreen(at);
+    if (!hex) {
+      setSelectedHex(null);
+      return;
+    }
+
+    if (button === 'secondary') {
+      if (tool().kind !== 'idle') cancelTool();
+      else secondary(at);
+      return;
+    }
+
+    const active = tool();
+    if (active.kind === 'place') {
+      placeBuilding(hex, active.building);
+      return;
+    }
+    if (active.kind === 'cannon') {
+      if (distance(active.from, hex) > state().config.cannon.range) {
+        notice('invalid_target');
+        return;
+      }
+      fireCannon(active.from, hex);
+      return;
+    }
+
+    if (own(hex)) {
+      selectHex(hex);
+      return;
+    }
+    if (foreign(hex)) {
+      sendTroops(hex);
+      return;
+    }
+    selectHex(hex);
+  };
+
+  const secondary = (at: Pixel) => {
+    const hex = hexAtScreen(at);
+    if (!hex) return;
+    setSelectedHex(hex);
+    setContextMenu({ at, hex });
+  };
+
+  const key = (pressed: string) => {
+    if (pressed === 'Escape') {
+      cancelTool();
+      return;
+    }
+    if (pressed === ' ') {
+      store.setPaused(!store.paused());
+      return;
+    }
+    if (pressed === '1') store.setSpeed(1);
+    if (pressed === '2') store.setSpeed(2);
+    if (pressed === '4') store.setSpeed(4);
+  };
+
+  return {
+    selectedHex,
+    hoverHex,
+    tool,
+    troopPercent,
+    contextMenu,
+    notices,
+    selectHex,
+    setHover: setHoverHex,
+    setTroopPercent: percent => setTroopPercentSignal(Math.round(Math.min(100, Math.max(1, percent)))),
+    setTool,
+    cancelTool,
+    openContextMenu: (at, hex) => {
+      setSelectedHex(hex);
+      setContextMenu({ at, hex });
+    },
+    closeContextMenu: () => setContextMenu(null),
+    hexAtScreen,
+    tap,
+    dragOver: client => setHoverHex(deps.clientToHex(client)),
+    dropAt: client => {
+      const active = tool();
+      const hex = deps.clientToHex(client);
+      if (active.kind === 'place' && hex) placeBuilding(hex, active.building);
+    },
+    secondary,
+    key,
+    notice,
+    dismissNotice,
+  };
+}
+
+export function frontsTouching(state: { readonly fronts: readonly { readonly id: FrontId; readonly hexA: Axial; readonly hexB: Axial }[] }, hex: Axial): FrontId[] {
+  return state.fronts
+    .filter(
+      front =>
+        (front.hexA.q === hex.q && front.hexA.r === hex.r) ||
+        (front.hexB.q === hex.q && front.hexB.r === hex.r),
+    )
+    .map(front => front.id);
+}
+
+export { pixelToHex };

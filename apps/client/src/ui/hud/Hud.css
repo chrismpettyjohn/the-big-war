@@ -1,0 +1,147 @@
+.hud-top {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: space-between;
+    left: var(--ui-rail-left);
+    pointer-events: none;
+    position: fixed;
+    right: var(--ui-safe-inset);
+    top: var(--ui-hud-top);
+    z-index: 60;
+}
+
+.hud-top > * {
+    pointer-events: auto;
+}
+
+.hud-speed {
+    font-size: 14px;
+    font-weight: 700;
+    text-shadow: var(--street-text-shadow);
+}
+
+.hud-speed-drop {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.hud-speed-drop .hud-speed-trigger {
+    gap: 6px;
+    width: auto;
+    min-width: calc(var(--ui-rail-width) - 2 * var(--ui-rail-padding));
+    padding: 0 8px;
+    font-size: 14px;
+    font-weight: 700;
+    text-shadow: var(--street-text-shadow);
+}
+
+.hud-speed-caret {
+    width: auto;
+    min-width: 22px;
+    padding: 0 6px;
+    color: var(--street-muted);
+    font-size: 10px;
+}
+
+.hud-speed-caret-icon {
+    display: inline-block;
+    line-height: 1;
+    transition: transform 120ms ease;
+}
+
+.hud-speed-drop.is-open .hud-speed-caret-icon {
+    transform: rotate(180deg);
+}
+
+.hud-speed-drop.is-open :is(.hud-speed-trigger, .hud-speed-caret) {
+    background: var(--street-hover);
+    color: var(--street-text);
+}
+
+.hud-speed-menu {
+    box-sizing: border-box;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 70;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 100%;
+    padding: 3px;
+    animation: hud-speed-menu-in 100ms ease-out;
+}
+
+.hud-speed-drop.is-open .hud-speed-menu {
+    display: flex;
+}
+
+.street-tray .hud-speed-menu .street-action {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 0 10px;
+    font-size: 13px;
+}
+
+.street-tray .hud-speed-menu .street-action.is-active {
+    box-shadow: inset 2px 0 0 var(--street-accent);
+}
+
+.street-tray .hud-speed-menu .rail-divider {
+    width: 100%;
+    height: 1px;
+    margin: 2px 0;
+    border-left: 0;
+    border-top: 1px solid var(--street-border);
+}
+
+.hud-nation {
+    align-items: center;
+    max-width: 190px;
+    padding-right: 4px;
+}
+
+.hud-nation-name {
+    overflow: hidden;
+    color: var(--street-text);
+    font-size: 14px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@keyframes hud-speed-menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hud-glyph {
+    font-size: 15px;
+}
+
+.hud-res-icon {
+    color: var(--street-muted);
+    flex: 0 0 auto;
+    font-size: 15px;
+}
+
+.hud-res-icon.is-gold {
+    color: var(--street-accent);
+}
+
+.hud-res-icon.is-science {
+    color: var(--street-info);
+}
+
+.hud-res-icon.is-troops {
+    color: var(--street-danger);
+}

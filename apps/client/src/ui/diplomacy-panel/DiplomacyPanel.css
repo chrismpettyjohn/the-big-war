@@ -1,0 +1,167 @@
+.diplo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.diplo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0 10px 8px 8px;
+  border: 1px solid var(--street-border);
+  border-left: 3px solid var(--street-border);
+  border-radius: var(--street-radius);
+  background: var(--street-tile);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.diplo-row:hover {
+  background: var(--street-surface-hover);
+  border-color: var(--street-border-hover);
+}
+.diplo-row.is-danger { border-left-color: var(--street-danger); }
+.diplo-row.is-success { border-left-color: var(--street-success); }
+.diplo-row.is-accent { border-left-color: var(--street-accent); }
+
+.diplo-flag {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 42px;
+  padding-bottom: 6px;
+  font-size: 15px;
+  text-shadow: none;
+  background: var(--tint);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+}
+
+.diplo-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.diplo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.diplo-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.diplo-name {
+  overflow: hidden;
+  color: var(--street-text);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  text-shadow: var(--street-text-shadow);
+  white-space: nowrap;
+}
+.diplo-faction {
+  color: var(--street-muted);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.diplo-status {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--street-tray-well);
+  color: var(--street-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.diplo-status.is-danger { background: var(--street-danger-dim); color: var(--street-danger); }
+.diplo-status.is-success { background: var(--street-success-dim); color: var(--street-success); }
+.diplo-status.is-accent { background: var(--street-accent-dim); color: var(--street-accent); }
+
+.diplo-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.diplo-action {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 4px 3px;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  cursor: pointer;
+  font-family: var(--street-font);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow: var(--street-text-shadow);
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease;
+}
+.diplo-action.is-good { background: var(--street-success-dim); color: var(--street-success); }
+.diplo-action.is-bad { background: var(--street-danger-dim); color: var(--street-danger); }
+.diplo-action.is-good:hover:not([aria-disabled='true']) { background: var(--street-success); color: #fff; }
+.diplo-action.is-bad:hover:not([aria-disabled='true']) { background: var(--street-danger); color: #fff; }
+.diplo-action:active:not([aria-disabled='true']) { transform: translateY(1px); }
+.diplo-action:focus-visible {
+  outline: 2px solid var(--street-select);
+  outline-offset: 2px;
+}
+.diplo-action[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.diplo-action-timer {
+  font-size: 7px;
+  opacity: 0.85;
+}
+
+.diplo-action[data-why]:hover::after {
+  content: attr(data-why);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 10;
+  width: max-content;
+  max-width: 220px;
+  padding: 6px 8px;
+  border: 1px solid var(--street-border);
+  background: var(--street-surface);
+  color: var(--street-text);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  pointer-events: none;
+}
+
+.diplo-action-icon {
+  flex: none;
+  width: 8px;
+  height: 8px;
+}
+.diplo-action-label {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+}

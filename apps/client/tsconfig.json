@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@the-big-war/frontend/*": ["../../libs/frontend/src/*"],
+      "@the-big-war/game-engine/*": ["../../libs/game-engine/src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

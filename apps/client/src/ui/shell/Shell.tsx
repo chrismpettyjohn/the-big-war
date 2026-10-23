@@ -1,0 +1,249 @@
+
+
+import './Shell.css';
+import { Hud } from '../hud/Hud';
+import { errorLabel } from '../text';
+import { Hotbar } from '../hotbar/Hotbar';
+import { openAbout } from '../about/about';
+import { MapMenu } from '../map-menu/MapMenu';
+import { TileTip } from '../tile-tip/TileTip';
+import { AboutView } from '../about/AboutView';
+import { VOID_COLOR } from '../../render/theme';
+import { ArmyPanel } from '../army-panel/ArmyPanel';
+import { EndScreen } from '../end-screen/EndScreen';
+import { WikiPanel } from '../wiki-panel/WikiPanel';
+import { BuildPanel } from '../build-panel/BuildPanel';
+import { MenuScreen } from '../menu-screen/MenuScreen';
+import { setNeutralStateStart } from '../../render/theme';
+import { gameStore } from '../../game/store/store.service';
+import type { NoticesProps, PanelId } from './Shell.types';
+import { DeploySlider } from '../deploy-slider/DeploySlider';
+import { ResearchPanel } from '../research-panel/ResearchPanel';
+import { DiplomacyPanel } from '../diplomacy-panel/DiplomacyPanel';
+import { createWorld, type WorldRenderer } from '../../render/world';
+import { Rail, RailAction } from '@the-big-war/frontend/ui/rail/Rail';
+import type { BuildingKind } from '../../game/building/building.types';
+import { createAttractMode, type AttractMode } from '../../session/attract';
+import { createMatchRuntime, type MatchRuntime } from '../../session/runtime';
+import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { DEFAULT_PLAYER_NAME, configFromSettings, createMatchFlow } from '../../session/flow';
+import { FaBook, FaFlag, FaHammer, FaCrosshairs, FaAtom, FaSignOutAlt } from '@the-big-war/frontend/ui/icons/icons';
+
+export type { NoticesProps, PanelId };
+
+export const Shell = () => {
+  const store = gameStore();
+  const flow = createMatchFlow();
+
+  const [panel, setPanel] = createSignal<PanelId>(null);
+  const [wikiFocus, setWikiFocus] = createSignal<BuildingKind | null>(null);
+  const [world, setWorld] = createSignal<WorldRenderer | null>(null);
+  const [runtime, setRuntime] = createSignal<MatchRuntime | null>(null);
+  const [attract, setAttract] = createSignal<AttractMode | null>(null);
+  let host: HTMLDivElement | undefined;
+
+  const ensureWorld = async (): Promise<WorldRenderer | null> => {
+    const existing = world();
+    if (existing || !host) return existing;
+    const created = createWorld({ host, initialScale: 0.85, background: VOID_COLOR });
+    await created.init();
+    setWorld(created);
+    return created;
+  };
+
+  onMount(() => {
+    void ensureWorld().then(active => {
+      if (active) setAttract(createAttractMode({ world: active }));
+    });
+  });
+
+  createEffect(() => {
+    const mode = attract();
+    if (!mode) return;
+    if (flow.screen() === 'menu') mode.start();
+    else mode.stop();
+  });
+
+  onCleanup(() => attract()?.stop());
+
+  const startMatch = async () => {
+    const settings = flow.settings();
+    setNeutralStateStart(settings.bots.length + 1);
+    store.startMatch(configFromSettings(settings, flow.playerName().trim() || DEFAULT_PLAYER_NAME));
+
+    store.dispatch({
+      type: 'SelectFaction',
+      empire: store.state.playerEmpire,
+      factionId: flow.playerFaction(),
+    });
+    const bots = settings.bots;
+    for (let id = 0; id < bots.length; id++) {
+      const factionId = bots[id];
+      if (factionId) store.dispatch({ type: 'SelectFaction', empire: id + 1, factionId });
+    }
+    attract()?.stop();
+    flow.enterMatch();
+    setPanel(null);
+
+    const activeWorld = await ensureWorld();
+    if (!activeWorld || !host) return;
+
+    runtime()?.stop();
+    const next = createMatchRuntime({
+      store,
+      world: activeWorld,
+      host,
+      onEnded: winner => flow.showResult(winner, store.state.playerEmpire),
+    });
+    setRuntime(next);
+    next.fillScreenFromLeft();
+    next.start();
+  };
+
+  const backToMenu = () => {
+    runtime()?.stop();
+    setRuntime(null);
+    store.returnToMenu();
+    setPanel(null);
+    flow.backToMenu();
+  };
+
+  const togglePanel = (id: Exclude<PanelId, null>) => {
+    if (id === 'wiki') setWikiFocus(null);
+    setPanel(current => (current === id ? null : id));
+  };
+  const closePanel = (id: Exclude<PanelId, null>) => () => setPanel(current => (current === id ? null : current));
+
+  const showingMatch = () => flow.screen() === 'match' || flow.screen() === 'end';
+
+  return (
+    <>
+      <div ref={el => (host = el)} class="world-host" />
+
+      <Show when={flow.screen() === 'menu'}>
+        <MenuScreen
+          settings={flow.settings()}
+          faction={flow.playerFaction()}
+          playerName={flow.playerName()}
+          onChange={patch => flow.updateSettings(patch)}
+          onNameChange={name => flow.setPlayerName(name)}
+          onSelectFaction={factionId => flow.chooseFaction(factionId)}
+          onStart={() => void startMatch()}
+        />
+      </Show>
+
+      <Show when={showingMatch()}>
+        <Hud />
+
+        <Rail
+          label="The Big War"
+          brand={<img src="/images/swords.svg" alt="" draggable={false} />}
+          onBrand={() => openAbout()}
+        >
+          <RailAction
+            label="Diplomacy"
+            icon={<FaFlag />}
+            active={panel() === 'diplomacy'}
+            onClick={() => togglePanel('diplomacy')}
+          />
+          <RailAction
+            label="Research"
+            icon={<FaAtom />}
+            active={panel() === 'research'}
+            onClick={() => togglePanel('research')}
+          />
+          <RailAction
+            label="Command"
+            icon={<FaCrosshairs />}
+            active={panel() === 'army'}
+            badge={store.state.fronts.length}
+            badgeAccent
+            onClick={() => togglePanel('army')}
+          />
+          <RailAction
+            label="Build"
+            icon={<FaHammer />}
+            active={panel() === 'build'}
+            onClick={() => togglePanel('build')}
+          />
+          <RailAction
+            label="Wiki"
+            icon={<FaBook />}
+            active={panel() === 'wiki'}
+            onClick={() => togglePanel('wiki')}
+          />
+          <div class="rail-divider rail-bottom">
+            <RailAction label="Menu" icon={<FaSignOutAlt />} danger onClick={() => backToMenu()} />
+          </div>
+        </Rail>
+
+        <Show when={panel() === 'build' && runtime()}>
+          {active => <BuildPanel controllers={active().controllers} onClose={closePanel('build')} />}
+        </Show>
+        <Show when={panel() === 'army' && runtime()}>
+          {active => <ArmyPanel controllers={active().controllers} onClose={closePanel('army')} />}
+        </Show>
+        <Show when={panel() === 'research'}>
+          <ResearchPanel onClose={closePanel('research')} />
+        </Show>
+        <Show when={panel() === 'diplomacy'}>
+          <DiplomacyPanel
+            controllers={runtime()?.controllers}
+            onClose={closePanel('diplomacy')}
+          />
+        </Show>
+        <Show when={panel() === 'wiki'}>
+          <WikiPanel focus={wikiFocus()} onClose={closePanel('wiki')} />
+        </Show>
+        <Show when={runtime()}>
+          {active => (
+            <>
+              <TileTip runtime={active()} />
+              <MapMenu
+                controllers={active().controllers}
+                onInspect={() => setPanel(null)}
+                onArmy={() => setPanel('army')}
+                onBuild={() => setPanel('build')}
+                onDiplomacy={() => setPanel('diplomacy')}
+              />
+              <div class="hud-bottom-row">
+                <Hotbar
+                  controllers={active().controllers}
+                  onInfo={kind => {
+                    setWikiFocus(kind);
+                    setPanel('wiki');
+                  }}
+                />
+                <Notices controllers={active().controllers} />
+              </div>
+              <DeploySlider
+                controllers={active().controllers}
+                cameraMoved={active().cameraMoved()}
+                onReset={() => active().resetCamera()}
+              />
+            </>
+          )}
+        </Show>
+      </Show>
+
+      <Show when={flow.screen() === 'end'}>
+        <EndScreen
+          playerWon={flow.lastResult()?.playerWon ?? false}
+          onAgain={() => void startMatch()}
+          onMenu={() => backToMenu()}
+        />
+      </Show>
+
+      <AboutView />
+    </>
+  );
+};
+
+const Notices = (props: NoticesProps) => (
+  <div class="kit-toasts" aria-live="polite">
+    <For each={props.controllers.notices()}>
+      {notice => <div class="kit-toast">{errorLabel(notice.reason)}</div>}
+    </For>
+  </div>
+);
+

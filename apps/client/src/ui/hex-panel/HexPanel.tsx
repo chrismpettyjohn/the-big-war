@@ -1,0 +1,242 @@
+
+
+import './HexPanel.css';
+import { createSignal, Show } from 'solid-js';
+import { buildingLabel, terrainLabel } from '../text';
+import type { HexPanelProps } from './HexPanel.types';
+import { Bar } from '@the-big-war/frontend/ui/bar/Bar';
+import { gameStore } from '../../game/store/store.service';
+import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
+import type { ModifierLine } from '../../game/front/front.types';
+import type { Building } from '../../game/building/building.types';
+import { distance, gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
+
+export type { HexPanelProps };
+
+function buildingState(building: Building): string {
+  const parts: string[] = [`L${building.level}`];
+  if (building.kind === 'cannon' && building.cooldown > 0) {
+    parts.push(`Reloading ${building.cooldown.toFixed(0)}s`);
+  }
+  if (building.kind === 'farm') parts.push(`+${Math.round(building.growth * 100)}%`);
+  if (building.demolishAt !== null) parts.push('Demolish');
+  return parts.join(' · ');
+}
+
+function modifierSummary(lines: readonly ModifierLine[]): string[] {
+  return lines
+    .filter(line => line.attack !== 1 || line.defence !== 1)
+    .map(
+      line =>
+        `${line.label}: ${line.attack !== 1 ? `×${line.attack.toFixed(2)} atk` : ''}${
+          line.attack !== 1 && line.defence !== 1 ? ' · ' : ''
+        }${line.defence !== 1 ? `×${line.defence.toFixed(2)} def` : ''}`,
+    );
+}
+
+export const HexPanel = (props: HexPanelProps) => {
+  const store = gameStore();
+  const [confirmDemolish, setConfirmDemolish] = createSignal(false);
+
+  const hex = () => props.controllers.selectedHex();
+  const cell = () => {
+    const selected = hex();
+    return selected ? (gridAt(store.state.grid, selected) ?? null) : null;
+  };
+  const player = () => store.state.playerEmpire;
+  const isOwn = () => cell()?.owner === player();
+  const isForeign = () => {
+    const current = cell();
+    return !!current && current.owner !== player() && current.owner >= 0;
+  };
+  const owner = () => {
+    const current = cell();
+    return current && current.owner >= 0 ? store.state.empires[current.owner] : null;
+  };
+  
+  const front = () => {
+    const selected = hex();
+    if (!selected) return null;
+    return (
+      store.state.fronts.find(
+        entry =>
+          (entry.hexA.q === selected.q && entry.hexA.r === selected.r) ||
+          (entry.hexB.q === selected.q && entry.hexB.r === selected.r),
+      ) ?? null
+    );
+  };
+  const attackFrom = () => {
+    const selected = hex();
+    if (!selected) return null;
+    for (const candidate of neighbors(selected)) {
+      if (gridAt(store.state.grid, candidate)?.owner === player()) return candidate;
+    }
+    return null;
+  };
+
+  const building = () => cell()?.building ?? null;
+  const canFire = () => {
+    const current = building();
+    return !!current && current.kind === 'cannon' && isOwn() && current.cooldown <= 0;
+  };
+
+  const demolish = () => {
+    const selected = hex();
+    if (!selected) return;
+    store.dispatch({ type: 'DemolishBuilding', empire: player(), hex: selected });
+    setConfirmDemolish(false);
+  };
+
+  const startFire = () => {
+    const selected = hex();
+    if (!selected) return;
+    props.controllers.setTool({ kind: 'cannon', from: selected });
+    props.onClose();
+  };
+
+  const ownNeighbours = () => {
+    const selected = hex();
+    if (!selected) return 0;
+    return neighbors(selected).filter(candidate => gridAt(store.state.grid, candidate)?.owner === player())
+      .length;
+  };
+
+  return (
+    <Panel
+      title={hex() ? `${hex()!.q}, ${hex()!.r}` : 'Territory'}
+      kind={cell() ? terrainLabel(cell()!.terrain) : undefined}
+      onClose={props.onClose}
+    >
+      <Show when={cell()} fallback={<div class="kit-empty">Nothing here</div>}>
+        {current => (
+          <>
+            <div class="kit-row">
+              <span
+                class="hud-card-swatch"
+                style={{
+                  background:
+                    current().owner >= 0 ? `var(--faction-${current().owner})` : 'var(--street-border-hover)',
+                }}
+              />
+              <span class="hud-card-sub">
+                {current().owner >= 0 ? (owner()?.name ?? '') : 'Unclaimed'}
+                {isOwn() ? ' · You' : ''}
+              </span>
+            </div>
+
+            <Show when={building()}>
+              {entry => (
+                <div class="kit-col">
+                  <div class="kit-row">
+                    <strong class="hud-card-name">{buildingLabel(entry().kind)}</strong>
+                    <span class="street-drawer-panel-kind">{buildingState(entry())}</span>
+                  </div>
+                  <Show when={isOwn()}>
+                    <div class="kit-row">
+                      <Show when={canFire()}>
+                        <button
+                          type="button"
+                          class="kit-button is-danger"
+                          style={{
+                            padding: '6px 16px',
+                            display: 'inline-flex',
+                            'align-items': 'center',
+                            gap: '8px',
+                            'font-weight': '700',
+                          }}
+                          onClick={startFire}
+                        >
+                          Fire Cannon  ·  {store.state.config.cannon.cost} Gold
+                        </button>
+                      </Show>
+                    </div>
+                    <Show
+                      when={confirmDemolish()}
+                      fallback={
+                        <button type="button" class="kit-button is-danger" onClick={() => setConfirmDemolish(true)}>
+                          Demolish
+                        </button>
+                      }
+                    >
+                      <div class="kit-col">
+                        <span class="kit-note">Stays active 10s, then disappears. No refund.</span>
+                        <div class="kit-row">
+                          <button type="button" class="kit-button is-danger" onClick={demolish}>
+                            Confirm demolish
+                          </button>
+                          <button type="button" class="kit-button is-ghost" onClick={() => setConfirmDemolish(false)}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </Show>
+                  </Show>
+                </div>
+              )}
+            </Show>
+
+            <Show when={isForeign()}>
+              <div class="kit-col">
+                <Bar
+                  label="Troops"
+                  ratio={Math.min(1, (owner()?.soldiers ?? 0) / Math.max(1, owner()?.reserveCap ?? 1))}
+                  value={Math.floor(owner()?.soldiers ?? 0)}
+                  variant="danger"
+                />
+              </div>
+            </Show>
+
+            <Show when={front()}>
+              {entry => (
+                <div class="kit-col">
+                  <span class="street-label">Front</span>
+                  <Bar
+                    label={store.state.empires[entry().sideA.empire]?.name ?? ''}
+                    ratio={
+                      entry().sideA.troops /
+                      Math.max(1, entry().sideA.troops + entry().sideB.troops)
+                    }
+                    value={Math.floor(entry().sideA.troops)}
+                    variant="accent"
+                  />
+                  <Bar
+                    label={store.state.empires[entry().sideB.empire]?.name ?? ''}
+                    ratio={
+                      entry().sideB.troops /
+                      Math.max(1, entry().sideA.troops + entry().sideB.troops)
+                    }
+                    value={Math.floor(entry().sideB.troops)}
+                    variant="danger"
+                  />
+                  <Show when={entry().resolution}>
+                    {resolution => (
+                      <span class="kit-note kit-num">
+                        Losses: {Math.floor(resolution().lossesA)} /{' '}
+                        {Math.floor(resolution().lossesB)}
+                      </span>
+                    )}
+                  </Show>
+                </div>
+              )}
+            </Show>
+
+            <Show when={isOwn()}>
+              <span class="kit-note">
+                Pick a building, then click one of your hexes. Buildings need an empty hex around them. · {ownNeighbours()}/6
+              </span>
+            </Show>
+
+            <Show when={attackFrom() && isForeign()}>
+              <span class="kit-note">
+                Click foreign land to attack, right-click it to inspect, drag to move the map.
+                <Show when={distance(attackFrom()!, hex()!) === 1}> ✓</Show>
+              </span>
+            </Show>
+          </>
+        )}
+      </Show>
+    </Panel>
+  );
+};
+
+export { modifierSummary };

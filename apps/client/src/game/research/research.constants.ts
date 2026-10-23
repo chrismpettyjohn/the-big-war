@@ -1,0 +1,241 @@
+import type { ResearchNode } from './research.types';
+
+export const RESEARCH_NODES: readonly ResearchNode[] = [
+
+  {
+    id: 'market_guilds',
+    name: 'Market Guilds',
+    description: 'Traders organise: +15% gold income.',
+    kind: 'modifier',
+    branch: 'economy',
+    cost: 40,
+    duration: 20,
+    requires: [],
+    position: { col: 0, row: 0 },
+    effects: [{ kind: 'modifier', modifiers: [{ key: 'goldIncome', mul: 1.15, label: 'Market Guilds' }] }],
+  },
+  {
+    id: 'logging',
+    name: 'Logging Industry',
+    description: 'Efficient timber: buildings15% cheaper, +5% gold.',
+    kind: 'modifier',
+    branch: 'economy',
+    cost: 50,
+    duration: 25,
+    requires: ['market_guilds'],
+    position: { col: 1, row: 0 },
+    effects: [
+      {
+        kind: 'modifier',
+        modifiers: [
+          { key: 'buildCost', mul: 0.85, label: 'Logging Industry' },
+          { key: 'goldIncome', mul: 1.05, label: 'Logging Industry' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'deep_mining',
+    name: 'Deep Mining',
+    description: 'Miners harden the army: +5% attack and defence.',
+    kind: 'modifier',
+    branch: 'economy',
+    cost: 50,
+    duration: 25,
+    requires: ['market_guilds'],
+    position: { col: 1, row: 1 },
+    effects: [
+      {
+        kind: 'modifier',
+        modifiers: [
+          { key: 'attack', mul: 1.05, label: 'Deep Mining' },
+          { key: 'defence', mul: 1.05, label: 'Deep Mining' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'agriculture',
+    name: 'Agriculture',
+    description: 'Better harvests: +25% civilian growth.',
+    kind: 'modifier',
+    branch: 'economy',
+    cost: 40,
+    duration: 20,
+    requires: [],
+    position: { col: 0, row: 1 },
+    effects: [{ kind: 'modifier', modifiers: [{ key: 'growth', mul: 1.25, label: 'Agriculture' }] }],
+  },
+  {
+    id: 'scientific_method',
+    name: 'Scientific Method',
+    description: 'Labs run hotter: +35% science.',
+    kind: 'modifier',
+    branch: 'economy',
+    cost: 60,
+    duration: 30,
+    requires: ['market_guilds'],
+    position: { col: 2, row: 0 },
+    effects: [{ kind: 'modifier', modifiers: [{ key: 'scienceRate', mul: 1.35, label: 'Scientific Method' }] }],
+  },
+
+  {
+    id: 'drill',
+    name: 'Drill',
+    description: 'Disciplined ranks: +10% attack.',
+    kind: 'modifier',
+    branch: 'military',
+    cost: 40,
+    duration: 20,
+    requires: [],
+    position: { col: 0, row: 0 },
+    effects: [{ kind: 'modifier', modifiers: [{ key: 'attack', mul: 1.1, label: 'Drill' }] }],
+  },
+  {
+    id: 'fortification',
+    name: 'Fortification',
+    description: 'Field works: +15% defence on fronts.',
+    kind: 'modifier',
+    branch: 'military',
+    cost: 40,
+    duration: 25,
+    requires: [],
+    position: { col: 0, row: 1 },
+    effects: [{ kind: 'modifier', modifiers: [{ key: 'frontDefence', mul: 1.15, label: 'Fortification' }] }],
+  },
+  {
+    id: 'conscription',
+    name: 'Conscription',
+    description: 'Bigger armies: +20% reserve cap and recruitment speed.',
+    kind: 'modifier',
+    branch: 'military',
+    cost: 50,
+    duration: 25,
+    requires: ['drill'],
+    position: { col: 1, row: 0 },
+    effects: [
+      {
+        kind: 'modifier',
+        modifiers: [
+          { key: 'reserveCap', mul: 1.2, label: 'Conscription' },
+          { key: 'recruitSpeed', mul: 1.2, label: 'Conscription' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'artillery',
+    name: 'Artillery',
+    description: 'Unlocks the cannon building.',
+    kind: 'unlock',
+    branch: 'military',
+    cost: 80,
+    duration: 40,
+    requires: ['drill'],
+    position: { col: 1, row: 1 },
+    effects: [{ kind: 'unlock', key: 'building:cannon', label: 'Cannon' }],
+  },
+
+  {
+    id: 'surveying',
+    name: 'Surveying',
+    description: 'Charted lands: cheaper buildings, +5% gold.',
+    kind: 'modifier',
+    branch: 'territory',
+    cost: 40,
+    duration: 20,
+    requires: [],
+    position: { col: 0, row: 0 },
+    effects: [
+      {
+        kind: 'modifier',
+        modifiers: [
+          { key: 'buildCost', mul: 0.9, label: 'Surveying' },
+          { key: 'goldIncome', mul: 1.05, label: 'Surveying' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'urban_planning',
+    name: 'Urban Planning',
+    description: 'Cities house and feed more: +15% reserve cap, +10% growth.',
+    kind: 'modifier',
+    branch: 'territory',
+    cost: 60,
+    duration: 30,
+    requires: ['surveying'],
+    position: { col: 1, row: 0 },
+    effects: [
+      {
+        kind: 'modifier',
+        modifiers: [
+          { key: 'reserveCap', mul: 1.15, label: 'Urban Planning' },
+          { key: 'growth', mul: 1.1, label: 'Urban Planning' },
+        ],
+      },
+    ],
+  },
+
+  {
+    id: 'grand_strategy',
+    name: 'Grand Strategy',
+    description: 'Commit the war economy to one doctrine (choose one).',
+    kind: 'choice',
+    branch: 'military',
+    cost: 100,
+    duration: 50,
+    requires: ['conscription'],
+    position: { col: 2, row: 0 },
+    effects: [],
+    options: [
+      {
+        id: 'blitz',
+        name: 'Blitz',
+        description: 'All-out offense: +20% attack, −10% defence.',
+        effects: [
+          {
+            kind: 'modifier',
+            modifiers: [
+              { key: 'attack', mul: 1.2, label: 'Blitz' },
+              { key: 'defence', mul: 0.9, label: 'Blitz' },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'bulwark',
+        name: 'Bulwark',
+        description: 'Hold everything: +20% defence, −10% attack.',
+        effects: [
+          {
+            kind: 'modifier',
+            modifiers: [
+              { key: 'defence', mul: 1.2, label: 'Bulwark' },
+              { key: 'attack', mul: 0.9, label: 'Bulwark' },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'war_economy',
+        name: 'War Economy',
+        description: 'Fund the fight: +25% gold, −5% attack.',
+        effects: [
+          {
+            kind: 'modifier',
+            modifiers: [
+              { key: 'goldIncome', mul: 1.25, label: 'War Economy' },
+              { key: 'attack', mul: 0.95, label: 'War Economy' },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+];
+
+export const RESEARCH_BY_ID: ReadonlyMap<string, ResearchNode> = new Map(
+  RESEARCH_NODES.map(node => [node.id, node]),
+);
+

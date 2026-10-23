@@ -1,0 +1,32 @@
+import type { Accessor } from 'solid-js';
+import type { Controllers } from './controllers';
+import type { WorldRenderer } from '../render/world';
+import type { GameStore } from '../game/store/store.types';
+import type { Axial, Pixel } from '@the-big-war/game-engine/world-tile/world-tile.types';
+
+export interface MatchRuntimeOptions {
+  readonly store: GameStore;
+  readonly world: WorldRenderer;
+  
+  readonly host: HTMLElement;
+  readonly onEnded?: (winner: number | null) => void;
+}
+
+export interface MatchRuntime {
+  readonly controllers: Controllers;
+
+  readonly cameraMoved: Accessor<boolean>;
+  
+  start(): void;
+  
+  stop(): void;
+  
+  centreOnEmpire(empire: number): void;
+  fillScreenFromLeft(): void;
+  
+  centreOnHex(hex: Axial): void;
+
+  hexTopToClient(hex: Axial): Pixel;
+
+  resetCamera(): void;
+}

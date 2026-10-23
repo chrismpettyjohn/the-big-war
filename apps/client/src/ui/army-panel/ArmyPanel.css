@@ -1,0 +1,81 @@
+.army-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.army-stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--street-solid);
+  border: 2px solid var(--street-border);
+  box-shadow: inset 0 0 0 2px var(--street-solid), inset 0 0 0 3px rgba(200, 162, 74, 0.35), 0 3px 0 #0b0f20;
+}
+
+.army-stat::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 6px;
+  height: 6px;
+  background: var(--street-accent);
+}
+
+.army-stat-label {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--street-muted);
+}
+
+.army-stat-value {
+  font-size: 20px;
+  color: var(--street-accent);
+}
+
+.army-front {
+  border-left: 3px solid var(--street-accent);
+}
+
+.army-front-name {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--street-accent);
+  font: inherit;
+  letter-spacing: 1px;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.army-front-name:hover {
+  text-decoration: underline;
+}
+
+.army-front-troops {
+  color: var(--street-text);
+}
+
+.army-retreat {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--street-border);
+  background: var(--street-solid);
+  color: var(--street-muted);
+  cursor: pointer;
+}
+
+.army-retreat:hover {
+  border-color: #e05050;
+  color: #e05050;
+}

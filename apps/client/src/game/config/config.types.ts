@@ -1,0 +1,161 @@
+import type { Terrain } from '../map/map.types';
+import type { BuildingKind } from '../building/building.types';
+
+export type GameSpeed = 1 | 2 | 4;
+export interface MapConfig {
+  readonly width: number;
+  readonly height: number;
+
+  readonly hexSize: number;
+
+  readonly seed: number;
+}
+
+export interface BuildingConfig {
+  readonly cost: number;
+
+  readonly buildSeconds: number;
+
+  readonly requiresResearch: string | null;
+
+  readonly requiresAdjacentTerrain: Terrain | null;
+}
+
+export interface StartConfig {
+  readonly gold: number;
+  readonly civilians: number;
+  readonly soldiers: number;
+  readonly science: number;
+
+  readonly empireCount: number;
+  readonly neutralStates?: number;
+
+  readonly humanName?: string;
+}
+
+export interface UpgradeConfig {
+  readonly maxLevel: number;
+  readonly costMultiplier: number;
+}
+
+export interface DemolishConfig {
+
+  readonly durationSeconds: number;
+
+  readonly refund: 0;
+}
+
+export interface CannonConfig {
+  readonly cost: number;
+
+  readonly cooldown: number;
+
+  readonly range: number;
+
+  readonly damage: number;
+
+  readonly destroysTerrain: readonly Terrain[];
+}
+
+export interface FrontConfig {
+
+  readonly idleEndSeconds: number;
+
+  readonly idleTroops: 0;
+
+  readonly retreatPenalty: number;
+}
+
+export interface MultiFrontConfig {
+
+  readonly perExtraFront: number;
+
+  readonly maxBonus: number;
+}
+
+export interface CombatConfig {
+  readonly attackWeight: number;
+  readonly defenceWeight: number;
+
+  readonly terrainDefence: Readonly<Record<Terrain, number>>;
+  readonly multiFront: MultiFrontConfig;
+
+  readonly counterattack: { readonly attackMultiplier: number; readonly defenceMultiplier: number };
+
+  readonly baseLossesPerSecond: number;
+}
+
+export interface EconomyConfig {
+
+  readonly baseGrowthPerCivilian: number;
+
+  readonly farmGrowthPerFarm: number;
+  readonly farmGrowthMax: number;
+  readonly marketGoldPerSecond: number;
+  readonly lumberjackGoldPerSecond: number;
+  readonly minerGoldPerSecond: number;
+
+  readonly labSciencePerSecond: number;
+  readonly labGoldPerSecond: number;
+
+  readonly workersPerBuilding: number;
+}
+
+export interface SupportConfig {
+
+  readonly cityTerritoryRadius: readonly number[];
+
+  readonly cityDefenceRadius: number;
+
+  readonly cityAttackLevel: number;
+  readonly cityAttackRadius: number;
+
+  readonly barracksAttackRadius: number;
+
+  readonly fortDefenceRadius: number;
+
+  readonly lumberjackRadius: number;
+  readonly minerRadius: number;
+
+}
+
+export interface RecruitConfig {
+  readonly civiliansPerSoldier: number;
+
+  readonly secondsPerSoldier: number;
+  readonly baseReserveCap: number;
+
+  readonly barracksReserveCap: number;
+
+  readonly targetReserveRatio: number;
+}
+
+export interface BotConfig {
+
+  readonly tickSeconds: number;
+}
+
+export interface DiplomacyConfig {
+
+  readonly peaceDurationSeconds: number;
+
+  readonly pactDurationSeconds: number;
+  readonly rejectCooldownSeconds: number;
+}
+
+export interface GameConfig {
+  readonly map: MapConfig;
+  readonly start: StartConfig;
+  readonly upgrades: UpgradeConfig;
+  readonly demolish: DemolishConfig;
+  readonly cannon: CannonConfig;
+  readonly front: FrontConfig;
+  readonly combat: CombatConfig;
+  readonly economy: EconomyConfig;
+  readonly support: SupportConfig;
+  readonly recruit: RecruitConfig;
+  readonly bot: BotConfig;
+  readonly diplomacy: DiplomacyConfig;
+  readonly buildings: Readonly<Record<BuildingKind, BuildingConfig>>;
+}
+

@@ -1,0 +1,68 @@
+.nitro-about {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(3, 7, 13, 0.82);
+  backdrop-filter: grayscale(1) brightness(0.42) saturate(0.8);
+  -webkit-backdrop-filter: grayscale(1) brightness(0.42) saturate(0.8);
+  animation: 0.9s about-drain ease-out both;
+  font-family: var(--street-font);
+}
+
+.nitro-about.is-closing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease-in;
+}
+
+.nitro-about .about-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(58% 58% at 50% 48%, rgba(3, 7, 13, 0.2) 0%, rgba(0, 0, 0, 0.62) 100%);
+}
+
+.nitro-about .about-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.nitro-about .about-logo {
+  width: auto;
+  height: clamp(220px, 46vh, 440px);
+  filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.7));
+  animation: 1.5s about-fade ease-out both;
+}
+
+@keyframes about-drain {
+  from {
+    background-color: rgba(3, 7, 13, 0);
+    backdrop-filter: grayscale(0) brightness(1) saturate(1);
+    -webkit-backdrop-filter: grayscale(0) brightness(1) saturate(1);
+  }
+  to {
+    background-color: rgba(3, 7, 13, 0.82);
+    backdrop-filter: grayscale(1) brightness(0.42) saturate(0.8);
+    -webkit-backdrop-filter: grayscale(1) brightness(0.42) saturate(0.8);
+  }
+}
+
+@keyframes about-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
