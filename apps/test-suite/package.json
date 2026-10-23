@@ -1,0 +1,14 @@
+{
+  "name": "@the-big-war/test-suite",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@the-big-war/frontend": "workspace:*",
+    "@the-big-war/game-engine": "workspace:*",
+    "@the-big-war/client": "workspace:*"
+  }
+}

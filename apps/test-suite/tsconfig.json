@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@the-big-war/frontend/*": ["../../libs/frontend/src/*"],
+      "@the-big-war/game-engine/*": ["../../libs/game-engine/src/*"],
+      "@the-big-war/client/*": ["../../apps/client/src/*"]
+    }
+  },
+  "include": ["tests", "types"]
+}
