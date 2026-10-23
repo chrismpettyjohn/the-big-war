@@ -1,0 +1,14 @@
+Design kit notes
+================
+
+The game's UI is a port of HabCrab's sidebar design system (~/projects/habcrab.com,
+GPL-3.0) so both products look uniform.
+
+Fonts
+-----
+public/webfonts/Ubuntu*.ttf are from the Ubuntu Font Package and are licensed
+under the Ubuntu Font Licence 1.0 (a free, redistributable licence that permits
+embedding and redistribution with the licence text). Keep the licence text with
+any distribution of these files: https://ubuntu.com/legal/font-licence
+
+All other assets in this repository are original work.
