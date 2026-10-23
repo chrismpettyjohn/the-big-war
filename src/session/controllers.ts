@@ -71,8 +71,13 @@ export interface Controllers {
 
 export interface ControllerDeps {
   readonly store: GameStore;
-  /** World→screen is the renderer's job; the session only needs screen→world. */
+  /** Viewport size in canvas-local px (for zoom anchoring). */
   readonly viewport: () => Pixel;
+  /**
+   * Canvas-local point → hex. The session owns this so the controllers never
+   * need to know whether the renderer works in client or local coordinates;
+   * `runtime.ts` supplies `world.screenToHex` adapted to the host's offset.
+   */
   readonly screenToHex: (at: Pixel) => Axial | null;
   /** Called when the player commits troops so the UI can flash the front. */
   readonly onTroopsSent?: (from: Axial, target: Axial) => void;

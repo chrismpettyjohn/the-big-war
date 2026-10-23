@@ -76,7 +76,12 @@ const DICT: Readonly<Record<string, Entry>> = {
   'hud.land': { en: 'Land', fr: 'Territoire', es: 'Territorio', de: 'Land' },
   'hud.time': { en: 'Time', fr: 'Temps', es: 'Tiempo', de: 'Zeit' },
   'hud.workers': { en: 'Workers', fr: 'Ouvriers', es: 'Trabajadores', de: 'Arbeiter' },
-  'hud.balance': { en: 'Civ. balance', fr: 'Solde civ.', es: 'Saldo civ.', de: 'Ziv.-Saldo' },
+  'hud.faction': { en: 'Faction', fr: 'Faction', es: 'Facción', de: 'Fraktion' },
+
+  'terrain.plain': { en: 'Plain', fr: 'Plaine', es: 'Llanura', de: 'Ebene' },
+  'terrain.forest': { en: 'Forest', fr: 'Forêt', es: 'Bosque', de: 'Wald' },
+  'terrain.mountain': { en: 'Mountain', fr: 'Montagne', es: 'Montaña', de: 'Berg' },
+  'terrain.water': { en: 'Water', fr: 'Eau', es: 'Agua', de: 'Wasser' },
 
   'panel.build.title': { en: 'Construction', fr: 'Construction', es: 'Construcción', de: 'Bau' },
   'panel.build.kind': { en: 'Place a building', fr: 'Placer un bâtiment', es: 'Colocar edificio', de: 'Gebäude setzen' },

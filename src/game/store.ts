@@ -19,6 +19,8 @@ import type { Accessor } from 'solid-js';
 import { step, FIXED_DT } from './engine';
 import { dispatch } from './commands';
 import type { Command, CommandResult } from './commands';
+import { createBot, botTick } from './bot';
+import type { Bot } from './bot';
 import { DEFAULT_GAME_CONFIG } from './config';
 import { createDevState } from './devstate';
 import type { GameConfig, GameSpeed, GameState, MatchStatus } from './types';
@@ -110,6 +112,35 @@ export function createGameStore(options: StoreOptions = {}): GameStore {
     setVersion(v => v + 1);
   };
 
+  /**
+   * Bots for the current match, one per non-human empire. Rebuilt by `attach`
+   * whenever a fresh state replaces `current`, so a bot's private rng and
+   * personality are stable for the whole match but never leak across matches
+   * (`createBot` derives both from the match seed + empire id).
+   */
+  let bots: readonly Bot[] = [];
+  const attachBots = (state: GameState): void => {
+    bots = state.empires
+      .filter(empire => !empire.isHuman)
+      .map(empire => createBot({ empire: empire.id, seed: state.config.map.seed }));
+    state.botAccumulator = 0;
+  };
+  attachBots(current);
+
+  /**
+   * Run every bot once, in empire-id order (stable, so replays match), and
+   * dispatch whatever commands they return through the ordinary command bus.
+   * A rejected command is dropped — the bot simply retries on its next tick.
+   */
+  const runBots = (dt: number): void => {
+    for (const bot of bots) {
+      if (!current.empires[bot.empire]?.alive) continue;
+      for (const command of botTick(bot, current, dt)) {
+        dispatch(current, command);
+      }
+    }
+  };
+
   const advance = (dtSeconds: number): void => {
     if (current.status !== 'playing' || paused()) return;
     accumulator += Math.max(0, dtSeconds) * current.speed;
@@ -119,9 +150,15 @@ export function createGameStore(options: StoreOptions = {}): GameStore {
     while (accumulator >= FIXED_DT) {
       accumulator -= FIXED_DT;
       step(current, FIXED_DT);
-      // TODO(ICT3-B/session): run bots here — every `config.bot.tickSeconds` of
-      // game time, call `botTick` for each bot empire and dispatch the results.
-      // Keep it inside this loop so bot cadence follows game time, not frames.
+      // Bots think on game time, not frames: one batch of decisions per
+      // `config.bot.tickSeconds` of simulated time, so speed multipliers and
+      // frame-rate changes never alter AI cadence.
+      current.botAccumulator += FIXED_DT;
+      if (current.botAccumulator >= current.config.bot.tickSeconds) {
+        const elapsed = current.botAccumulator;
+        current.botAccumulator = 0;
+        runBots(elapsed);
+      }
     }
   };
 
@@ -143,6 +180,7 @@ export function createGameStore(options: StoreOptions = {}): GameStore {
     reset(next: GameState): void {
       current = next;
       accumulator = 0;
+      attachBots(current);
       bump();
     },
     startMatch(nextConfig?: GameConfig): void {
@@ -150,6 +188,7 @@ export function createGameStore(options: StoreOptions = {}): GameStore {
       state.status = 'playing';
       current = state;
       accumulator = 0;
+      attachBots(current);
       setPausedSignal(false);
       bump();
     },
@@ -158,6 +197,7 @@ export function createGameStore(options: StoreOptions = {}): GameStore {
       state.status = 'menu';
       current = state;
       accumulator = 0;
+      attachBots(current);
       setPausedSignal(false);
       bump();
     },

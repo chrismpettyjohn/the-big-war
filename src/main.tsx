@@ -1,23 +1,15 @@
+/**
+ * Entry point. Mounts the app shell and pulls in the global stylesheets in
+ * cascade order: design tokens → kit components → app layout.
+ */
+
 import { render } from 'solid-js/web';
-import { Rail, RailAction } from './ui/kit/Rail';
+import { Shell } from './ui/Shell';
 import './ui/kit/tokens.css';
 import './ui/kit/kit.css';
+import './styles/shell.css';
 
-function Placeholder() {
-  return (
-    <>
-      <Rail label="Main navigation" brand={<span style={{ 'font-size': '18px' }}>⚔</span>}>
-        <RailAction label="Map" icon={<span>🗺</span>} active onClick={() => {}} />
-        <RailAction label="Build" icon={<span>🏠</span>} onClick={() => {}} />
-        <RailAction label="Research" icon={<span>🔬</span>} badge={2} badgeAccent onClick={() => {}} />
-        <RailAction label="Army" icon={<span>⚔</span>} onClick={() => {}} />
-      </Rail>
-      <div class="boot">
-        <h1>The Big War</h1>
-        <p>Bootstrapping…</p>
-      </div>
-    </>
-  );
-}
+const host = document.getElementById('app');
+if (!host) throw new Error('#app host element is missing from index.html');
 
-render(() => <Placeholder />, document.getElementById('app')!);
+render(() => <Shell />, host);

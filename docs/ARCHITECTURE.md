@@ -7,8 +7,8 @@ Lightning CSS. Tests: `bun test`. Everything must keep
 
 This document is the contract. **The contracts in `src/game/*.ts` are written and
 compile today**; the `TODO(ICT3-A)` markers inside `engine.ts`, `commands.ts` and
-`bot.ts` are the gameplay engineer's work list. `TODO(ICT3-B)` in `store.ts` is
-the bot-driver hook for session/integration.
+`bot.ts` are the gameplay engineer's work list. The bot driver lives in
+`store.ts` and is wired (session/integration).
 
 ---
 
@@ -337,7 +337,7 @@ in stage 4/5.
 | `src/game/bot.ts` | **ICT3-A** | `createBot` + `botTick` |
 | `src/game/setup.ts` | **ICT3-A** | real `createInitialState` + map gen |
 | `src/game/devstate.ts` | STAFF (throwaway) | ICT3-B may read/import |
-| `src/game/store.ts` | STAFF writes, **SENIOR** last-mile bot hook | `TODO(ICT3-B/session)` marker |
+| `src/game/store.ts` | STAFF writes, **SENIOR** bot driver (done) | bots run in `advance` |
 | `src/render/**` | **ICT3-B** | PIXI only |
 | `src/ui/**` except `kit/**` | **ICT3-C** | Solid only |
 | `src/ui/kit/**` | FROZEN | do not modify |
