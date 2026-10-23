@@ -1,11 +1,8 @@
-import { ENGINE_TUNING } from '../simulation.constants';
-import { terrainShare } from '../../map/terrain.service';
 import type { GameState } from '../../state/state.types';
 import type { EmpireId } from '../../empire/empire.types';
 import { hasUnlimitedGold } from '../../empire/empire.service';
 import type { OwnedBuilding } from '../../building/building.types';
 import { CHEAT_UNLIMITED_GOLD_AMOUNT } from '../../empire/empire.constants';
-import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
 import { isProductionBuilding, ownedBuildings } from '../../building/building.service';
 
@@ -17,7 +14,6 @@ export function civilianGrowthRateOf(empireId: EmpireId): number {
 
 export function stepEconomy(state: GameState, dt: number): void {
   const econ = state.config.economy;
-  const support = state.config.support;
 
   for (const empire of state.empires) {
     if (!empire.alive) {
@@ -35,16 +31,10 @@ export function stepEconomy(state: GameState, dt: number): void {
 
     let rawGold = 0;
     let rawScience = 0;
-    for (const { hex, building } of owned) {
+    for (const { building } of owned) {
       switch (building.kind) {
         case 'market':
           rawGold += econ.marketGoldPerSecond;
-          break;
-        case 'lumberjack':
-          rawGold += econ.lumberjackGoldPerSecond * lumberjackTerrainBonus(state, empire.id, hex, support.lumberjackRadius);
-          break;
-        case 'miner':
-          rawGold += econ.minerGoldPerSecond * minerTerrainBonus(state, empire.id, hex, support.minerRadius);
           break;
         case 'lab':
           rawScience += econ.labSciencePerSecond * labLevelBonus(building.level);
@@ -65,20 +55,19 @@ export function stepEconomy(state: GameState, dt: number): void {
     empire.science += scienceProduction * dt;
     if (hasUnlimitedGold(empire)) empire.gold = CHEAT_UNLIMITED_GOLD_AMOUNT;
 
-    const passive = empire.civilians * econ.baseGrowthPerCivilian;
+    const passive = econ.baseGrowthPerSecond;
     let farmGrowth = 0;
     let cityGrowth = 0;
     for (const { building } of owned) {
       if (building.kind === 'city') {
-        cityGrowth += ENGINE_TUNING.cityPopGrowthPerLevel * building.level;
+        cityGrowth += econ.cityGrowthPerCity * building.level;
         continue;
       }
       if (building.kind !== 'farm') continue;
       building.growth = Math.min(econ.farmGrowthMax, building.growth + dt / farmMaturitySeconds(state));
       farmGrowth += econ.farmGrowthPerFarm * (1 + building.growth);
     }
-    const landGrowth = (passive + farmGrowth) * staffing;
-    const growth = resolveModifier(landGrowth + cityGrowth, empire.bonuses.growth);
+    const growth = resolveModifier(passive + cityGrowth + farmGrowth * staffing, empire.bonuses.growth);
     civilianGrowthRate[empire.id] = growth;
   }
 }
@@ -95,12 +84,4 @@ function farmMaturitySeconds(state: GameState): number {
 
 function labLevelBonus(level: number): number {
   return 1 + (level - 1) * 0.25;
-}
-
-function lumberjackTerrainBonus(state: GameState, empireId: EmpireId, hex: Axial, radius: number): number {
-  return terrainShare(state, empireId, hex, radius, 'forest');
-}
-
-function minerTerrainBonus(state: GameState, empireId: EmpireId, hex: Axial, radius: number): number {
-  return terrainShare(state, empireId, hex, radius, 'mountain');
 }

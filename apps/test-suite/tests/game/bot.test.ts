@@ -100,7 +100,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
 }
 
 function city(state: GameState, level = 1): Building {
-  return { id: state.nextBuildingId++, kind: 'city', level, cooldown: 0, growth: 0, demolishAt: null, buildRemaining: 0 };
+  return { id: state.nextBuildingId++, kind: 'city', level, cooldown: 0, growth: 0, demolishAt: null, buildRemaining: 0, gatherers: [] };
 }
 
 function countHexes(state: GameState, empireId: number): void {

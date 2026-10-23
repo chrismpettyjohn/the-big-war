@@ -4,9 +4,9 @@ import type { HexRange } from './terrain-layer';
 import type { HexCell } from '../game/map/map.types';
 import type { PlacementGhost } from './overlay-layer.types';
 import { BUILDING_SPRITES, SPRITE_PALETTE, SPRITE_SIZE } from './pixel-sprites';
-import { axialToPixel, hexCorners } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import type { AxialGrid } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import type { Building, BuildingKind, BuildingId } from '../game/building/building.types';
+import { axialToPixel, hexCorners } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 const GHOST_ALPHA = 0.6;
 const INVALID_GHOST_ALPHA = 0.35;

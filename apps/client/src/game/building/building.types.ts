@@ -14,6 +14,17 @@ export type BuildingKind =
   | 'fort'
   | 'cannon';
 
+export type GathererPhase = 'idle' | 'outbound' | 'working' | 'returning';
+
+export interface Gatherer {
+  pos: Axial;
+  target: Axial | null;
+  phase: GathererPhase;
+
+  progress: number;
+  duration: number;
+}
+
 export interface Building {
   readonly id: BuildingId;
   readonly kind: BuildingKind;
@@ -27,6 +38,8 @@ export interface Building {
   demolishAt: number | null;
 
   buildRemaining: number;
+
+  gatherers: Gatherer[];
 }
 
 export interface OwnedBuilding {

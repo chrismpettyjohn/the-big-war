@@ -10,13 +10,13 @@ import type { GameConfig } from '@the-big-war/client/game/config/config.types';
 import type { HexCell, HexGrid } from '@the-big-war/client/game/map/map.types';
 import type { Command } from '@the-big-war/client/game/commands/commands.types';
 import { NEUTRAL_OWNER } from '@the-big-war/client/game/empire/empire.constants';
-import { placementError } from '@the-big-war/client/game/building/building.service';
 import { DEFAULT_GAME_CONFIG } from '@the-big-war/client/game/config/config.constants';
 import { emptyModifierTotals } from '@the-big-war/client/game/modifier/modifier.service';
 import { stepColumns } from '@the-big-war/client/game/simulation/systems/columns.system';
 import { gridAt, makeGrid } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { stepBuildings } from '@the-big-war/client/game/simulation/systems/buildings.system';
 import type { Building, BuildingKind } from '@the-big-war/client/game/building/building.types';
+import { buildingCost, placementError } from '@the-big-war/client/game/building/building.service';
 
 const FACTION_IDS = FACTIONS.map(faction => faction.id);
 
@@ -93,7 +93,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
 }
 
 function makeBuilding(state: GameState, kind: BuildingKind, level = 1): Building {
-  return { id: state.nextBuildingId++, kind, level, cooldown: 0, growth: 0, demolishAt: null, buildRemaining: 0 };
+  return { id: state.nextBuildingId++, kind, level, cooldown: 0, growth: 0, demolishAt: null, buildRemaining: 0, gatherers: [] };
 }
 
 function borderEdge(state: GameState, left: number, right: number): { a: { q: number; r: number }; b: { q: number; r: number } } {
@@ -313,7 +313,8 @@ describe('PlaceBuilding', () => {
     const spot = state.grid.cells.find(cell => !placementError(state, 0, cell, 'farm'))!;
     const b = { q: spot.q, r: spot.r };
     expect(dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: b, kind: 'farm' }).ok).toBe(true);
-    expect(state.empires[0]!.gold).toBe(goldBefore - state.config.buildings.farm.cost * 2);
+    const farmCost = state.config.buildings.farm.cost;
+    expect(state.empires[0]!.gold).toBeCloseTo(goldBefore - farmCost - farmCost * state.config.economy.buildingCostGrowth, 6);
     stepBuildings(state, 1);
     const spec = state.config.buildings.farm.buildSeconds;
     expect(gridAt(state.grid, a)!.building!.buildRemaining).toBe(spec - 1);
@@ -324,20 +325,19 @@ describe('PlaceBuilding', () => {
     expect(gridAt(state.grid, b)!.building!.buildRemaining).toBe(spec - 1);
   });
 
-  test('starts a build timer and takes one civilian', () => {
+  test('starts a build timer without consuming civilians', () => {
     const state = makeState();
     const civiliansBefore = state.empires[0]!.civilians;
     dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'market' });
     expect(gridAt(state.grid, { q: 3, r: 2 })!.building?.buildRemaining).toBe(state.config.buildings.market.buildSeconds);
-    expect(state.empires[0]!.civilians).toBe(civiliansBefore - 1);
+    expect(state.empires[0]!.civilians).toBe(civiliansBefore);
   });
 
-  test('rejects with insufficient_civilians when nobody is free to build', () => {
+  test('each building of a kind costs more than the last', () => {
     const state = makeState();
-    state.empires[0]!.civilians = 0;
-    const result = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'market' });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toBe('insufficient_civilians');
+    const before = buildingCost(state, 0, 'market');
+    dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'market' });
+    expect(buildingCost(state, 0, 'market')).toBeCloseTo(before * state.config.economy.buildingCostGrowth, 6);
   });
 
   test('rejects a hex owned by someone else', () => {

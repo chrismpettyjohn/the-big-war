@@ -104,7 +104,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
 }
 
 function building(state: GameState, kind: BuildingKind, level = 1, growth = 0): Building {
-  return { id: state.nextBuildingId++, kind, level, cooldown: 0, growth, demolishAt: null, buildRemaining: 0 };
+  return { id: state.nextBuildingId++, kind, level, cooldown: 0, growth, demolishAt: null, buildRemaining: 0, gatherers: [] };
 }
 
 function place(state: GameState, hex: { q: number; r: number }, kind: BuildingKind, level = 1): Building {
@@ -150,38 +150,40 @@ describe('engine economy', () => {
     expect(empire.gold).toBeLessThan(expected * 1.1);
   });
 
-  test('lumberjacks earn more next to forest than on open plain', () => {
+  test('lumberjacks haul wood from forest and only earn on delivery', () => {
     const forest = makeState();
-    
-    for (let r = 0; r < 8; r++) for (let q = 0; q < 3; q++) forest.grid.cells[r * 8 + q]!.terrain = 'forest';
+    gridAt(forest.grid, { q: 1, r: 2 })!.terrain = 'forest';
     const open = makeState();
     place(forest, { q: 1, r: 1 }, 'lumberjack');
     place(open, { q: 1, r: 1 }, 'lumberjack');
-    for (const s of [forest, open]) {
-      s.empires[0]!.civilians = 100;
-      s.empires[0]!.gold = 0;
-    }
+    for (const s of [forest, open]) s.empires[0]!.gold = 0;
     run(forest, 1);
-    run(open, 1);
-    expect(forest.empires[0]!.gold).toBeGreaterThan(open.empires[0]!.gold);
+    expect(forest.empires[0]!.gold).toBe(0);
+    run(forest, 10);
+    run(open, 11);
+    expect(forest.empires[0]!.gold).toBeGreaterThan(0);
+    expect(open.empires[0]!.gold).toBe(0);
   });
 
-  test('labs make science and stall at zero gold', () => {
+  test('a forest tile turns to plain once its loads are used up', () => {
+    const state = makeState();
+    const tree: HexCell = gridAt(state.grid, { q: 1, r: 2 })!;
+    tree.terrain = 'forest';
+    place(state, { q: 1, r: 1 }, 'lumberjack');
+    run(state, 120);
+    expect(tree.terrain as Terrain).toBe('plain');
+  });
+
+  test('labs slowly make science without costing gold', () => {
     const state = makeState();
     const empire = state.empires[0]!;
     place(state, { q: 0, r: 1 }, 'lab');
     empire.civilians = 100;
     empire.gold = 0;
     empire.science = 0;
-    
     run(state, 1);
-    expect(empire.science).toBe(0);
-    expect(empire.gold).toBeGreaterThanOrEqual(0);
-
-    empire.gold = 100;
-    run(state, 1);
-    expect(empire.science).toBeGreaterThan(0);
-    expect(empire.gold).toBeLessThan(100);
+    expect(empire.science).toBeCloseTo(state.config.economy.labSciencePerSecond, 1);
+    expect(empire.gold).toBe(0);
   });
 
   test('farms mature over time and add civilian growth', () => {
@@ -244,7 +246,9 @@ describe('engine economy', () => {
     const state = makeState();
     const empire = state.empires[0]!;
     empire.civilians = 1000;
-    empire.soldiers = 10;
+    empire.soldiers = 60;
+    empire.bonuses = { ...empire.bonuses, reserveCap: { add: 0, mul: 10 }, growth: { add: 0, mul: 100 } };
+    place(state, { q: 1, r: 6 }, 'barracks');
     run(state, 0.5);
     const civilians = empire.civilians;
     const soldiers = empire.soldiers;
@@ -259,6 +263,7 @@ describe('engine economy', () => {
     const empire = state.empires[0]!;
     empire.civilians = 1000;
     empire.soldiers = 0;
+    place(state, { q: 1, r: 6 }, 'barracks');
     run(state, 0.1);
     expect(empire.drafting).toBe(true);
     run(state, 2);
@@ -289,10 +294,12 @@ describe('engine recruitment', () => {
     const empire = state.empires[0]!;
     empire.civilians = 100;
     empire.soldiers = 0;
+    empire.bonuses = { ...empire.bonuses, growth: { add: 0, mul: 100 } };
+    place(state, { q: 1, r: 6 }, 'barracks');
     const rate = state.config.recruit.secondsPerSoldier;
     run(state, rate * 4);
     
-    expect(empire.soldiers).toBeGreaterThan(2.5);
+    expect(empire.soldiers).toBeGreaterThan(2);
 
     run(state, 200);
     const target = empire.reserveCap * state.config.recruit.targetReserveRatio;
@@ -300,17 +307,22 @@ describe('engine recruitment', () => {
     expect(empire.soldiers).toBeLessThanOrEqual(target + 1);
   });
 
-  test('barracks raise reserveCap and recruitment speed', () => {
+  test('only barracks train soldiers; forts raise reserveCap', () => {
     const withBarracks = makeState();
-    withBarracks.empires[0]!.civilians = 100;
-    withBarracks.empires[0]!.soldiers = 0;
     place(withBarracks, { q: 0, r: 1 }, 'barracks');
-    const plain = makeState();
-    plain.empires[0]!.civilians = 100;
-    plain.empires[0]!.soldiers = 0;
+    const withFort = makeState();
+    place(withFort, { q: 0, r: 1 }, 'fort');
+    for (const s of [withBarracks, withFort]) {
+      s.empires[0]!.civilians = 100;
+      s.empires[0]!.soldiers = 0;
+    }
     run(withBarracks, 1);
-    run(plain, 1);
-    expect(withBarracks.empires[0]!.reserveCap).toBeGreaterThan(plain.empires[0]!.reserveCap);
+    run(withFort, 1);
+    expect(withBarracks.empires[0]!.soldiers).toBeGreaterThan(0);
+    expect(withFort.empires[0]!.soldiers).toBe(0);
+    expect(withFort.empires[0]!.reserveCap).toBe(
+      withBarracks.empires[0]!.reserveCap - withFort.config.recruit.barracksReserveCap + withFort.config.recruit.fortReserveCap,
+    );
   });
 
   test('recruitment stops at zero civilians and never goes negative', () => {
@@ -319,6 +331,8 @@ describe('engine recruitment', () => {
     empire.civilians = 2;
     empire.soldiers = 0;
     empire.reserveCap = 1000;
+    place(state, { q: 1, r: 6 }, 'barracks');
+
     run(state, 20);
     expect(empire.civilians).toBeGreaterThanOrEqual(0);
     expect(empire.soldiers).toBeGreaterThan(0);
@@ -330,6 +344,8 @@ describe('engine recruitment', () => {
     for (const s of [fast, slow]) {
       s.empires[0]!.civilians = 200;
       s.empires[0]!.soldiers = 0;
+      s.empires[0]!.bonuses = { ...s.empires[0]!.bonuses, reserveCap: { add: 0, mul: 10 }, growth: { add: 0, mul: 100 } };
+      place(s, { q: 1, r: 6 }, 'barracks');
     }
     fast.empires[0]!.bonuses = { ...fast.empires[0]!.bonuses, recruitSpeed: { add: 0, mul: 2 } };
     slow.empires[0]!.bonuses = { ...slow.empires[0]!.bonuses, recruitSpeed: { add: 0, mul: 1 } };
@@ -782,17 +798,18 @@ describe('engine population chain', () => {
     expect(built.empires[0]!.soldiers).toBeGreaterThan(bare.empires[0]!.soldiers);
   });
 
-  test('forts contribute to the soldier-production chain', () => {
+  test('forts let barracks keep training past the base capacity', () => {
     const bare = makeState();
     const fortified = makeState();
     for (const state of [bare, fortified]) {
       const empire = state.empires[0]!;
       empire.civilians = 400;
       empire.soldiers = 0;
+      place(state, { q: 1, r: 6 }, 'barracks');
     }
     for (let i = 0; i < 4; i++) place(fortified, { q: i, r: 2 }, 'fort');
-    run(bare, 2);
-    run(fortified, 2);
+    run(bare, 120);
+    run(fortified, 120);
     expect(fortified.empires[0]!.soldiers).toBeGreaterThan(bare.empires[0]!.soldiers);
   });
 });
@@ -862,7 +879,7 @@ describe('engine staffing, diplomacy & bot integration', () => {
       level: 1,
       cooldown: 0,
       growth: 0,
-      demolishAt: null, buildRemaining: 0,
+      demolishAt: null, buildRemaining: 0, gatherers: [],
     };
     gridAt(state.grid, { q: 0, r: 2 })!.building = {
       id: state.nextBuildingId++,
@@ -870,14 +887,14 @@ describe('engine staffing, diplomacy & bot integration', () => {
       level: 1,
       cooldown: 0,
       growth: 0,
-      demolishAt: null, buildRemaining: 0,
+      demolishAt: null, buildRemaining: 0, gatherers: [],
     };
 
-    empire.civilians = 5;
+    empire.civilians = 2;
     empire.gold = 0;
     step(state, FIXED_DT);
-    
-    const expectedIncome = 0.8 * 0.5 * FIXED_DT;
+
+    const expectedIncome = state.config.economy.marketGoldPerSecond * 0.5 * FIXED_DT;
     expect(empire.gold).toBeCloseTo(expectedIncome, 4);
   });
 

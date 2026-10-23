@@ -10,6 +10,8 @@ export interface HexCell {
   terrain: Terrain;
 
   owner: EmpireId;
+
+  harvested?: number;
   building: Building | null;
 }
 

@@ -19,6 +19,7 @@ export function createBuilding(state: GameState, kind: BuildingKind, level: numb
     growth: 0,
     demolishAt: null,
     buildRemaining,
+    gatherers: [],
   };
 }
 
@@ -28,7 +29,8 @@ export function isProductionBuilding(kind: BuildingKind): boolean {
 
 export function buildingCost(state: GameState, empireId: EmpireId, kind: BuildingKind): number {
   const empire = state.empires[empireId];
-  const base = state.config.buildings[kind].cost;
+  const placed = countPlacedOfKind(state, empireId, kind);
+  const base = state.config.buildings[kind].cost * state.config.economy.buildingCostGrowth ** placed;
   return empire ? resolveModifier(base, empire.bonuses.buildCost) : base;
 }
 
@@ -49,6 +51,14 @@ export function countBuildingsOfKind(state: GameState, empireId: EmpireId, kind:
   let count = 0;
   for (const cell of state.grid.cells) {
     if (cell.owner === empireId && cell.building?.kind === kind && cell.building.buildRemaining <= 0) count += 1;
+  }
+  return count;
+}
+
+function countPlacedOfKind(state: GameState, empireId: EmpireId, kind: BuildingKind): number {
+  let count = 0;
+  for (const cell of state.grid.cells) {
+    if (cell.owner === empireId && cell.building?.kind === kind) count += 1;
   }
   return count;
 }

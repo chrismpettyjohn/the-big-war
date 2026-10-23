@@ -5,6 +5,7 @@ import { stepEconomy } from './systems/economy.system';
 import { stepResearch } from './systems/research.system';
 import { stepBuildings } from './systems/buildings.system';
 import { stepExpansion } from './systems/expansion.system';
+import { stepGathering } from './systems/gathering.system';
 import { checkWinConditions } from './systems/victory.system';
 import { stepRecruitment } from './systems/recruitment.system';
 import { stepHousekeeping } from './systems/housekeeping.system';
@@ -13,6 +14,7 @@ import { createStepper } from '@the-big-war/game-engine/simulation/simulation.se
 
 export const GAME_SYSTEMS: readonly System<GameState>[] = [
   stepEconomy,
+  stepGathering,
   stepResearch,
   stepRecruitment,
   stepBuildings,

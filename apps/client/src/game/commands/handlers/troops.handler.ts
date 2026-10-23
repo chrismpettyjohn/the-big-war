@@ -11,7 +11,7 @@ export function handleSendTroops(state: GameState, command: SendTroopsCommand): 
   if (!empire || !empire.alive) return fail(command.type, 'no_empire');
 
   const percent = Math.max(1, Math.min(100, Math.round(command.percent)));
-  const troops = Math.floor((empire.soldiers * percent) / 100);
+  const troops = Math.min(Math.floor(empire.soldiers), Math.max(1, Math.floor((empire.soldiers * percent) / 100)));
   if (troops <= 0) return fail(command.type, 'insufficient_troops');
 
   const from = gridAt(state.grid, command.hex);

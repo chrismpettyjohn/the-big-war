@@ -87,18 +87,31 @@ export interface CombatConfig {
 
 export interface EconomyConfig {
 
-  readonly baseGrowthPerCivilian: number;
+  readonly baseGrowthPerSecond: number;
+
+  readonly cityGrowthPerCity: number;
 
   readonly farmGrowthPerFarm: number;
   readonly farmGrowthMax: number;
   readonly marketGoldPerSecond: number;
-  readonly lumberjackGoldPerSecond: number;
-  readonly minerGoldPerSecond: number;
 
   readonly labSciencePerSecond: number;
   readonly labGoldPerSecond: number;
 
   readonly workersPerBuilding: number;
+
+  readonly buildingCostGrowth: number;
+}
+
+export interface GatherConfig {
+  readonly workersPerBuilding: number;
+
+  readonly loadsPerTile: number;
+
+  readonly workSeconds: number;
+  readonly walkSecondsPerHex: number;
+
+  readonly goldPerLoad: number;
 }
 
 export interface SupportConfig {
@@ -126,6 +139,8 @@ export interface RecruitConfig {
   readonly baseReserveCap: number;
 
   readonly barracksReserveCap: number;
+
+  readonly fortReserveCap: number;
 
   readonly targetReserveRatio: number;
 
@@ -157,6 +172,7 @@ export interface GameConfig {
   readonly combat: CombatConfig;
   readonly economy: EconomyConfig;
   readonly support: SupportConfig;
+  readonly gather: GatherConfig;
   readonly recruit: RecruitConfig;
   readonly bot: BotConfig;
   readonly diplomacy: DiplomacyConfig;

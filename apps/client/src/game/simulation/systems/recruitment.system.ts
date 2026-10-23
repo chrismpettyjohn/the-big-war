@@ -1,5 +1,4 @@
 import { civilianGrowthRateOf } from './economy.system';
-import { ENGINE_TUNING } from '../simulation.constants';
 import type { Empire } from '../../empire/empire.types';
 import type { GameState } from '../../state/state.types';
 import { deployedTroops } from '../../troops/troops.service';
@@ -16,19 +15,16 @@ export function stepRecruitment(state: GameState, dt: number): void {
       continue;
     }
     const barracks = countBuildingsOfKind(state, empire.id, 'barracks');
-    const forts = countBuildingsOfKind(state, empire.id, 'fort');
     const cap = reserveCapOf(state, empire);
     empire.reserveCap = cap;
 
-    const structureBonus =
-      1 + barracks * ENGINE_TUNING.barracksRecruitBonusPer + forts * ENGINE_TUNING.fortRecruitBonusPer;
-    const speed = Math.max(0, resolveModifier(structureBonus, empire.bonuses.recruitSpeed));
+    const speed = barracks > 0 ? Math.max(0, resolveModifier(barracks, empire.bonuses.recruitSpeed)) : 0;
 
     const targetReserve = cap * recruit.targetReserveRatio;
     const fielded = empire.soldiers + deployedTroops(state, empire.id);
     const draftTarget = Math.min(targetReserve, cap * recruit.draftUntilRatio);
-    if (fielded <= 0 && draftTarget > 0) empire.drafting = true;
-    if (fielded >= draftTarget || empire.civilians < recruit.civiliansPerSoldier) empire.drafting = false;
+    if (barracks > 0 && fielded < draftTarget) empire.drafting = true;
+    if (barracks <= 0 || fielded >= draftTarget || empire.civilians < recruit.civiliansPerSoldier) empire.drafting = false;
 
     let drafted = 0;
     if (empire.drafting) {
@@ -58,10 +54,12 @@ export function stepRecruitment(state: GameState, dt: number): void {
 export function reserveCapOf(state: GameState, empire: Empire): number {
   const recruit = state.config.recruit;
   const barracks = countBuildingsOfKind(state, empire.id, 'barracks');
+  const forts = countBuildingsOfKind(state, empire.id, 'fort');
+  const raw = recruit.baseReserveCap + barracks * recruit.barracksReserveCap + forts * recruit.fortReserveCap;
   return Math.max(
     0,
     Math.floor(
-      resolveModifier(recruit.baseReserveCap + barracks * recruit.barracksReserveCap, empire.bonuses.reserveCap),
+      resolveModifier(raw, empire.bonuses.reserveCap),
     ),
   );
 }

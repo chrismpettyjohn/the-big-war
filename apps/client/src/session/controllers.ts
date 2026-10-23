@@ -32,15 +32,28 @@ export function createControllers(deps: ControllerDeps): Controllers {
   const state = () => store.state;
   const player = (): EmpireId => state().playerEmpire;
 
+  const noticeTimers = new Map<CommandError, ReturnType<typeof setTimeout>>();
   const notice = (reason: CommandError) => {
-    const entry: CommandNotice = { id: ++noticeId, reason };
-    setNotices(current => [...current, entry]);
-    setTimeout(() => {
-      setNotices(current => current.filter(item => item.id !== entry.id));
-    }, 2600);
+    const pending = noticeTimers.get(reason);
+    if (pending) clearTimeout(pending);
+    else setNotices(current => [...current, { id: ++noticeId, reason }]);
+    noticeTimers.set(
+      reason,
+      setTimeout(() => {
+        noticeTimers.delete(reason);
+        setNotices(current => current.filter(item => item.reason !== reason));
+      }, 2600),
+    );
   };
 
-  const dismissNotice = (id: number) => setNotices(current => current.filter(item => item.id !== id));
+  const dismissNotice = (id: number) => {
+    const dismissed = notices().find(item => item.id === id);
+    if (dismissed) {
+      clearTimeout(noticeTimers.get(dismissed.reason));
+      noticeTimers.delete(dismissed.reason);
+    }
+    setNotices(current => current.filter(item => item.id !== id));
+  };
 
   const hexAtScreen = (at: Pixel): Axial | null => deps.screenToHex(at);
 

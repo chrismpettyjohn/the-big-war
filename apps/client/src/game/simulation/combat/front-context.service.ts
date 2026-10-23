@@ -70,7 +70,7 @@ function resolveFrontSide(
   const cityDefenceMul = 1 + ENGINE_TUNING.cityDefenceBonusPer * cityDefence;
   const cityAttackMul = 1 + ENGINE_TUNING.cityAttackBonusPer * cityAttack;
   const barracksMul = 1 + ENGINE_TUNING.barracksAttackBonusPer * barracks;
-  const fortMul = 1 + ENGINE_TUNING.fortDefenceBonusPer * forts;
+  const fortMul = 1 + ENGINE_TUNING.fortDefenceBonus;
   if (cityDefence > 0) lines.push({ label: 'City defence', attack: 1, defence: cityDefenceMul });
   if (cityAttack > 0) lines.push({ label: 'City attack', attack: cityAttackMul, defence: 1 });
   if (barracks > 0) lines.push({ label: 'Barracks', attack: barracksMul, defence: 1 });

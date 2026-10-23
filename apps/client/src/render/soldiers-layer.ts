@@ -15,6 +15,8 @@ const MARCH_CYCLE = 0.5;
 const LUNGE = 0.12;
 const MAX_COLUMN_SOLDIERS = 12;
 const COUNT_SIZE = 0.34;
+const GATHERER_SCALE = 0.26;
+const GATHERER_COLOR = 0x8a5a2b;
 
 export class SoldiersLayer {
 
@@ -40,6 +42,7 @@ export class SoldiersLayer {
     }
     for (const expedition of expeditions) this.drawSquads(expedition, hexSize, elapsed);
     for (const column of state.columns) this.drawColumn(state, column, hexSize, elapsed);
+    this.drawGatherers(state, hexSize, elapsed);
     for (let i = this.used; i < this.pool.length; i++) this.pool[i]!.visible = false;
     for (let i = this.labelsUsed; i < this.labels.length; i++) this.labels[i]!.visible = false;
   }
@@ -171,6 +174,29 @@ export class SoldiersLayer {
       sprite.position.set(at.x, at.y);
       sprite.zIndex = at.y;
     });
+  }
+
+  private drawGatherers(state: GameState, hexSize: number, elapsed: number): void {
+    const pixel = (hexSize * GATHERER_SCALE) / SOLDIER_SIZE;
+    for (const cell of state.grid.cells) {
+      const building = cell.building;
+      if (!building || building.gatherers.length === 0) continue;
+      building.gatherers.forEach((gatherer, i) => {
+        if (gatherer.phase === 'idle') return;
+        const at = axialToPixel(gatherer.pos, hexSize);
+        const phase = elapsed + i * 0.29;
+        let frame: SoldierFrame;
+        if (gatherer.phase === 'working') frame = Math.floor(phase / ATTACK_CYCLE) % 2 === 0 ? 'windup' : 'strike';
+        else frame = Math.floor(phase / (MARCH_CYCLE / 2)) % 2 === 0 ? 'step' : 'idle';
+        const toward = gatherer.phase === 'returning' ? cell.q - gatherer.pos.q : (gatherer.target?.q ?? cell.q) - cell.q;
+        const sprite = this.acquire();
+        sprite.texture = this.texture(GATHERER_COLOR, frame);
+        sprite.scale.set(toward < 0 ? -pixel : pixel, pixel);
+        const offset = (i - (building.gatherers.length - 1) / 2) * hexSize * 0.25;
+        sprite.position.set(at.x + offset, at.y + hexSize * 0.1);
+        sprite.zIndex = sprite.position.y;
+      });
+    }
   }
 
   private acquire(): Sprite {

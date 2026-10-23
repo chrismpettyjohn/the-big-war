@@ -6,11 +6,11 @@ import { For, Show } from 'solid-js';
 import type { ArmyPanelProps } from './ArmyPanel.types';
 import { gameStore } from '../../game/store/store.service';
 import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
-import { FaCrosshairs, FaFlag, FaShieldAlt, FaTimes, FaUsers } from '@the-big-war/frontend/ui/icons/icons';
 import { deployedTroops } from '../../game/troops/troops.service';
 import { NEUTRAL_OWNER } from '../../game/empire/empire.constants';
 import type { Front, FrontMode } from '../../game/front/front.types';
 import type { Column, Expedition } from '../../game/state/state.types';
+import { FaCrosshairs, FaFlag, FaShieldAlt, FaTimes, FaUsers } from '@the-big-war/frontend/ui/icons/icons';
 
 export type { ArmyPanelProps };
 
