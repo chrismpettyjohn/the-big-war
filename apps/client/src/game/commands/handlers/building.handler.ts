@@ -1,4 +1,5 @@
 import type { GameState } from '../../state/state.types';
+import { ENGINE_TUNING } from '../../simulation/simulation.constants';
 import { ok, fail } from '@the-big-war/game-engine/commands/command.service';
 import { gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { buildingCost, createBuilding, placementError } from '../../building/building.service';
@@ -12,6 +13,7 @@ export function handlePlaceBuilding(state: GameState, command: PlaceBuildingComm
   const spec = state.config.buildings[command.kind];
 
   empire.gold -= buildingCost(state, command.empire, command.kind);
+  empire.civilians -= ENGINE_TUNING.civiliansPerBuild;
   cell.terrain = 'plain';
   cell.building = createBuilding(state, command.kind, 1, spec.buildSeconds);
   return ok(command.type);

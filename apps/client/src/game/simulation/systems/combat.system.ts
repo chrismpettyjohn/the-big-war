@@ -2,6 +2,7 @@ import type { Front } from '../../front/front.types';
 import { ENGINE_TUNING } from '../simulation.constants';
 import type { GameState } from '../../state/state.types';
 import type { EmpireId } from '../../empire/empire.types';
+import { terrainDefenceAt } from '../../map/terrain.service';
 import { buildFrontContext } from '../combat/front-context.service';
 import { assignFrontClusters } from '../combat/front-clusters.service';
 import { gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
@@ -56,18 +57,34 @@ export function stepCombat(state: GameState, dt: number): void {
     const overwhelmingB = context.attackerB && pressureB > pressureA * ENGINE_TUNING.capturePressureRatio;
 
     let capturedBy: EmpireId | null = null;
-    if (context.attackerA && (collapseB || overwhelmingA) && remainingA > 0) capturedBy = front.sideA.empire;
-    else if (context.attackerB && (collapseA || overwhelmingB) && remainingB > 0) capturedBy = front.sideB.empire;
-
+    let winning: EmpireId | null = null;
+    if (context.attackerA && (collapseB || overwhelmingA) && remainingA > 0) winning = front.sideA.empire;
+    else if (context.attackerB && (collapseA || overwhelmingB) && remainingB > 0) winning = front.sideB.empire;
     else if (collapseA && collapseB) {
-      capturedBy = pressureA >= pressureB ? front.sideA.empire : front.sideB.empire;
+      winning = pressureA >= pressureB ? front.sideA.empire : front.sideB.empire;
     }
 
     front.sideA.troops = remainingA;
     front.sideB.troops = remainingB;
+
+    if (winning !== null) {
+      if (!front.capture || front.capture.by !== winning) {
+        const targetHex = front.sideA.empire === winning ? front.hexB : front.hexA;
+        const duration = ENGINE_TUNING.captureSeconds * terrainDefenceAt(state, targetHex);
+        front.capture = { by: winning, progress: 0, duration };
+      }
+      front.capture.progress += dt;
+      if (front.capture.progress >= front.capture.duration) capturedBy = winning;
+    } else if (front.capture) {
+      front.capture.progress -= dt * ENGINE_TUNING.captureDecayRate;
+      if (front.capture.progress <= 0) front.capture = null;
+    }
     front.resolution = { at: state.elapsed, lossesA, lossesB, capturedBy };
 
-    if (capturedBy !== null) captureHex(state, front, capturedBy);
+    if (capturedBy !== null) {
+      front.capture = null;
+      captureHex(state, front, capturedBy);
+    }
     if (context.attackerA || context.attackerB) front.lastAttackAt = state.elapsed;
   }
 }

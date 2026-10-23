@@ -52,6 +52,7 @@ export function terrainLabel(terrain: Terrain): string {
 
 const ERROR_LABELS: Readonly<Record<CommandError, string>> = {
   insufficient_gold: 'Not enough gold',
+  insufficient_civilians: 'No civilians free to build',
   insufficient_science: 'Not enough science',
   insufficient_troops: 'No troops free',
   reserve_full: 'Reserve full',

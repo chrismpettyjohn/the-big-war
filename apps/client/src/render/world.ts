@@ -1,6 +1,7 @@
 import { FxLayer } from './fx-layer';
 import type { FxKind } from './fx-layer';
 import { OverlayLayer } from './overlay-layer';
+import { SoldiersLayer } from './soldiers-layer';
 import { BuildingsLayer } from './buildings-layer';
 import type { OverlayState } from './overlay-layer';
 import { NationLabelsLayer } from './nation-labels-layer';
@@ -59,6 +60,8 @@ export function createWorld(options: WorldOptions): WorldRenderer {
   const terrain = new TerrainLayer();
   const buildings = new BuildingsLayer();
   const overlay = new OverlayLayer();
+  const soldiers = new SoldiersLayer();
+  soldiers.container.sortableChildren = true;
   const nationLabels = new NationLabelsLayer();
   const fx = new FxLayer();
   const worldBorder = new Graphics();
@@ -145,10 +148,11 @@ export function createWorld(options: WorldOptions): WorldRenderer {
     );
     terrain.draw(state.grid, hexSize, range);
     nationLabels.draw(state, hexSize);
-    buildings.draw(state.grid, hexSize, range, state.elapsed);
+    buildings.draw(state.grid, hexSize, range, state.elapsed, state.config.buildings);
     buildings.drawGhost(overlayState.ghost, hexSize);
     overlayState.fronts = state.fronts;
     overlay.draw(overlayState, hexSize);
+    soldiers.draw(state, hexSize);
     fx.update(dtSeconds);
 
     const borderWidth = WORLD_BORDER_WIDTH / cameraState.scale;
@@ -203,7 +207,7 @@ export function createWorld(options: WorldOptions): WorldRenderer {
         resolution: Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1),
         autoDensity: true,
       });
-      stage.addChild(terrain.container, worldBorder, nationLabels.container, buildings.container, overlay.container, fx.container);
+      stage.addChild(terrain.container, worldBorder, nationLabels.container, buildings.container, overlay.container, soldiers.container, fx.container);
       app.stage.addChild(stage);
       options.host.appendChild(app.canvas);
       app.canvas.style.display = 'block';
@@ -268,6 +272,7 @@ export function createWorld(options: WorldOptions): WorldRenderer {
       resizeObserver = null;
       if (options.autoStart ?? true) app.ticker.remove(onTick);
       buildings.reset();
+      soldiers.reset();
       fx.clear();
       terrain.invalidate();
       app.destroy(true, { children: true });

@@ -3,18 +3,20 @@ import type { Terrain } from './map.types';
 export const TERRAINS: readonly Terrain[] = ['plain', 'forest', 'mountain'];
 
 export const MAP_SHAPE = {
-  forestPatches: 16,
+  forestPatches: 6,
 
-  mountainRanges: 6,
-  rangeMinLength: 8,
-  rangeMaxLength: 18,
-  rangeTurnChance: 0.3,
-  rangeWidenChance: 0.35,
+  mountainRanges: 3,
+  rangeMinLength: 4,
+  rangeMaxLength: 8,
+  rangeBend: 0.4,
+  rangeTaper: 0.15,
+  rangeEdgeInset: 3,
+  rangeWidenChance: 0.05,
 
   patchMinRadius: 2,
   patchMaxRadius: 5,
 
-  forestVeinChance: 0.03,
+  forestVeinChance: 0.008,
 
   startClearance: 0,
 } as const;

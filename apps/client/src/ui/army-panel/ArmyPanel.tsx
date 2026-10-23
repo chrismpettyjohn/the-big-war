@@ -2,14 +2,15 @@
 
 import './ArmyPanel.css';
 import { For, Show } from 'solid-js';
-import { Bar } from '@the-big-war/frontend/ui/bar/Bar';
 
 import type { ArmyPanelProps } from './ArmyPanel.types';
 import { gameStore } from '../../game/store/store.service';
 import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
-import { FaTimes } from '@the-big-war/frontend/ui/icons/icons';
+import { FaCrosshairs, FaFlag, FaShieldAlt, FaTimes, FaUsers } from '@the-big-war/frontend/ui/icons/icons';
+import { deployedTroops } from '../../game/troops/troops.service';
 import { NEUTRAL_OWNER } from '../../game/empire/empire.constants';
 import type { Front, FrontMode } from '../../game/front/front.types';
+import type { Column, Expedition } from '../../game/state/state.types';
 
 export type { ArmyPanelProps };
 
@@ -20,7 +21,7 @@ const modeLabel = (mode: FrontMode): string =>
     ? 'Attack'
     : mode === 'defence'
       ? 'Hold'
-      : 'Counterattack';
+      : 'Counter';
 
 export const ArmyPanel = (props: ArmyPanelProps) => {
   const store = gameStore();
@@ -42,7 +43,24 @@ export const ArmyPanel = (props: ArmyPanelProps) => {
     return store.state.empires[enemy]?.name ?? '';
   };
 
-  const deployed = () => myFronts().reduce((sum, front) => sum + mySide(front).troops, 0);
+  const deployed = () => deployedTroops(store.state, player());
+
+  const myExpeditions = (): readonly Expedition[] =>
+    store.state.expeditions.filter(expedition => expedition.empire === player());
+  const myColumns = (): readonly Column[] => store.state.columns.filter(column => column.empire === player());
+  const missionCount = () => myFronts().length + myExpeditions().length + myColumns().length;
+
+  const expeditionTroops = (expedition: Expedition): number =>
+    expedition.troops + expedition.squads.reduce((sum, squad) => sum + squad.troops, 0);
+  const wildLeft = (expedition: Expedition): number =>
+    expedition.region.filter(index => store.state.grid.cells[index]?.owner === NEUTRAL_OWNER).length;
+  const columnTarget = (column: Column) => column.path[column.path.length - 1]!;
+  const columnLeft = (column: Column): number => column.path.length - 1 - column.step;
+
+  const focusHex = (hex: { q: number; r: number }) => {
+    props.controllers.selectHex(hex);
+    props.onClose();
+  };
   const retreatPenalty = () => Math.round(store.state.config.front.retreatPenalty * 100);
 
   const retreat = (front: Front) => {
@@ -59,24 +77,53 @@ export const ArmyPanel = (props: ArmyPanelProps) => {
   };
 
   return (
-    <Panel title="Command" kind={`${myFronts().length}`} onClose={props.onClose}>
+    <Panel title="Combat" kind={`${missionCount()}`} onClose={props.onClose}>
       <div class="army-summary">
-        <div class="army-stat">
-          <span class="army-stat-label">Troops</span>
-          <strong class="army-stat-value kit-num">{Math.floor(store.state.empires[player()]?.soldiers ?? 0)}</strong>
-        </div>
-        <div class="army-stat">
-          <span class="army-stat-label">Deployed</span>
-          <strong class="army-stat-value kit-num">{Math.floor(deployed())}</strong>
-        </div>
+        <span class="army-stat" title="Troops at home">
+          <FaUsers class="army-stat-icon" />
+          <span class="kit-num">{Math.floor(store.state.empires[player()]?.soldiers ?? 0)}</span>
+        </span>
+        <span class="army-stat" title="Deployed">
+          <FaFlag class="army-stat-icon" />
+          <span class="kit-num">{Math.floor(deployed())}</span>
+        </span>
       </div>
-      <span class="kit-note">Set the share of forces to deploy with the arrows at the bottom right. Click land to attack or claim it.</span>
 
-      <div class="kit-divider" />
+      <For each={myColumns()}>
+        {column => (
+          <div class="kit-col army-node">
+            <div class="hud-card-head">
+              <span class="hud-card-swatch" style={{ background: 'var(--street-muted)' }} />
+              <button type="button" class="army-front-name" title="Show on map" onClick={() => focusHex(columnTarget(column))}>
+                {column.mission === 'claim' ? 'Marching to wild' : 'Marching to attack'}
+              </button>
+              <span class="army-troops kit-num">{Math.floor(column.troops)}</span>
+            </div>
+            <span class="army-sub">{columnLeft(column)} tiles to go</span>
+          </div>
+        )}
+      </For>
+
+      <For each={myExpeditions()}>
+        {expedition => (
+          <div class="kit-col army-node">
+            <div class="hud-card-head">
+              <span class="hud-card-swatch" style={{ background: 'var(--street-muted)' }} />
+              <button type="button" class="army-front-name" title="Show on map" onClick={() => focusHex(expedition.target)}>
+                Claiming wild
+              </button>
+              <span class="army-troops kit-num">{Math.floor(expeditionTroops(expedition))}</span>
+            </div>
+            <span class="army-sub">
+              {expedition.squads.length} squads · {wildLeft(expedition)} wild left
+            </span>
+          </div>
+        )}
+      </For>
 
       <Show
-        when={myFronts().length > 0}
-        fallback={<div class="kit-empty">No troops deployed</div>}
+        when={missionCount() > 0}
+        fallback={<div class="army-empty">No troops deployed. Click land to attack or claim it.</div>}
       >
         <For each={myFronts()}>
           {front => {
@@ -84,7 +131,7 @@ export const ArmyPanel = (props: ArmyPanelProps) => {
             const theirs = () => otherSide(front);
             const total = () => Math.max(1, mine().troops + theirs().troops);
             return (
-              <div class="kit-col hud-card army-front">
+              <div class="kit-col army-node">
                 <div class="hud-card-head">
                   <span
                     class="hud-card-swatch"
@@ -93,7 +140,10 @@ export const ArmyPanel = (props: ArmyPanelProps) => {
                   <button type="button" class="army-front-name" title="Show on map" onClick={() => focus(front)}>
                     {frontName(front)}
                   </button>
-                  <span class="army-front-troops kit-num">{Math.floor(mine().troops)}</span>
+                  <span class="army-troops kit-num" title="Yours : theirs">
+                    {Math.floor(mine().troops)}
+                    <span class="army-vs">:{Math.floor(theirs().troops)}</span>
+                  </span>
                   <button
                     type="button"
                     class="army-retreat"
@@ -104,29 +154,32 @@ export const ArmyPanel = (props: ArmyPanelProps) => {
                     <FaTimes />
                   </button>
                 </div>
-                <Bar
-                  label="Committed"
-                  ratio={mine().troops / total()}
-                  value={`${Math.floor(mine().troops)} : ${Math.floor(theirs().troops)}`}
-                  variant="accent"
-                />
-                <div class="kit-row">
-                  <For each={MODES}>
-                    {mode => (
-                      <button
-                        type="button"
-                        class={`kit-button${mine().mode === mode ? ' is-active' : ''}`}
-                        aria-pressed={mine().mode === mode}
-                        onClick={() => setMode(front, mode)}
-                      >
-                        {modeLabel(mode)}
-                      </button>
-                    )}
-                  </For>
+                <div class="army-bar">
+                  <div class="army-bar-fill" style={{ width: `${(mine().troops / total()) * 100}%` }} />
                 </div>
-                <div class="kit-row">
-                  <span class="hud-bar-label">×{mine().modifiers.attack.toFixed(2)} Attack mod.</span>
-                  <span class="hud-bar-label">×{mine().modifiers.defence.toFixed(2)} Defence mod.</span>
+                <div class="army-foot">
+                  <div class="army-modes">
+                    <For each={MODES}>
+                      {mode => (
+                        <button
+                          type="button"
+                          class={`army-mode${mine().mode === mode ? ' is-active' : ''}`}
+                          aria-pressed={mine().mode === mode}
+                          onClick={() => setMode(front, mode)}
+                        >
+                          {modeLabel(mode)}
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                  <span class="army-chip" title="Attack modifier">
+                    <FaCrosshairs class="army-chip-icon" />
+                    <span class="kit-num">×{mine().modifiers.attack.toFixed(2)}</span>
+                  </span>
+                  <span class="army-chip" title="Defence modifier">
+                    <FaShieldAlt class="army-chip-icon" />
+                    <span class="kit-num">×{mine().modifiers.defence.toFixed(2)}</span>
+                  </span>
                 </div>
               </div>
             );

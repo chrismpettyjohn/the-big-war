@@ -15,11 +15,11 @@ import { ensureFront, findFront } from '@the-big-war/client/game/front/front.ser
 import { DEFAULT_GAME_CONFIG } from '@the-big-war/client/game/config/config.constants';
 import type { HexCell, HexGrid, Terrain } from '@the-big-war/client/game/map/map.types';
 import { emptyModifierTotals } from '@the-big-war/client/game/modifier/modifier.service';
-import { ENGINE_TUNING } from '@the-big-war/client/game/simulation/simulation.constants';
 import { gridAt, makeGrid } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { recomputeEmpireBonuses } from '@the-big-war/client/game/research/research.service';
 import { declareWar, getRelation } from '@the-big-war/client/game/diplomacy/diplomacy.service';
 import type { Building, BuildingKind } from '@the-big-war/client/game/building/building.types';
+import { launchExpedition as launchTroops } from '@the-big-war/client/game/troops/troops.service';
 
 const FACTIONS = ['ironclad', 'league', 'verdant', 'academy'];
 
@@ -73,6 +73,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
     empires,
     fronts: [],
     expeditions: [],
+    columns: [],
     landHexCount: grid.cells.length,
     elapsed: 0,
     tick: 0,
@@ -331,8 +332,26 @@ describe('engine combat', () => {
     front.sideA.troops = 100;
     front.sideB.troops = 0;
     run(state, 0.1);
+    expect(gridAt(state.grid, edge.b)!.owner).toBe(1);
+    run(state, 4);
     expect(gridAt(state.grid, edge.b)!.owner).toBe(0);
     expect(front.sideA.empire).toBe(0);
+  });
+
+  test('a capture in progress decays when the defender reinforces', () => {
+    const state = makeState();
+    const edge = borderEdge(state, 0, 1);
+    const front = ensureFront(state, edge.a, edge.b);
+    front.sideA.mode = 'attack';
+    front.sideA.troops = 100;
+    front.sideB.troops = 0;
+    run(state, 1);
+    const progress = front.capture?.progress ?? 0;
+    expect(progress).toBeGreaterThan(0);
+    front.sideB.troops = 1000;
+    run(state, 0.5);
+    expect(front.capture?.progress ?? 0).toBeLessThan(progress);
+    expect(gridAt(state.grid, edge.b)!.owner).toBe(1);
   });
 
   test('an attack that does not overwhelm only grinds the defender down', () => {
@@ -589,10 +608,49 @@ function openFrontier(state: GameState, neutralColumns = 1): number {
 function launchExpedition(state: GameState, troops: number): void {
   const empire = state.empires[0]!;
   empire.soldiers -= troops;
-  state.expeditions.push({ empire: 0, target: { q: state.grid.width - 1, r: 0 }, troops });
+  const strip = Math.floor(state.grid.width / state.empires.length);
+  const target = { q: strip - 1, r: 0 };
+  launchTroops(state, 0, target, troops);
 }
 
 describe('engine territorial expansion', () => {
+  test('an expedition keeps claiming until its wild region is fully taken', () => {
+    const state = makeState();
+    const empire = state.empires[0]!;
+    const opened = openFrontier(state, 2);
+    launchExpedition(state, 200);
+    run(state, 30);
+    const region = state.grid.cells.filter(cell => cell.owner === NEUTRAL_OWNER && cell.q < Math.floor(state.grid.width / state.empires.length));
+    expect(opened).toBeGreaterThan(0);
+    expect(region).toHaveLength(0);
+    expect(state.expeditions).toHaveLength(0);
+    expect(empire.soldiers).toBeGreaterThan(0);
+  });
+
+  test('a squad survives its claim and keeps going the way it was heading', () => {
+    const state = makeState();
+    openFrontier(state, 2);
+    launchExpedition(state, 1);
+    const expedition = state.expeditions[0]!;
+    step(state, FIXED_DT);
+    const squad = expedition.squads[0]!;
+    let guard = 0;
+    while (squad.heading.q === 0 && squad.heading.r === 0 && guard++ < 600) step(state, FIXED_DT);
+    expect(expedition.squads[0]).toBe(squad);
+    const heading = { ...squad.heading };
+    step(state, FIXED_DT);
+    expect(squad.from).toEqual(squad.tile);
+    expect(squad.goal).toEqual({ q: squad.tile.q + heading.q, r: squad.tile.r + heading.r });
+  });
+
+  test('an expedition splits into several squads at once', () => {
+    const state = makeState();
+    openFrontier(state, 2);
+    launchExpedition(state, 200);
+    step(state, FIXED_DT);
+    expect(state.expeditions[0]!.squads.length).toBeGreaterThan(1);
+  });
+
   test('neutral land is never claimed without an expedition', () => {
     const state = makeState();
     const empire = state.empires[0]!;
@@ -608,24 +666,26 @@ describe('engine territorial expansion', () => {
     openFrontier(state, 1);
     launchExpedition(state, 20);
     const before = empire.hexCount;
-    run(state, 1);
+    run(state, 0.5);
+    expect(empire.hexCount).toBe(before);
+    expect(state.expeditions[0]!.squads.length).toBeGreaterThan(0);
+    run(state, 3);
     expect(empire.hexCount).toBeGreaterThan(before);
   });
 
-  test('claims are paid for by the expedition, never the reserve', () => {
+  test('expedition troops are away while claiming and all come back alive', () => {
     const state = makeState();
     const empire = state.empires[0]!;
     openFrontier(state, 3);
-    empire.civilians = 0;
-    launchExpedition(state, 5);
-    const soldiersAfterLaunch = empire.soldiers;
-    const hexesBefore = empire.hexCount;
-    run(state, 2);
-    const claimed = empire.hexCount - hexesBefore;
-    expect(claimed).toBeGreaterThan(0);
-    expect(claimed).toBeLessThanOrEqual(5 / ENGINE_TUNING.claimSoldiersPerHex);
-    expect(empire.soldiers).toBeGreaterThanOrEqual(soldiersAfterLaunch);
+    empire.civilians = 1000;
+    empire.soldiers = 20;
+    launchExpedition(state, 20);
+    expect(empire.soldiers).toBe(0);
+    run(state, 1);
+    expect(empire.soldiers).toBeLessThan(1);
+    run(state, 60);
     expect(state.expeditions).toHaveLength(0);
+    expect(empire.soldiers).toBeGreaterThanOrEqual(20);
   });
 
   test('leftover expedition troops return when there is nothing left to claim', () => {
@@ -636,7 +696,7 @@ describe('engine territorial expansion', () => {
     empire.soldiers = 0;
     launchExpedition(state, 0);
     state.expeditions[0]!.troops = 500;
-    run(state, 3);
+    run(state, 10);
     expect(state.expeditions).toHaveLength(0);
     expect(empire.soldiers).toBeGreaterThan(0);
   });
@@ -645,18 +705,16 @@ describe('engine territorial expansion', () => {
     const bare = makeState();
     openFrontier(bare, 3);
     launchExpedition(bare, 100);
-    const bareBefore = bare.empires[0]!.hexCount;
     step(bare, FIXED_DT);
-    const bareClaims = bare.empires[0]!.hexCount - bareBefore;
+    const bareClaims = bare.expeditions[0]!.squads.length;
 
     const built = makeState();
     openFrontier(built, 3);
     for (let i = 0; i < 4; i++) place(built, { q: i, r: 2 }, 'barracks');
     for (let i = 0; i < 4; i++) place(built, { q: i, r: 3 }, 'fort');
     launchExpedition(built, 100);
-    const builtBefore = built.empires[0]!.hexCount;
     step(built, FIXED_DT);
-    const builtClaims = built.empires[0]!.hexCount - builtBefore;
+    const builtClaims = built.expeditions[0]!.squads.length;
     expect(bareClaims).toBeGreaterThan(0);
     expect(builtClaims).toBeGreaterThan(bareClaims);
   });

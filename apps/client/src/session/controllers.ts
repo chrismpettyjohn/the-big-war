@@ -3,6 +3,7 @@
 import { createSignal } from 'solid-js';
 import type { FrontId } from '../game/front/front.types';
 import type { EmpireId } from '../game/empire/empire.types';
+import { nearestOwnedHex } from '../game/troops/troops.service';
 import type { BuildingKind } from '../game/building/building.types';
 import type { CommandError } from '../game/commands/commands.types';
 import type { Axial, Pixel } from '@the-big-war/game-engine/world-tile/world-tile.types';
@@ -57,7 +58,7 @@ export function createControllers(deps: ControllerDeps): Controllers {
   };
 
   const sendTroops = (target: Axial) => {
-    const from = attackFromFor(target);
+    const from = attackFromFor(target) ?? nearestOwnedHex(state(), player(), target);
     if (!from) {
       notice('invalid_target');
       return;
@@ -76,8 +77,7 @@ export function createControllers(deps: ControllerDeps): Controllers {
 
   const placeBuilding = (hex: Axial, building: BuildingKind) => {
     const result = store.dispatch({ type: 'PlaceBuilding', empire: player(), hex, kind: building });
-    if (result.ok) setToolSignal({ kind: 'idle' });
-    else notice(result.reason);
+    if (!result.ok) notice(result.reason);
   };
 
   const fireCannon = (from: Axial, target: Axial) => {

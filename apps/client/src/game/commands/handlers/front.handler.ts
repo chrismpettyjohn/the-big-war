@@ -19,7 +19,7 @@ export function handleRetreatFront(state: GameState, command: RetreatFrontComman
   const empire = state.empires[command.empire];
   if (!side || !empire) return fail(command.type, 'invalid_target');
   const returned = Math.floor(side.troops * (1 - state.config.front.retreatPenalty));
-  empire.soldiers = Math.min(empire.reserveCap, empire.soldiers + returned);
+  empire.soldiers += returned;
   side.troops = 0;
   return ok(command.type);
 }

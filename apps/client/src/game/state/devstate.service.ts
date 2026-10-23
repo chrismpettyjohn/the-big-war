@@ -132,6 +132,7 @@ function seedFronts(state: GameState, rng: Rng): void {
       },
       cluster: 0,
       resolution: null,
+      capture: null,
       lastAttackAt: 0,
     });
   }

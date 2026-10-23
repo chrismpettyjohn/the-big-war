@@ -31,7 +31,7 @@ function endIdleAndBrokenFronts(state: GameState): void {
       cellB.owner === front.sideB.empire;
     const idle = state.elapsed - front.lastAttackAt > idleSeconds;
     const empty = front.sideA.troops <= state.config.front.idleTroops && front.sideB.troops <= state.config.front.idleTroops;
-    const oneSideEmpty = front.sideA.troops <= 0 || front.sideB.troops <= 0;
+    const oneSideEmpty = (front.sideA.troops <= 0 || front.sideB.troops <= 0) && front.capture === null;
 
     if (!hostile || idle || empty || oneSideEmpty) disbandFront(state, front);
   }

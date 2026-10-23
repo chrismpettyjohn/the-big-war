@@ -70,6 +70,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
     empires,
     fronts: [],
     expeditions: [],
+    columns: [],
     landHexCount: grid.cells.length,
     elapsed: 0,
     tick: 0,

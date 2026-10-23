@@ -147,3 +147,50 @@ export const BUILDING_SPRITES: Readonly<Record<BuildingKind, readonly string[]>>
     '..kkk...kkk.',
   ],
 };
+
+export const SOLDIER_SIZE = 8;
+
+export type SoldierFrame = 'idle' | 'step' | 'windup' | 'strike';
+
+export const SOLDIER_SPRITES: Readonly<Record<SoldierFrame, readonly string[]>> = {
+  idle: [
+    '..kk..s.',
+    '.kwwk.s.',
+    '.kwwk.s.',
+    'kcccckd.',
+    'kcccckd.',
+    '.kcck.d.',
+    '.kddk...',
+    '.kk.kk..',
+  ],
+  step: [
+    '..kk..s.',
+    '.kwwk.s.',
+    '.kwwk.s.',
+    'kcccckd.',
+    'kcccckd.',
+    '.kcck.d.',
+    '.kddk...',
+    'kk...kk.',
+  ],
+  windup: [
+    '..kk....',
+    '.kwwkss.',
+    '.kwwkd..',
+    'kccccd..',
+    'kcccck..',
+    '.kcck...',
+    '.kddk...',
+    'kk...kk.',
+  ],
+  strike: [
+    '..kk....',
+    '.kwwk...',
+    '.kwwk...',
+    'kccccddss',
+    'kcccck..',
+    '.kcck...',
+    '.kddk...',
+    'kk...kk.',
+  ],
+};

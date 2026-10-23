@@ -2,7 +2,7 @@ import { Container, Text } from 'pixi.js';
 import type { GameState } from '../game/state/state.types';
 import type { EmpireId } from '../game/empire/empire.types';
 import { NEUTRAL_OWNER } from '../game/empire/empire.constants';
-import { axialToPixel, gridCoord } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import { axialToPixel, gridCoord, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 const LABEL_ALPHA = 0.28;
 const MIN_HEXES = 6;
@@ -23,25 +23,12 @@ export class NationLabelsLayer {
     if (state.tick === this.lastTick) return;
     this.lastTick = state.tick;
 
-    const sums = new Map<EmpireId, { x: number; y: number; n: number; minX: number; maxX: number; minY: number; maxY: number }>();
-    state.grid.cells.forEach((cell, index) => {
-      if (cell.owner === NEUTRAL_OWNER) return;
-      const p = axialToPixel(gridCoord(state.grid, index), hexSize);
-      const s = sums.get(cell.owner) ?? { x: 0, y: 0, n: 0, minX: p.x, maxX: p.x, minY: p.y, maxY: p.y };
-      s.x += p.x;
-      s.y += p.y;
-      s.n += 1;
-      s.minX = Math.min(s.minX, p.x);
-      s.maxX = Math.max(s.maxX, p.x);
-      s.minY = Math.min(s.minY, p.y);
-      s.maxY = Math.max(s.maxY, p.y);
-      sums.set(cell.owner, s);
-    });
+    const sums = largestClusters(state, hexSize);
 
     for (const empire of state.empires) {
       const s = sums.get(empire.id);
       let label = this.labels.get(empire.id);
-      if (!s || s.n < MIN_HEXES) {
+      if (!s || s.n < MIN_HEXES || empire.neutralState) {
         if (label) label.visible = false;
         continue;
       }
@@ -55,13 +42,62 @@ export class NationLabelsLayer {
         this.labels.set(empire.id, label);
         this.container.addChild(label);
       }
+      const name = empire.name.toUpperCase();
+      if (label.text !== name) label.text = name;
       label.visible = true;
       label.scale.set(1);
       label.style.fontSize = Math.max(8, hexSize * FONT_SCALE * Math.sqrt(s.n));
       const spanW = (s.maxX - s.minX + hexSize) * MAX_SPAN;
       const spanH = (s.maxY - s.minY + hexSize) * MAX_SPAN;
       label.scale.set(Math.min(1, spanW / label.width, spanH / label.height));
-      label.position.set((s.minX + s.maxX) / 2, (s.minY + s.maxY) / 2);
+      label.position.set(s.x / s.n, s.y / s.n);
     }
   }
 }
+
+interface Cluster {
+  x: number;
+  y: number;
+  n: number;
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+function largestClusters(state: GameState, hexSize: number): Map<EmpireId, Cluster> {
+  const { grid } = state;
+  const seen = new Uint8Array(grid.cells.length);
+  const best = new Map<EmpireId, Cluster>();
+  grid.cells.forEach((cell, start) => {
+    if (seen[start] || cell.owner === NEUTRAL_OWNER) return;
+    const owner = cell.owner;
+    const first = axialToPixel(gridCoord(grid, start), hexSize);
+    const cluster: Cluster = { x: 0, y: 0, n: 0, minX: first.x, maxX: first.x, minY: first.y, maxY: first.y };
+    const stack = [start];
+    seen[start] = 1;
+    while (stack.length > 0) {
+      const index = stack.pop()!;
+      const hex = gridCoord(grid, index);
+      const p = axialToPixel(hex, hexSize);
+      cluster.x += p.x;
+      cluster.y += p.y;
+      cluster.n += 1;
+      cluster.minX = Math.min(cluster.minX, p.x);
+      cluster.maxX = Math.max(cluster.maxX, p.x);
+      cluster.minY = Math.min(cluster.minY, p.y);
+      cluster.maxY = Math.max(cluster.maxY, p.y);
+      for (const next of neighbors(hex)) {
+        if (next.q < 0 || next.r < 0 || next.q >= grid.width || next.r >= grid.height) continue;
+        const nextIndex = next.r * grid.width + next.q;
+        if (seen[nextIndex] || grid.cells[nextIndex]!.owner !== owner) continue;
+        seen[nextIndex] = 1;
+        stack.push(nextIndex);
+      }
+    }
+    const current = best.get(owner);
+    if (!current || cluster.n > current.n) best.set(owner, cluster);
+  });
+  return best;
+}
+

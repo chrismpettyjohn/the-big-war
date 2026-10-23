@@ -9,6 +9,8 @@ export const ENGINE_TUNING = {
   capturePressureRatio: 1.5,
   holdingFireShare: 0.5,
   workersPerBuilding: 1,
+  civiliansPerBuild: 1,
+  buildSlotsPerEmpire: 1,
   progressEpsilon: 1e-9,
 
   cityPopGrowthPerLevel: 0.5,
@@ -19,4 +21,12 @@ export const ENGINE_TUNING = {
   claimPerStructures: 2,
   claimHexesPerSize: 6,
   maxClaimsPerTick: 24,
+  claimSecondsPerHex: 1.2,
+  walkSecondsPerHex: 0.35,
+  squadTargetPull: 0.3,
+  squadStraightBonus: 6,
+  squadStayBonus: 4,
+
+  captureSeconds: 2.5,
+  captureDecayRate: 0.5,
 } as const;

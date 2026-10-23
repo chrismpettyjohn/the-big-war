@@ -48,6 +48,7 @@ export function ensureFront(state: GameState, a: Axial, b: Axial): Front {
     sideB: { empire: cellB.owner, troops: 0, mode: 'defence', modifiers: NEUTRAL_FRONT_MODIFIERS },
     cluster: -1,
     resolution: null,
+    capture: null,
     lastAttackAt: state.elapsed,
   };
   state.fronts.push(front);
@@ -81,7 +82,7 @@ export function returnFrontTroops(state: GameState, side: FrontSide): void {
   const empire = state.empires[side.empire];
   if (!empire || !empire.alive) return;
   if (side.troops <= 0) return;
-  empire.soldiers = Math.min(empire.reserveCap, empire.soldiers + side.troops);
+  empire.soldiers += side.troops;
   side.troops = 0;
 }
 

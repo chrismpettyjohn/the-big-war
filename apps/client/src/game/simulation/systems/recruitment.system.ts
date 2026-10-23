@@ -1,6 +1,7 @@
 import { civilianGrowthRateOf } from './economy.system';
 import { ENGINE_TUNING } from '../simulation.constants';
 import type { GameState } from '../../state/state.types';
+import { deployedTroops } from '../../troops/troops.service';
 import { countBuildingsOfKind } from '../../building/building.service';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
 
@@ -27,11 +28,12 @@ export function stepRecruitment(state: GameState, dt: number): void {
     const speed = Math.max(0, resolveModifier(structureBonus, empire.bonuses.recruitSpeed));
 
     const targetReserve = cap * recruit.targetReserveRatio;
+    const fielded = empire.soldiers + deployedTroops(state, empire.id);
     let consumed = 0;
-    if (empire.soldiers < targetReserve && empire.civilians >= 1) {
+    if (fielded < targetReserve && empire.civilians >= 1) {
       const ratePerSecond = (1 / recruit.secondsPerSoldier) * speed;
       const wantSoldiers = Math.min(
-        targetReserve - empire.soldiers,
+        targetReserve - fielded,
         ratePerSecond * dt,
         empire.civilians / recruit.civiliansPerSoldier,
       );

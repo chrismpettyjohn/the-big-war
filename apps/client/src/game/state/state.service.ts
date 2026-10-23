@@ -13,6 +13,7 @@ export function createBaseState(config: GameConfig, grid: HexGrid, empires: Empi
     empires,
     fronts: [],
     expeditions: [],
+    columns: [],
     landHexCount: grid.cells.length,
     elapsed: 0,
     tick: 0,

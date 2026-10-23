@@ -10,10 +10,35 @@ import type { SimulationState } from '@the-big-war/game-engine/simulation/simula
 
 export type EndReason = 'elimination';
 
+export interface Squad {
+  pos: { q: number; r: number };
+  tile: Axial;
+  heading: Axial;
+  goal: Axial | null;
+  from: Axial | null;
+  claiming: boolean;
+  progress: number;
+  duration: number;
+  readonly troops: number;
+}
+
+export interface Column {
+  readonly empire: EmpireId;
+  readonly mission: 'claim' | 'attack';
+  readonly path: readonly Axial[];
+  step: number;
+  progress: number;
+  troops: number;
+}
+
 export interface Expedition {
   readonly empire: EmpireId;
   target: Axial;
   troops: number;
+
+  readonly region: readonly number[];
+  readonly origin: Axial;
+  squads: Squad[];
 }
 
 export interface GameState extends SimulationState {
@@ -25,6 +50,7 @@ export interface GameState extends SimulationState {
   fronts: Front[];
 
   expeditions: Expedition[];
+  columns: Column[];
 
   landHexCount: number;
 

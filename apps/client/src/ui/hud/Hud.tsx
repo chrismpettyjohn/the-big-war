@@ -20,7 +20,10 @@ export const Hud = () => {
     onCleanup(() => document.removeEventListener('pointerdown', closeOnOutside));
   });
 
-  const me = () => store.state.empires[store.state.playerEmpire] ?? store.state.empires[0]!;
+  const me = () => {
+    store.version();
+    return store.state.empires[store.state.playerEmpire] ?? store.state.empires[0]!;
+  };
 
   return (
     <header class="hud-top" aria-label="The Big War">

@@ -17,7 +17,7 @@ export interface FrontTickContext {
 }
 
 export interface FrontierScan {
-  candidates: Axial[];
+  candidates: { from: Axial; hex: Axial }[];
   barracks: number;
   forts: number;
 }

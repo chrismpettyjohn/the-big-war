@@ -12,6 +12,11 @@ const GHOST_ALPHA = 0.6;
 const INVALID_GHOST_ALPHA = 0.35;
 const INVALID_GHOST_TINT = 0xff6060;
 const SPRITE_FILL = 0.85;
+const CONSTRUCTION_ALPHA = 0.45;
+const BAR_WIDTH = 0.7;
+const BAR_HEIGHT = 0.1;
+const BAR_BACK = 0x1b1330;
+const BAR_FILL = 0xffd35c;
 
 interface GlyphEntry {
   readonly object: Graphics;
@@ -28,6 +33,7 @@ export class BuildingsLayer {
   private readonly entries = new Map<BuildingId, GlyphEntry>();
   private readonly free: Graphics[] = [];
   private readonly ghost = new Graphics();
+  private readonly progress = new Graphics();
   private ghostKey = '';
   private elapsed = 0;
 
@@ -36,6 +42,7 @@ export class BuildingsLayer {
     this.container.eventMode = 'none';
     this.ghost.eventMode = 'none';
     this.ghost.alpha = GHOST_ALPHA;
+    this.progress.eventMode = 'none';
   }
 
   drawGhost(ghost: PlacementGhost | null, hexSize: number): void {
@@ -55,8 +62,15 @@ export class BuildingsLayer {
     this.container.addChild(this.ghost);
   }
 
-  draw(grid: AxialGrid<HexCell>, hexSize: number, range: HexRange | null, elapsed: number): void {
+  draw(
+    grid: AxialGrid<HexCell>,
+    hexSize: number,
+    range: HexRange | null,
+    elapsed: number,
+    specs: Readonly<Record<BuildingKind, { readonly buildSeconds: number }>>,
+  ): void {
     this.elapsed = elapsed;
+    this.progress.clear();
     if (!range) {
       this.releaseAll();
       return;
@@ -85,7 +99,12 @@ export class BuildingsLayer {
           this.redraw(entry, hexSize);
         }
         
-        entry.object.alpha = demolishing ? this.demolishAlpha() : 1;
+        const constructing = building.buildRemaining > 0;
+        entry.object.alpha = demolishing ? this.demolishAlpha() : constructing ? CONSTRUCTION_ALPHA : 1;
+        if (constructing) {
+          const total = specs[building.kind].buildSeconds || 1;
+          this.drawProgress(center.x, center.y, hexSize, 1 - building.buildRemaining / total);
+        }
       }
     }
     
@@ -93,6 +112,18 @@ export class BuildingsLayer {
       if (seen.has(id)) continue;
       this.release(id, entry);
     }
+    this.container.addChild(this.progress);
+  }
+
+  private drawProgress(x: number, y: number, hexSize: number, done: number): void {
+    const width = hexSize * BAR_WIDTH;
+    const height = Math.max(2, hexSize * BAR_HEIGHT);
+    const left = x - width / 2;
+    const top = y + hexSize * 0.42;
+    this.progress.rect(left - 1, top - 1, width + 2, height + 2);
+    this.progress.fill({ color: BAR_BACK, alpha: 0.85 });
+    this.progress.rect(left, top, width * Math.min(1, Math.max(0, done)), height);
+    this.progress.fill({ color: BAR_FILL });
   }
 
   reset(): void {

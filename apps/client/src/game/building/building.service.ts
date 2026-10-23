@@ -4,6 +4,7 @@ import type { EmpireId } from '../empire/empire.types';
 import { hasUnlock } from '../research/research.service';
 import { PRODUCTION_BUILDINGS } from './building.constants';
 import type { CommandError } from '../commands/commands.types';
+import { ENGINE_TUNING } from '../simulation/simulation.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
 import type { Building, BuildingId, BuildingKind, OwnedBuilding } from './building.types';
@@ -105,6 +106,7 @@ export function placementError(
   if (!cell) return 'invalid_target';
   const spec = state.config.buildings[kind];
   if (empire.gold < buildingCost(state, empireId, kind)) return 'insufficient_gold';
+  if (empire.civilians < ENGINE_TUNING.civiliansPerBuild) return 'insufficient_civilians';
 
   if (cell.owner !== empireId || cell.building !== null) return 'invalid_target';
 

@@ -10,9 +10,12 @@ import type { GameConfig } from '@the-big-war/client/game/config/config.types';
 import type { HexCell, HexGrid } from '@the-big-war/client/game/map/map.types';
 import type { Command } from '@the-big-war/client/game/commands/commands.types';
 import { NEUTRAL_OWNER } from '@the-big-war/client/game/empire/empire.constants';
+import { placementError } from '@the-big-war/client/game/building/building.service';
 import { DEFAULT_GAME_CONFIG } from '@the-big-war/client/game/config/config.constants';
 import { emptyModifierTotals } from '@the-big-war/client/game/modifier/modifier.service';
+import { stepColumns } from '@the-big-war/client/game/simulation/systems/columns.system';
 import { gridAt, makeGrid } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import { stepBuildings } from '@the-big-war/client/game/simulation/systems/buildings.system';
 import type { Building, BuildingKind } from '@the-big-war/client/game/building/building.types';
 
 const FACTION_IDS = FACTIONS.map(faction => faction.id);
@@ -65,6 +68,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
     empires,
     fronts: [],
     expeditions: [],
+    columns: [],
     landHexCount: grid.cells.length,
     elapsed: 0,
     tick: 0,
@@ -118,7 +122,7 @@ describe('SendTroops', () => {
     expect(state.empires[0]!.soldiers).toBe(50);
   });
 
-  test('rejects a target that is not adjacent', () => {
+  test('a far target sends a marching column from the nearest owned tile', () => {
     const state = makeState();
     const edge = borderEdge(state, 0, 1);
     const far = { q: edge.b.q, r: edge.b.r === 0 ? 3 : 0 };
@@ -130,8 +134,41 @@ describe('SendTroops', () => {
       percent: 50,
       intent: 'attack',
     });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toBe('invalid_target');
+    expect(result.ok).toBe(true);
+    const column = state.columns[0]!;
+    expect(column.path.at(-1)).toEqual(far);
+    expect(gridAt(state.grid, column.path[0]!)!.owner).toBe(0);
+    for (let i = 1; i < column.path.length; i++) {
+      const a = column.path[i - 1]!;
+      const b = column.path[i]!;
+      expect(Math.abs(a.q - b.q) + Math.abs(a.r - b.r)).toBe(1);
+    }
+    expect(state.empires[0]!.soldiers).toBe(50);
+  });
+
+  test('a column claims neutral land along its path toward the target', () => {
+    const state = makeState();
+    for (const cell of state.grid.cells) cell.owner = cell.q === 0 ? 0 : NEUTRAL_OWNER;
+    const target = { q: 6, r: 2 };
+    const result = dispatch(state, { type: 'SendTroops', empire: 0, hex: { q: 0, r: 2 }, target, percent: 50, intent: 'attack' });
+    expect(result.ok).toBe(true);
+    for (let i = 0; i < 300; i++) stepColumns(state, 1 / 30);
+    for (let q = 1; q <= 6; q++) expect(gridAt(state.grid, { q, r: 2 })!.owner).toBe(0);
+    expect(gridAt(state.grid, { q: 1, r: 0 })!.owner).toBe(NEUTRAL_OWNER);
+  });
+
+  test('a column sent to claim wild land stops at another nation and never attacks it', () => {
+    const state = makeState();
+    for (const cell of state.grid.cells) cell.owner = cell.q === 0 ? 0 : NEUTRAL_OWNER;
+    gridAt(state.grid, { q: 3, r: 2 })!.owner = 1;
+    const target = { q: 6, r: 2 };
+    const result = dispatch(state, { type: 'SendTroops', empire: 0, hex: { q: 0, r: 2 }, target, percent: 50, intent: 'attack' });
+    expect(result.ok).toBe(true);
+    for (let i = 0; i < 300; i++) stepColumns(state, 1 / 30);
+    expect(gridAt(state.grid, { q: 3, r: 2 })!.owner).toBe(1);
+    expect(state.fronts).toHaveLength(0);
+    expect(state.columns).toHaveLength(0);
+    expect(state.expeditions).toHaveLength(1);
   });
 
   test('rejects a friendly target', () => {
@@ -264,6 +301,41 @@ describe('PlaceBuilding', () => {
     const result = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'market' });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('insufficient_gold');
+  });
+
+  test('queues builds: gold is paid up front and only the oldest build progresses', () => {
+    const state = makeState();
+    const goldBefore = state.empires[0]!.gold;
+    const a = { q: 3, r: 2 };
+    expect(dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: a, kind: 'farm' }).ok).toBe(true);
+    const spot = state.grid.cells.find(cell => !placementError(state, 0, cell, 'farm'))!;
+    const b = { q: spot.q, r: spot.r };
+    expect(dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: b, kind: 'farm' }).ok).toBe(true);
+    expect(state.empires[0]!.gold).toBe(goldBefore - state.config.buildings.farm.cost * 2);
+    stepBuildings(state, 1);
+    const spec = state.config.buildings.farm.buildSeconds;
+    expect(gridAt(state.grid, a)!.building!.buildRemaining).toBe(spec - 1);
+    expect(gridAt(state.grid, b)!.building!.buildRemaining).toBe(spec);
+    stepBuildings(state, spec);
+    stepBuildings(state, 1);
+    expect(gridAt(state.grid, a)!.building!.buildRemaining).toBe(0);
+    expect(gridAt(state.grid, b)!.building!.buildRemaining).toBe(spec - 1);
+  });
+
+  test('starts a build timer and takes one civilian', () => {
+    const state = makeState();
+    const civiliansBefore = state.empires[0]!.civilians;
+    dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'market' });
+    expect(gridAt(state.grid, { q: 3, r: 2 })!.building?.buildRemaining).toBe(state.config.buildings.market.buildSeconds);
+    expect(state.empires[0]!.civilians).toBe(civiliansBefore - 1);
+  });
+
+  test('rejects with insufficient_civilians when nobody is free to build', () => {
+    const state = makeState();
+    state.empires[0]!.civilians = 0;
+    const result = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'market' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('insufficient_civilians');
   });
 
   test('rejects a hex owned by someone else', () => {

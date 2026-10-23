@@ -1,11 +1,9 @@
-import { ensureFront } from '../../front/front.service';
 import type { GameState } from '../../state/state.types';
-import type { EmpireId } from '../../empire/empire.types';
 import { NEUTRAL_OWNER } from '../../empire/empire.constants';
 import { canAttack, declareWar } from '../../diplomacy/diplomacy.service';
 import type { CommandResult, SendTroopsCommand } from '../commands.types';
 import { ok, fail } from '@the-big-war/game-engine/commands/command.service';
-import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
+import { joinFront, launchExpedition, marchPath } from '../../troops/troops.service';
 import { distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export function handleSendTroops(state: GameState, command: SendTroopsCommand): CommandResult {
@@ -20,7 +18,7 @@ export function handleSendTroops(state: GameState, command: SendTroopsCommand): 
   const to = gridAt(state.grid, command.target);
   if (!from || !to) return fail(command.type, 'invalid_target');
   if (from.owner !== command.empire || to.owner === command.empire) return fail(command.type, 'invalid_target');
-  if (distance(command.hex, command.target) !== 1) return fail(command.type, 'invalid_target');
+  if (distance(command.hex, command.target) !== 1) return marchColumn(state, command, troops);
 
   if (to.owner === NEUTRAL_OWNER) {
     if (command.intent !== 'attack') return fail(command.type, 'invalid_target');
@@ -36,25 +34,24 @@ export function handleSendTroops(state: GameState, command: SendTroopsCommand): 
   }
 
   empire.soldiers -= troops;
-  const front = ensureFront(state, command.hex, command.target);
-  const isSideA = front.hexA.q === command.hex.q && front.hexA.r === command.hex.r;
-  const side = isSideA ? front.sideA : front.sideB;
-  if (side.empire !== command.empire) {
+  if (!joinFront(state, command.empire, command.hex, command.target, troops, command.intent)) {
     empire.soldiers += troops;
     return fail(command.type, 'invalid_target');
   }
-  side.troops += troops;
-  side.mode = command.intent === 'attack' ? 'attack' : 'defence';
-  front.lastAttackAt = state.elapsed;
   return ok(command.type);
 }
 
-function launchExpedition(state: GameState, empire: EmpireId, target: Axial, troops: number): void {
-  const existing = state.expeditions.find(expedition => expedition.empire === empire);
-  if (existing) {
-    existing.troops += troops;
-    existing.target = { q: target.q, r: target.r };
-    return;
+function marchColumn(state: GameState, command: SendTroopsCommand, troops: number): CommandResult {
+  if (command.intent !== 'attack') return fail(command.type, 'invalid_target');
+  const path = marchPath(state, command.empire, command.target);
+  if (!path) return fail(command.type, 'invalid_target');
+  const targetOwner = gridAt(state.grid, command.target)!.owner;
+  if (targetOwner !== NEUTRAL_OWNER) {
+    const attackCheck = canAttack(state, command.empire, targetOwner);
+    if (!attackCheck.allowed) return fail(command.type, attackCheck.reason ?? 'invalid_target');
   }
-  state.expeditions.push({ empire, target: { q: target.q, r: target.r }, troops });
+  state.empires[command.empire]!.soldiers -= troops;
+  const mission = targetOwner === NEUTRAL_OWNER ? 'claim' : 'attack';
+  state.columns.push({ empire: command.empire, mission, path, step: 0, progress: 0, troops });
+  return ok(command.type);
 }

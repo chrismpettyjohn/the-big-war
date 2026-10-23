@@ -50,6 +50,8 @@ export interface Front {
 
   resolution: FrontResolution | null;
 
+  capture: { by: EmpireId; progress: number; duration: number } | null;
+
   lastAttackAt: number;
 }
 

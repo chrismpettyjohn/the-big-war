@@ -52,7 +52,9 @@ canvas {
   -webkit-backdrop-filter: var(--street-glass-blur);
 }
 
-.nitro-sidebar {
+.nitro-sidebar,
+.street-drawer-tier-panel,
+.street-drawer-panel {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 48px), rgba(6, 9, 20, 0.82);
 }
 

@@ -179,7 +179,7 @@ export const MapMenu = (props: MapMenuProps) => {
     }
 
     list.push({ type: 'divider' });
-    list.push({ type: 'item', label: 'Command', onClick: () => props.onArmy() });
+    list.push({ type: 'item', label: 'Combat', onClick: () => props.onArmy() });
 
     if (front()) {
       list.push({

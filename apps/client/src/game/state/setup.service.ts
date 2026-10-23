@@ -8,12 +8,12 @@ import type { GameConfig } from '../config/config.types';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
 import { createBuilding } from '../building/building.service';
 import { defaultFactionId } from '../faction/faction.service';
-import { generateTerrain } from '../map/map-generator.service';
 import type { BuildingKind } from '../building/building.types';
 import type { Rng } from '@the-big-war/game-engine/rng/rng.types';
 import { createEmpire, refreshHexCounts } from '../empire/empire.service';
 import { createRng, nextInt } from '@the-big-war/game-engine/rng/rng.service';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
+import { generateTerrain, pruneLoneMountains } from '../map/map-generator.service';
 import { distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { recomputeAllBonuses, recomputeEmpireBonuses } from '../research/research.service';
 import { NEUTRAL_PLOT, PLOT_AFTER, PLOT_BEFORE, START_CITY_LEVEL, START_PLOT } from './setup.constants';
@@ -115,6 +115,7 @@ export function createInitialState(config: GameConfig): GameState {
     claimTerritory(state, id, capital, state.empires[id]!.neutralState ? NEUTRAL_PLOT : START_PLOT);
   }
 
+  pruneLoneMountains(grid);
   recomputeAllBonuses(state);
   refreshHexCounts(state);
 

@@ -63,6 +63,7 @@ function createTestState(configOverrides: Partial<GameConfig> = {}): GameState {
     empires,
     fronts: [],
     expeditions: [],
+    columns: [],
     landHexCount: grid.cells.length,
     elapsed: 0,
     tick: 0,

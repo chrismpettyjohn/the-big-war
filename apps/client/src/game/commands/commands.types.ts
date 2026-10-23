@@ -9,6 +9,7 @@ export type CommandError =
   | 'not_playing'
   | 'no_empire'
   | 'insufficient_gold'
+  | 'insufficient_civilians'
   | 'insufficient_science'
   | 'insufficient_troops'
   | 'reserve_full'

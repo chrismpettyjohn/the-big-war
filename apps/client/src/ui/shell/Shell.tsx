@@ -153,7 +153,7 @@ export const Shell = () => {
             onClick={() => togglePanel('research')}
           />
           <RailAction
-            label="Command"
+            label="Combat"
             icon={<FaCrosshairs />}
             active={panel() === 'army'}
             badge={store.state.fronts.length}
