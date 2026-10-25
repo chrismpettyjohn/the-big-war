@@ -96,7 +96,7 @@ export const Hotbar = (props: HotbarProps) => {
               class={[
                 'street-action hud-hotbar-slot',
                 isSelected(kind) && 'is-active',
-                !affordable() && 'is-unaffordable',
+                affordable() ? 'is-affordable' : 'is-unaffordable',
               ].filter(Boolean).join(' ')}
               onMouseEnter={() => setHovered(kind)}
               onMouseLeave={() => setHovered(current => (current === kind ? null : current))}

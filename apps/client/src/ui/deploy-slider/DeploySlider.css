@@ -1,12 +1,24 @@
-.deploy-slider {
+.deploy-slider-dock {
+  align-items: center;
   bottom: var(--ui-hotbar-bottom);
+  display: flex;
+  gap: 8px;
   position: fixed;
-  justify-content: space-between;
-  min-width: 180px;
-  padding: 0 8px;
   right: var(--ui-safe-inset);
   user-select: none;
   z-index: 25;
+}
+
+.deploy-slider {
+  justify-content: space-between;
+  flex: 0 0 auto;
+  min-width: 180px;
+  padding: 0 8px;
+}
+
+.deploy-slider-reset-tray {
+  flex: 0 0 auto;
+  padding: 2px;
 }
 
 .deploy-slider-label {
@@ -21,21 +33,18 @@
   white-space: nowrap;
 }
 
-.deploy-slider-reset {
-  gap: 6px;
-  height: 23px;
+.street-tray .deploy-slider-reset {
+  gap: 5px;
+  height: 22px;
   padding: 0 8px;
   width: auto;
   color: var(--street-text);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 12px;
   text-shadow: var(--street-text-shadow);
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.deploy-slider-reset:hover:not(:disabled) {
+.street-tray .deploy-slider-reset:hover:not(:disabled) {
   color: var(--street-accent);
 }
 
@@ -72,4 +81,9 @@
 
 .deploy-slider-caret:active {
   color: var(--street-accent);
+}
+
+.street-tray .deploy-slider-reset svg {
+  height: 11px;
+  width: 11px;
 }

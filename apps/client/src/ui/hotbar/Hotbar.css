@@ -7,6 +7,10 @@
     user-select: none;
 }
 
+.hud-hotbar-slot.is-affordable {
+    color: #fff;
+}
+
 .hud-hotbar-slot.is-unaffordable {
     cursor: not-allowed;
     opacity: 0.45;

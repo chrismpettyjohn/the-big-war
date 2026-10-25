@@ -59,29 +59,32 @@ export const DeploySlider = (props: DeploySliderProps) => {
     </button>
   );
 
+  const trayHeight = () => (height() === null ? undefined : `${height()}px`);
+
   return (
-    <div
-      class="deploy-slider street-tray kit-glass"
-      style={{ height: height() === null ? undefined : `${height()}px` }}
-    >
+    <div class="deploy-slider-dock">
       <Show when={props.cameraMoved}>
-        <button
-          type="button"
-          class="street-action deploy-slider-reset"
-          title="Reset map view"
-          aria-label="Reset map view"
-          onClick={() => props.onReset()}
-        >
-          <FaUndo />
-          <span>Reset view</span>
-        </button>
+        <div class="deploy-slider-reset-tray street-tray kit-glass">
+          <button
+            type="button"
+            class="street-action is-wide deploy-slider-reset"
+            title="Reset map view"
+            aria-label="Reset map view"
+            onClick={() => props.onReset()}
+          >
+            <FaUndo />
+            <span>Reset view</span>
+          </button>
+        </div>
       </Show>
-      <span class="deploy-slider-label kit-num" aria-live="polite">
-        {percent()}% troops
-      </span>
-      <div class="deploy-slider-carets">
-        {caret(1)}
-        {caret(-1)}
+      <div class="deploy-slider street-tray kit-glass" style={{ height: trayHeight() }}>
+        <span class="deploy-slider-label kit-num" aria-live="polite">
+          {percent()}% troops
+        </span>
+        <div class="deploy-slider-carets">
+          {caret(1)}
+          {caret(-1)}
+        </div>
       </div>
     </div>
   );
