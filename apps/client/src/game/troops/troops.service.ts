@@ -1,5 +1,6 @@
 import { ensureFront } from '../front/front.service';
 import type { GameState } from '../state/state.types';
+import type { BuildingKind } from '../building/building.types';
 import type { EmpireId } from '../empire/empire.types';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
@@ -26,7 +27,7 @@ export function launchExpedition(
     returnToReserve(state, empire, troops);
     return;
   }
-  const start = origin ?? nearestOwnedHex(state, empire, target) ?? target;
+  const start = origin ?? stagingHex(state, empire, target) ?? nearestOwnedHex(state, empire, target) ?? target;
   state.expeditions.push({
     empire,
     target: { q: target.q, r: target.r },
@@ -140,15 +141,57 @@ export function tileLine(from: Axial, to: Axial): Axial[] {
   return line;
 }
 
-export function marchPath(state: GameState, empire: EmpireId, target: Axial): Axial[] | null {
-  const origin = nearestOwnedHex(state, empire, target);
+const STAGING_KINDS: ReadonlySet<BuildingKind> = new Set(['city', 'barracks', 'fort']);
+
+export function stagingHex(state: GameState, empire: EmpireId, target: Axial): Axial | null {
+  let best: Axial | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const cell of state.grid.cells) {
+    if (cell.owner !== empire || !cell.building || cell.building.buildRemaining > 0) continue;
+    if (!STAGING_KINDS.has(cell.building.kind)) continue;
+    const d = distance(cell, target);
+    if (d < bestDistance) {
+      bestDistance = d;
+      best = { q: cell.q, r: cell.r };
+    }
+  }
+  return best;
+}
+
+function ownedPath(state: GameState, empire: EmpireId, from: Axial, to: Axial): Axial[] | null {
+  const { grid } = state;
+  const key = (hex: Axial) => hex.r * grid.width + hex.q;
+  const goal = key(to);
+  const previous = new Map<number, Axial | null>([[key(from), null]]);
+  const queue: Axial[] = [from];
+  for (let head = 0; head < queue.length; head++) {
+    const hex = queue[head]!;
+    if (key(hex) === goal) {
+      const path: Axial[] = [];
+      for (let at: Axial | null = hex; at; at = previous.get(key(at))!) path.push({ q: at.q, r: at.r });
+      return path.reverse();
+    }
+    for (const next of neighbors(hex)) {
+      if (!gridInBounds(grid, next.q, next.r) || previous.has(key(next))) continue;
+      if (gridAt(grid, next)?.owner !== empire) continue;
+      previous.set(key(next), hex);
+      queue.push(next);
+    }
+  }
+  return null;
+}
+
+export function marchPath(state: GameState, empire: EmpireId, target: Axial, border: Axial | null = null): Axial[] | null {
+  const origin = border ?? nearestOwnedHex(state, empire, target);
   if (!origin) return null;
   const line = tileLine(origin, target);
   let start = 0;
   for (let i = 0; i < line.length; i++) {
     if (gridAt(state.grid, line[i]!)?.owner === empire) start = i;
   }
-  const path = line.slice(start);
+  const outward = line.slice(start);
+  const staging = stagingHex(state, empire, target);
+  const inward = staging ? ownedPath(state, empire, staging, outward[0]!) : null;
+  const path = inward ? [...inward, ...outward.slice(1)] : outward;
   return path.length >= 2 ? path : null;
 }
-

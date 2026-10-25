@@ -136,7 +136,7 @@ export interface RecruitConfig {
   readonly civiliansPerSoldier: number;
 
   readonly secondsPerSoldier: number;
-  readonly baseReserveCap: number;
+  readonly cityReserveCap: number;
 
   readonly barracksReserveCap: number;
 

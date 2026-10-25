@@ -67,7 +67,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   recruit: {
     civiliansPerSoldier: 1,
     secondsPerSoldier: 3,
-    baseReserveCap: 10,
+    cityReserveCap: 3,
     barracksReserveCap: 10,
     fortReserveCap: 20,
     targetReserveRatio: 1,

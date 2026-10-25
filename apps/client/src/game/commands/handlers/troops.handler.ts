@@ -1,9 +1,10 @@
+import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import type { GameState } from '../../state/state.types';
 import { NEUTRAL_OWNER } from '../../empire/empire.constants';
 import { canAttack, declareWar } from '../../diplomacy/diplomacy.service';
 import type { CommandResult, SendTroopsCommand } from '../commands.types';
 import { ok, fail } from '@the-big-war/game-engine/commands/command.service';
-import { joinFront, launchExpedition, marchPath } from '../../troops/troops.service';
+import { joinFront, launchExpedition, marchPath, stagingHex } from '../../troops/troops.service';
 import { distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export function handleSendTroops(state: GameState, command: SendTroopsCommand): CommandResult {
@@ -19,6 +20,9 @@ export function handleSendTroops(state: GameState, command: SendTroopsCommand): 
   if (!from || !to) return fail(command.type, 'invalid_target');
   if (from.owner !== command.empire || to.owner === command.empire) return fail(command.type, 'invalid_target');
   if (distance(command.hex, command.target) !== 1) return marchColumn(state, command, troops);
+  if (command.intent === 'attack' && stagingHex(state, command.empire, command.target)) {
+    return marchColumn(state, command, troops, command.hex);
+  }
 
   if (to.owner === NEUTRAL_OWNER) {
     if (command.intent !== 'attack') return fail(command.type, 'invalid_target');
@@ -41,9 +45,14 @@ export function handleSendTroops(state: GameState, command: SendTroopsCommand): 
   return ok(command.type);
 }
 
-function marchColumn(state: GameState, command: SendTroopsCommand, troops: number): CommandResult {
+function marchColumn(
+  state: GameState,
+  command: SendTroopsCommand,
+  troops: number,
+  border: Axial | null = null,
+): CommandResult {
   if (command.intent !== 'attack') return fail(command.type, 'invalid_target');
-  const path = marchPath(state, command.empire, command.target);
+  const path = marchPath(state, command.empire, command.target, border);
   if (!path) return fail(command.type, 'invalid_target');
   const targetOwner = gridAt(state.grid, command.target)!.owner;
   if (targetOwner !== NEUTRAL_OWNER) {

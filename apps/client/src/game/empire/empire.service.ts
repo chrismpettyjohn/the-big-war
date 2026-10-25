@@ -19,7 +19,7 @@ export function createEmpire(config: GameConfig, seed: EmpireSeed): Empire {
     civilianBalance: 0,
     troopBalance: 0,
     soldiers: config.start.soldiers,
-    reserveCap: config.recruit.baseReserveCap,
+    reserveCap: config.recruit.cityReserveCap,
     drafting: false,
     bonuses: emptyModifierTotals(),
     research: { completed: [], chosen: {}, active: null },

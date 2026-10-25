@@ -55,7 +55,8 @@ export function reserveCapOf(state: GameState, empire: Empire): number {
   const recruit = state.config.recruit;
   const barracks = countBuildingsOfKind(state, empire.id, 'barracks');
   const forts = countBuildingsOfKind(state, empire.id, 'fort');
-  const raw = recruit.baseReserveCap + barracks * recruit.barracksReserveCap + forts * recruit.fortReserveCap;
+  const cities = countBuildingsOfKind(state, empire.id, 'city');
+  const raw = cities * recruit.cityReserveCap + barracks * recruit.barracksReserveCap + forts * recruit.fortReserveCap;
   return Math.max(
     0,
     Math.floor(
