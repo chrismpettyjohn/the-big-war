@@ -1,6 +1,6 @@
 .tile-tip {
   align-items: center;
-  background: var(--street-solid);
+  background: var(--street-chrome);
   border: 1px solid var(--street-border);
   border-radius: var(--street-radius);
   color: var(--street-text);

@@ -147,10 +147,10 @@
 }
 
 .hud-rate {
-    font-size: 0.6em;
+    font-size: 0.8em;
     font-weight: normal;
     line-height: 0;
-    vertical-align: 0.6em;
+    vertical-align: 0.5em;
     margin-left: 1px;
     opacity: 0.9;
 }

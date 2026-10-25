@@ -8,7 +8,7 @@ const SPEEDS: readonly GameSpeed[] = [1, 2, 4];
 
 const rate = (value: number): string => `${value >= 0 ? '+' : ''}${Number(value.toFixed(1))}/s`;
 
-const rateClass = (value: number): string => `hud-rate kit-num ${value < 0 ? 'is-danger' : 'is-success'}`;
+const rateClass = (value: number): string => `hud-rate kit-num ${value <= 0 ? 'is-danger' : 'is-success'}`;
 
 export const Hud = () => {
   const store = gameStore();

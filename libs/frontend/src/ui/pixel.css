@@ -46,16 +46,10 @@ canvas {
 .kit-glass {
   border: 1px solid var(--street-border);
   border-radius: var(--street-radius);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02) 48px), var(--street-surface);
+  background: var(--street-chrome-sheen), var(--street-chrome);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 24px rgba(0, 0, 0, 0.25);
   backdrop-filter: var(--street-glass-blur);
   -webkit-backdrop-filter: var(--street-glass-blur);
-}
-
-.nitro-sidebar,
-.street-drawer-tier-panel,
-.street-drawer-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 48px), rgba(6, 9, 20, 0.82);
 }
 
 button,

@@ -39,6 +39,8 @@
   --street-surface: rgba(0, 0, 0, 0.6);
   --street-surface-hover: rgba(0, 0, 0, 0.8);
   --street-solid: #111;
+  --street-chrome: rgba(6, 9, 20, 0.82);
+  --street-chrome-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 48px);
   --street-well: rgba(0, 0, 0, 0.35);
   --street-tile: rgba(255, 255, 255, 0.03);
   --street-hover: rgba(255, 255, 255, 0.07);

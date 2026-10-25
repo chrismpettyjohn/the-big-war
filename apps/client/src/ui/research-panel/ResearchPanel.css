@@ -115,7 +115,7 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--street-accent);
-  background: color-mix(in srgb, var(--street-panel) 85%, transparent);
+  background: var(--street-chrome);
   opacity: 0;
   transition: opacity 120ms;
 }
