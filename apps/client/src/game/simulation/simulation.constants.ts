@@ -6,6 +6,8 @@ export const ENGINE_TUNING = {
   trenchDefenceBonus: 0.35,
   machineGunAttackBonus: 0.5,
   machineGunDefenceBonus: 0.2,
+  bunkerDefenceBonus: 0.75,
+  bunkerShelling: 0.5,
   cityDefenceBonusPer: 0.15,
   cityAttackBonusPer: 0.1,
   defaultTerrainDefence: 1.0,

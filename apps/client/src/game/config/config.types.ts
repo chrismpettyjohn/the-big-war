@@ -131,6 +131,7 @@ export interface SupportConfig {
   readonly minerRadius: number;
 
   readonly machineGunRadius: number;
+  readonly bunkerRadius: number;
 
 }
 

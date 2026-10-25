@@ -407,6 +407,15 @@ describe('engine field works', () => {
     step(attacking, FIXED_DT);
     expect(attackFront.sideA.modifiers.lines.map(entry => entry.label)).not.toContain('Machine guns');
   });
+
+  test('bunkers add defence to nearby fronts', () => {
+    const state = makeState();
+    place(state, { q: 3, r: 5 }, 'bunker');
+    const front = standoff(state);
+    step(state, FIXED_DT);
+    const line = front.sideA.modifiers.lines.find(entry => entry.label === 'Bunker');
+    expect(line?.defence).toBeCloseTo(1.75, 6);
+  });
 });
 
 describe('engine combat', () => {

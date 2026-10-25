@@ -147,6 +147,18 @@ export const RESEARCH_NODES: readonly ResearchNode[] = [
     position: { col: 1, row: 3 },
     effects: [{ kind: 'unlock', key: 'building:machine_gun', label: 'Machine Gun' }],
   },
+  {
+    id: 'reinforced_concrete',
+    name: 'Reinforced Concrete',
+    description: 'Unlocks bunkers that shrug off assaults and shelling.',
+    kind: 'unlock',
+    branch: 'military',
+    cost: 90,
+    duration: 40,
+    requires: ['fortification'],
+    position: { col: 1, row: 2 },
+    effects: [{ kind: 'unlock', key: 'building:bunker', label: 'Bunker' }],
+  },
 
   {
     id: 'surveying',

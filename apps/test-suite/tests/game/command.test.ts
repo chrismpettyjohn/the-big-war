@@ -393,6 +393,7 @@ describe('PlaceBuilding', () => {
 describe('PlaceBuilding field works', () => {
   const gated = [
     ['machine_gun', 'machine_guns'],
+    ['bunker', 'reinforced_concrete'],
   ] as const;
 
   for (const [kind, nodeId] of gated) {

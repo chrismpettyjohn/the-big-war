@@ -57,6 +57,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     lumberjackRadius: 2,
     minerRadius: 2,
     machineGunRadius: 2,
+    bunkerRadius: 1,
   },
   gather: {
     workersPerBuilding: 2,
@@ -93,5 +94,6 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     cannon: { cost: 120, buildSeconds: 10, requiresResearch: 'artillery', requiresAdjacentTerrain: null },
     trench: { cost: 15, buildSeconds: 3, requiresResearch: null, requiresAdjacentTerrain: null },
     machine_gun: { cost: 60, buildSeconds: 6, requiresResearch: 'machine_guns', requiresAdjacentTerrain: null },
+    bunker: { cost: 110, buildSeconds: 10, requiresResearch: 'reinforced_concrete', requiresAdjacentTerrain: null },
   },
 };

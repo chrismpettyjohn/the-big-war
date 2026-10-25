@@ -174,6 +174,20 @@ export const BUILDING_SPRITES: Readonly<Record<BuildingKind, readonly string[]>>
     'kkkkkkkkkkkk',
     '............',
   ],
+  bunker: [
+    '............',
+    '............',
+    '....kkkk....',
+    '..kksssskk..',
+    '.kssssssssk.',
+    'kssssssssssk',
+    'kskkkkkkkksk',
+    'kSSSSSSSSSSk',
+    'kSSSSSSSSSSk',
+    'kkkkkkkkkkkk',
+    '............',
+    '............',
+  ],
 };
 
 export const SOLDIER_SIZE = 8;

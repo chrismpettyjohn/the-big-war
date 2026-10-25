@@ -1,5 +1,6 @@
 import type { GameState } from '../../state/state.types';
 import { incidentFronts } from '../../front/front.service';
+import { shellingFactor } from '../../building/building.service';
 import type { CommandResult, FireCannonCommand } from '../commands.types';
 import { ok, fail } from '@the-big-war/game-engine/commands/command.service';
 import { distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
@@ -21,8 +22,8 @@ export function handleFireCannon(state: GameState, command: FireCannonCommand): 
   from.building.cooldown = cannon.cooldown;
 
   for (const front of incidentFronts(state, command.target)) {
-    const lossesA = Math.min(front.sideA.troops, cannon.damage);
-    const lossesB = Math.min(front.sideB.troops, cannon.damage);
+    const lossesA = Math.min(front.sideA.troops, cannon.damage * shellingFactor(state, front.sideA.empire, front.hexA));
+    const lossesB = Math.min(front.sideB.troops, cannon.damage * shellingFactor(state, front.sideB.empire, front.hexB));
     front.sideA.troops -= lossesA;
     front.sideB.troops -= lossesB;
     front.resolution = { at: state.elapsed, lossesA, lossesB, capturedBy: null };

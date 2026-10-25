@@ -89,6 +89,11 @@ function squareArea(center: Axial, radius: number): Axial[] {
   return results;
 }
 
+export function shellingFactor(state: GameState, empireId: EmpireId, hex: Axial): number {
+  const bunkers = countSupport(state, empireId, hex, state.config.support.bunkerRadius, k => k === 'bunker');
+  return bunkers > 0 ? ENGINE_TUNING.bunkerShelling : 1;
+}
+
 export function hasAdjacentTerrain(state: GameState, hex: Axial, terrain: Terrain): boolean {
   if (gridAt(state.grid, hex)?.terrain === terrain) return true;
   return hasNeighbourTerrain(state, hex, terrain);
