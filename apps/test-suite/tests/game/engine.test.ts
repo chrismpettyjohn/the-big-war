@@ -390,6 +390,23 @@ describe('engine field works', () => {
     const trench = front.sideA.modifiers.lines.find(line => line.label === 'Trench');
     expect(trench?.defence).toBeCloseTo(1.35, 6);
   });
+
+  test('machine guns only fire for a side holding the line', () => {
+    const holding = makeState();
+    place(holding, { q: 2, r: 4 }, 'machine_gun');
+    const front = standoff(holding);
+    step(holding, FIXED_DT);
+    const line = front.sideA.modifiers.lines.find(entry => entry.label === 'Machine guns');
+    expect(line?.attack).toBeCloseTo(1.5, 6);
+    expect(line?.defence).toBeCloseTo(1.2, 6);
+
+    const attacking = makeState();
+    place(attacking, { q: 2, r: 4 }, 'machine_gun');
+    const attackFront = standoff(attacking);
+    attackFront.sideA.mode = 'attack';
+    step(attacking, FIXED_DT);
+    expect(attackFront.sideA.modifiers.lines.map(entry => entry.label)).not.toContain('Machine guns');
+  });
 });
 
 describe('engine combat', () => {

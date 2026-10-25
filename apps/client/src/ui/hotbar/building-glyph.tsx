@@ -1,6 +1,7 @@
 import type { JSX } from 'solid-js';
 import type { BuildingKind } from '../../game/building/building.types';
 import {
+  FaBolt,
   FaBuilding,
   FaCrosshairs,
   FaLayerGroup,
@@ -24,6 +25,7 @@ const GLYPHS: Record<BuildingKind, (props: { class?: string }) => JSX.Element> =
   fort: FaShieldAlt,
   cannon: FaCrosshairs,
   trench: FaLayerGroup,
+  machine_gun: FaBolt,
 };
 
 export function buildingGlyph(kind: BuildingKind): JSX.Element {

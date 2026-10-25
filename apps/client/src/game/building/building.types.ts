@@ -13,7 +13,8 @@ export type BuildingKind =
   | 'barracks'
   | 'fort'
   | 'cannon'
-  | 'trench';
+  | 'trench'
+  | 'machine_gun';
 
 export type GathererPhase = 'idle' | 'outbound' | 'working' | 'returning';
 

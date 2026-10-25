@@ -12,7 +12,15 @@ import { chance } from '@the-big-war/game-engine/rng/rng.service';
 
 const ECONOMY_PLAN: readonly BuildingKind[] = ['market', 'farm', 'lumberjack', 'miner', 'lab', 'city'];
 
-const MILITARY_PLAN: readonly BuildingKind[] = ['barracks', 'fort', 'cannon', 'market', 'farm', 'city'];
+const MILITARY_PLAN: readonly BuildingKind[] = [
+  'barracks',
+  'fort',
+  'cannon',
+  'machine_gun',
+  'market',
+  'farm',
+  'city',
+];
 
 export function pickResearch(bot: Bot, empire: Empire): ResearchNode | null {
   if (empire.research.active) return null;

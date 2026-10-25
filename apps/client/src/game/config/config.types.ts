@@ -130,6 +130,8 @@ export interface SupportConfig {
   readonly lumberjackRadius: number;
   readonly minerRadius: number;
 
+  readonly machineGunRadius: number;
+
 }
 
 export interface RecruitConfig {

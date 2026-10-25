@@ -10,6 +10,7 @@ import type { GameConfig } from '@the-big-war/client/game/config/config.types';
 import type { HexCell, HexGrid } from '@the-big-war/client/game/map/map.types';
 import type { Command } from '@the-big-war/client/game/commands/commands.types';
 import { NEUTRAL_OWNER } from '@the-big-war/client/game/empire/empire.constants';
+import { completeResearch } from '@the-big-war/client/game/research/research.service';
 import { DEFAULT_GAME_CONFIG } from '@the-big-war/client/game/config/config.constants';
 import { emptyModifierTotals } from '@the-big-war/client/game/modifier/modifier.service';
 import { stepColumns } from '@the-big-war/client/game/simulation/systems/columns.system';
@@ -390,6 +391,27 @@ describe('PlaceBuilding', () => {
 });
 
 describe('PlaceBuilding field works', () => {
+  const gated = [
+    ['machine_gun', 'machine_guns'],
+  ] as const;
+
+  for (const [kind, nodeId] of gated) {
+    test(`gates ${kind} behind the ${nodeId} research unlock`, () => {
+      const locked = makeState();
+      locked.empires[0]!.gold = 1000;
+      const result = dispatch(locked, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.reason).toBe('not_researched');
+
+      const unlocked = makeState();
+      unlocked.empires[0]!.gold = 1000;
+      unlocked.empires[0]!.research.active = { nodeId, progress: 1, optionId: null };
+      completeResearch(unlocked, 0);
+      const ok = dispatch(unlocked, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind });
+      expect(ok.ok).toBe(true);
+    });
+  }
+
   test('trenches can be dug in a line next to other buildings at a flat cost', () => {
     const state = makeState();
     state.empires[0]!.gold = 1000;

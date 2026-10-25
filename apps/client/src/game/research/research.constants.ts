@@ -135,6 +135,18 @@ export const RESEARCH_NODES: readonly ResearchNode[] = [
     position: { col: 1, row: 1 },
     effects: [{ kind: 'unlock', key: 'building:cannon', label: 'Cannon' }],
   },
+  {
+    id: 'machine_guns',
+    name: 'Machine Guns',
+    description: 'Unlocks machine gun nests that cut down attackers.',
+    kind: 'unlock',
+    branch: 'military',
+    cost: 70,
+    duration: 35,
+    requires: ['drill'],
+    position: { col: 1, row: 3 },
+    effects: [{ kind: 'unlock', key: 'building:machine_gun', label: 'Machine Gun' }],
+  },
 
   {
     id: 'surveying',

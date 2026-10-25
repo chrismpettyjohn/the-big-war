@@ -11,6 +11,7 @@ export const BUILDING_KINDS: readonly BuildingKind[] = [
   'fort',
   'cannon',
   'trench',
+  'machine_gun',
 ];
 
 export const PRODUCTION_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingKind>([

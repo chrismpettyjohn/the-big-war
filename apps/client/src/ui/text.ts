@@ -14,6 +14,7 @@ const BUILDING_LABELS: Readonly<Record<BuildingKind, string>> = {
   fort: 'Fort',
   cannon: 'Cannon',
   trench: 'Trench',
+  machine_gun: 'Machine Gun',
 };
 
 export function buildingLabel(kind: BuildingKind): string {
@@ -31,6 +32,7 @@ const BUILDING_DESCRIPTIONS: Readonly<Record<BuildingKind, string>> = {
   fort: 'Troops within its radius fight 50% more effectively.',
   cannon: 'Fires at distant hexes to damage defenders and clear forests and mountains. Needs a reload between shots. Unlocked through research.',
   trench: 'Troops fighting from a trench hex defend 35% better. Cheap, and can be dug right next to other buildings to form unbroken lines.',
+  machine_gun: 'Troops holding the line within 2 hexes hit attackers 50% harder and defend 20% better. No effect while attacking. Unlocked through research.',
 };
 
 export function buildingDescription(kind: BuildingKind): string {
