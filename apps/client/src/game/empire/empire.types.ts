@@ -28,6 +28,10 @@ export interface Empire {
   gold: number;
   science: number;
 
+  goldBalance: number;
+
+  scienceBalance: number;
+
   civilians: number;
 
   civilianBalance: number;

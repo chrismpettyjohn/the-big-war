@@ -1,10 +1,14 @@
 import './Hud.css';
 import { gameStore } from '../../game/store/store.service';
 import type { GameSpeed } from '../../game/config/config.types';
-import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js';
+import { createEffect, createSignal, For, onCleanup } from 'solid-js';
 import { FaAtom, FaUsers, GiCoin, GiCrossedSwords } from '@the-big-war/frontend/ui/icons/icons';
 
 const SPEEDS: readonly GameSpeed[] = [1, 2, 4];
+
+const rate = (value: number): string => `${value >= 0 ? '+' : ''}${Number(value.toFixed(1))}/s`;
+
+const rateClass = (value: number): string => `hud-rate kit-num ${value < 0 ? 'is-danger' : 'is-success'}`;
 
 export const Hud = () => {
   const store = gameStore();
@@ -35,33 +39,24 @@ export const Hud = () => {
         <div class="street-stat is-accent">
           <GiCoin class="hud-res-icon is-gold" />
           <span class="street-label">Gold</span>
-          <strong>{Math.floor(me().gold)}</strong>
+          <strong>{Math.floor(me().gold)}<sup class={rateClass(me().goldBalance)}>{rate(me().goldBalance)}</sup></strong>
         </div>
         <div class="street-stat is-info">
           <FaAtom class="hud-res-icon is-science" />
           <span class="street-label">Science</span>
-          <strong>{Math.floor(me().science)}</strong>
+          <strong>{Math.floor(me().science)}<sup class={rateClass(me().scienceBalance)}>{rate(me().scienceBalance)}</sup></strong>
         </div>
         <div class="rail-divider" />
         <div class="street-stat">
           <FaUsers class="hud-res-icon" />
           <span class="street-label">Civilians</span>
-          <strong>{Math.floor(me().civilians)}</strong>
-          <Show when={me().troopBalance <= 0}>
-            <span class={me().civilianBalance < 0 ? 'is-danger kit-num' : 'is-success kit-num'}>
-              {me().civilianBalance >= 0 ? '+' : ''}
-              {me().civilianBalance.toFixed(1)}
-            </span>
-          </Show>
+          <strong>{Math.floor(me().civilians)}<sup class={rateClass(me().civilianBalance)}>{rate(me().civilianBalance)}</sup></strong>
         </div>
         <div class="street-stat">
           <GiCrossedSwords class="hud-res-icon is-troops" />
           <span class="street-label">Troops</span>
           <strong>{Math.floor(me().soldiers)}</strong>
-          <span>/ {Math.floor(me().reserveCap)}</span>
-          <Show when={me().troopBalance > 0}>
-            <span class="is-success kit-num">+{me().troopBalance.toFixed(1)}</span>
-          </Show>
+          <span>/ {Math.floor(me().reserveCap)}<sup class={rateClass(me().troopBalance)}>{rate(me().troopBalance)}</sup></span>
         </div>
       </div>
 

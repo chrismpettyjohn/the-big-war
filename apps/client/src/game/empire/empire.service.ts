@@ -16,6 +16,8 @@ export function createEmpire(config: GameConfig, seed: EmpireSeed): Empire {
     gold: unlimited ? CHEAT_UNLIMITED_GOLD_AMOUNT : config.start.gold,
     science: config.start.science,
     civilians: config.start.civilians,
+    goldBalance: 0,
+    scienceBalance: 0,
     civilianBalance: 0,
     troopBalance: 0,
     soldiers: config.start.soldiers,

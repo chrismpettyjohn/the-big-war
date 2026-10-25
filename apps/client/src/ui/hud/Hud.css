@@ -145,3 +145,12 @@
 .hud-res-icon.is-troops {
     color: var(--street-danger);
 }
+
+.hud-rate {
+    font-size: 0.6em;
+    font-weight: normal;
+    line-height: 0;
+    vertical-align: 0.6em;
+    margin-left: 1px;
+    opacity: 0.9;
+}

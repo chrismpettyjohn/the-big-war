@@ -17,6 +17,8 @@ export function stepEconomy(state: GameState, dt: number): void {
 
   for (const empire of state.empires) {
     if (!empire.alive) {
+      empire.goldBalance = 0;
+      empire.scienceBalance = 0;
       empire.civilianBalance = 0;
       civilianGrowthRate[empire.id] = 0;
       continue;
@@ -50,9 +52,15 @@ export function stepEconomy(state: GameState, dt: number): void {
 
     const labGoldCost = econ.labGoldPerSecond * staffing * labsOf(owned) * dt;
     let scienceProduction = resolveModifier(rawScience, empire.bonuses.scienceRate) * staffing;
+    let labGoldSpent = 0;
     if (empire.gold <= 0 && labGoldCost > 0) scienceProduction = 0;
-    else empire.gold = Math.max(0, empire.gold - labGoldCost);
+    else {
+      empire.gold = Math.max(0, empire.gold - labGoldCost);
+      labGoldSpent = labGoldCost > 0 ? labGoldCost / dt : 0;
+    }
     empire.science += scienceProduction * dt;
+    empire.goldBalance = goldIncome - labGoldSpent;
+    empire.scienceBalance = scienceProduction;
     if (hasUnlimitedGold(empire)) empire.gold = CHEAT_UNLIMITED_GOLD_AMOUNT;
 
     const passive = econ.baseGrowthPerSecond;
