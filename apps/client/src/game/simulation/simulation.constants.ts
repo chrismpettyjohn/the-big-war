@@ -2,7 +2,7 @@ export const ENGINE_TUNING = {
   frontAttackShare: 0.5,
   frontDefenceShare: 0.5,
   barracksAttackBonusPer: 0.08,
-  fortDefenceBonus: 0.25,
+  fortBonus: 0.5,
   cityDefenceBonusPer: 0.15,
   cityAttackBonusPer: 0.1,
   defaultTerrainDefence: 1.0,

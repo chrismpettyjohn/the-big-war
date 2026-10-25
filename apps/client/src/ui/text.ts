@@ -27,7 +27,7 @@ const BUILDING_DESCRIPTIONS: Readonly<Record<BuildingKind, string>> = {
   farm: 'Speeds up population growth. Each farm adds more, up to a cap. Must be built next to plains.',
   lab: 'Produces science for research, plus a little gold.',
   barracks: 'Raises how many troops you can hold in reserve and lets you attack from nearby hexes.',
-  fort: 'Strengthens the defence of the hexes around it.',
+  fort: 'Troops within its radius fight 50% more effectively.',
   cannon: 'Fires at distant hexes to damage defenders and clear forests and mountains. Needs a reload between shots. Unlocked through research.',
 };
 

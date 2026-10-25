@@ -53,7 +53,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     cityAttackLevel: 2,
     cityAttackRadius: 2,
     barracksAttackRadius: 2,
-    fortDefenceRadius: 4,
+    fortDefenceRadius: 2,
     lumberjackRadius: 2,
     minerRadius: 2,
   },

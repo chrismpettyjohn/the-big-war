@@ -70,14 +70,23 @@ export function countSupport(
   radius: number,
   predicate: (kind: BuildingKind) => boolean,
   minLevel = 1,
+  square = false,
 ): number {
   let count = 0;
-  for (const candidate of area(hex, radius)) {
+  for (const candidate of square ? squareArea(hex, radius) : area(hex, radius)) {
     const cell = gridAt(state.grid, candidate);
     if (!cell || cell.owner !== empireId || !cell.building || cell.building.buildRemaining > 0) continue;
     if (predicate(cell.building.kind) && cell.building.level >= minLevel) count += 1;
   }
   return count;
+}
+
+function squareArea(center: Axial, radius: number): Axial[] {
+  const results: Axial[] = [];
+  for (let dr = -radius; dr <= radius; dr++) {
+    for (let dq = -radius; dq <= radius; dq++) results.push({ q: center.q + dq, r: center.r + dr });
+  }
+  return results;
 }
 
 export function hasAdjacentTerrain(state: GameState, hex: Axial, terrain: Terrain): boolean {

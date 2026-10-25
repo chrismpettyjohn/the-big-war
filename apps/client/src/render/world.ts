@@ -148,7 +148,7 @@ export function createWorld(options: WorldOptions): WorldRenderer {
     );
     terrain.draw(state.grid, hexSize, range);
     nationLabels.draw(state, hexSize);
-    buildings.draw(state.grid, hexSize, range, state.elapsed, state.config.buildings);
+    buildings.draw(state.grid, hexSize, range, state.elapsed, state.config.buildings, state.config.support.fortDefenceRadius);
     buildings.drawGhost(overlayState.ghost, hexSize);
     overlayState.fronts = state.fronts;
     overlay.draw(overlayState, hexSize);

@@ -20,6 +20,9 @@ const BAR_FILL = 0xffd35c;
 const BORDER_COLOR = 0xffd35c;
 const BORDER_ALPHA = 0.7;
 const BORDER_INSET = 0.92;
+const FORT_RING_COLOR = 0x9a9a9a;
+const FORT_RING_ALPHA = 0.55;
+const FORT_RING_FILL_ALPHA = 0.06;
 
 interface GlyphEntry {
   readonly object: Graphics;
@@ -37,6 +40,7 @@ export class BuildingsLayer {
   private readonly free: Graphics[] = [];
   private readonly ghost = new Graphics();
   private readonly progress = new Graphics();
+  private readonly rings = new Graphics();
   private ghostKey = '';
   private elapsed = 0;
 
@@ -46,6 +50,8 @@ export class BuildingsLayer {
     this.ghost.eventMode = 'none';
     this.ghost.alpha = GHOST_ALPHA;
     this.progress.eventMode = 'none';
+    this.rings.eventMode = 'none';
+    this.container.addChild(this.rings);
   }
 
   drawGhost(ghost: PlacementGhost | null, hexSize: number): void {
@@ -71,9 +77,11 @@ export class BuildingsLayer {
     range: HexRange | null,
     elapsed: number,
     specs: Readonly<Record<BuildingKind, { readonly buildSeconds: number }>>,
+    fortRadius: number,
   ): void {
     this.elapsed = elapsed;
     this.progress.clear();
+    this.rings.clear();
     if (!range) {
       this.releaseAll();
       return;
@@ -90,6 +98,9 @@ export class BuildingsLayer {
         const center = axialToPixel({ q, r }, hexSize);
         entry.object.position.set(center.x, center.y);
         this.drawBorder(center.x, center.y, hexSize);
+        if (building.kind === 'fort' && building.buildRemaining <= 0) {
+          this.drawFortRing(center.x, center.y, (fortRadius + 0.5) * hexSize);
+        }
         const demolishing = building.demolishAt !== null;
         const levelChanged = entry.level !== building.level;
         const kindChanged = entry.kind !== building.kind;
@@ -123,6 +134,12 @@ export class BuildingsLayer {
     const points = hexCorners({ x, y }, hexSize * BORDER_INSET).flatMap(corner => [corner.x, corner.y]);
     this.progress.poly(points);
     this.progress.stroke({ color: BORDER_COLOR, alpha: BORDER_ALPHA, width: Math.max(1, hexSize * 0.06) });
+  }
+
+  private drawFortRing(x: number, y: number, radius: number): void {
+    this.rings.rect(x - radius, y - radius, radius * 2, radius * 2);
+    this.rings.fill({ color: FORT_RING_COLOR, alpha: FORT_RING_FILL_ALPHA });
+    this.rings.stroke({ color: FORT_RING_COLOR, alpha: FORT_RING_ALPHA, width: 2 });
   }
 
   private drawProgress(x: number, y: number, hexSize: number, done: number): void {
