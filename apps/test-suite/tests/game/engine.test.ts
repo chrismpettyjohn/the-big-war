@@ -369,6 +369,29 @@ describe('engine buildings', () => {
   });
 });
 
+describe('engine field works', () => {
+  const home = { q: 3, r: 4 };
+  const enemy = { q: 4, r: 4 };
+
+  function standoff(state: GameState): ReturnType<typeof ensureFront> {
+    const front = ensureFront(state, home, enemy);
+    front.sideA.mode = 'defence';
+    front.sideA.troops = 50;
+    front.sideB.mode = 'attack';
+    front.sideB.troops = 50;
+    return front;
+  }
+
+  test('a trench on the home hex boosts defence', () => {
+    const dug = makeState();
+    place(dug, home, 'trench');
+    const front = standoff(dug);
+    step(dug, FIXED_DT);
+    const trench = front.sideA.modifiers.lines.find(line => line.label === 'Trench');
+    expect(trench?.defence).toBeCloseTo(1.35, 6);
+  });
+});
+
 describe('engine combat', () => {
   test('unopposed attacker captures the target hex', () => {
     const state = makeState();

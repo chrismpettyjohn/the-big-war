@@ -389,6 +389,21 @@ describe('PlaceBuilding', () => {
   });
 });
 
+describe('PlaceBuilding field works', () => {
+  test('trenches can be dug in a line next to other buildings at a flat cost', () => {
+    const state = makeState();
+    state.empires[0]!.gold = 1000;
+    const cost = buildingCost(state, 0, 'trench');
+    for (let r = 1; r <= 4; r++) {
+      const result = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r }, kind: 'trench' });
+      expect(result.ok).toBe(true);
+    }
+    expect(buildingCost(state, 0, 'trench')).toBe(cost);
+    const market = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 2, r: 2 }, kind: 'market' });
+    expect(market.ok).toBe(true);
+  });
+});
+
 describe('DemolishBuilding', () => {
   test('stamps demolishAt 10s ahead with no refund', () => {
     const state = makeState();

@@ -3,6 +3,7 @@ import type { BuildingKind } from '../../game/building/building.types';
 import {
   FaBuilding,
   FaCrosshairs,
+  FaLayerGroup,
   FaShieldAlt,
   FaShoppingBag,
   FaUsers,
@@ -22,6 +23,7 @@ const GLYPHS: Record<BuildingKind, (props: { class?: string }) => JSX.Element> =
   barracks: FaUsers,
   fort: FaShieldAlt,
   cannon: FaCrosshairs,
+  trench: FaLayerGroup,
 };
 
 export function buildingGlyph(kind: BuildingKind): JSX.Element {

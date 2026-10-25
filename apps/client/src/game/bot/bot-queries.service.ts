@@ -6,9 +6,9 @@ import { hasUnlock } from '../research/research.service';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
 import type { BuildingKind } from '../building/building.types';
 import type { Bot, CannonShot, HostileEdge } from './bot.types';
-import { hasNeighbourTerrain } from '../building/building.service';
 import { canAttack, getRelation } from '../diplomacy/diplomacy.service';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
+import { hasNeighbourBuilding, hasNeighbourTerrain } from '../building/building.service';
 import { distance, gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export function ownedCells(state: GameState, empireId: EmpireId): HexCell[] {
@@ -17,10 +17,7 @@ export function ownedCells(state: GameState, empireId: EmpireId): HexCell[] {
 
 export function isFreeSite(state: GameState, cell: HexCell): boolean {
   if (cell.building !== null) return false;
-  for (const n of neighbors({ q: cell.q, r: cell.r })) {
-    if (gridAt(state.grid, n)?.building) return false;
-  }
-  return true;
+  return !hasNeighbourBuilding(state, { q: cell.q, r: cell.r });
 }
 
 export function findSite(state: GameState, empireId: EmpireId, kind: BuildingKind): Axial | null {

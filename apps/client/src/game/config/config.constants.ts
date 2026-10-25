@@ -90,5 +90,6 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     barracks: { cost: 60, buildSeconds: 6, requiresResearch: null, requiresAdjacentTerrain: null },
     fort: { cost: 70, buildSeconds: 8, requiresResearch: null, requiresAdjacentTerrain: null },
     cannon: { cost: 120, buildSeconds: 10, requiresResearch: 'artillery', requiresAdjacentTerrain: null },
+    trench: { cost: 15, buildSeconds: 3, requiresResearch: null, requiresAdjacentTerrain: null },
   },
 };

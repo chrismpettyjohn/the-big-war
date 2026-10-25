@@ -2,13 +2,13 @@ import type { Terrain } from '../map/map.types';
 import type { GameState } from '../state/state.types';
 import type { EmpireId } from '../empire/empire.types';
 import { hasUnlock } from '../research/research.service';
-import { PRODUCTION_BUILDINGS } from './building.constants';
 import type { CommandError } from '../commands/commands.types';
 import { ENGINE_TUNING } from '../simulation/simulation.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
 import type { Building, BuildingId, BuildingKind, OwnedBuilding } from './building.types';
 import { area, gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import { FLAT_COST_BUILDINGS, FREE_STANDING_BUILDINGS, PRODUCTION_BUILDINGS } from './building.constants';
 
 export function createBuilding(state: GameState, kind: BuildingKind, level: number, buildRemaining: number): Building {
   return {
@@ -29,7 +29,7 @@ export function isProductionBuilding(kind: BuildingKind): boolean {
 
 export function buildingCost(state: GameState, empireId: EmpireId, kind: BuildingKind): number {
   const empire = state.empires[empireId];
-  const placed = countPlacedOfKind(state, empireId, kind);
+  const placed = FLAT_COST_BUILDINGS.has(kind) ? 0 : countPlacedOfKind(state, empireId, kind);
   const base = state.config.buildings[kind].cost * state.config.economy.buildingCostGrowth ** placed;
   return empire ? resolveModifier(base, empire.bonuses.buildCost) : base;
 }
@@ -101,9 +101,14 @@ export function hasNeighbourTerrain(state: GameState, hex: Axial, terrain: Terra
   return false;
 }
 
+export function isFreeStanding(kind: BuildingKind): boolean {
+  return FREE_STANDING_BUILDINGS.has(kind);
+}
+
 export function hasNeighbourBuilding(state: GameState, hex: Axial): boolean {
   for (const neighbour of neighbors(hex)) {
-    if (gridAt(state.grid, neighbour)?.building) return true;
+    const building = gridAt(state.grid, neighbour)?.building;
+    if (building && !isFreeStanding(building.kind)) return true;
   }
   return false;
 }
@@ -137,6 +142,6 @@ export function placementError(
     return 'invalid_target';
   }
 
-  if (hasNeighbourBuilding(state, hex)) return 'invalid_target';
+  if (!isFreeStanding(kind) && hasNeighbourBuilding(state, hex)) return 'invalid_target';
   return null;
 }
