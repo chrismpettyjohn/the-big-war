@@ -10,7 +10,7 @@ export function stepBuildings(state: GameState, dt: number): void {
   for (const cell of state.grid.cells) {
     const building = cell.building;
     if (!building || building.buildRemaining > 0) continue;
-    if (building.kind === 'cannon' && building.cooldown > 0) {
+    if ((building.kind === 'cannon' || building.kind === 'battery') && building.cooldown > 0) {
       building.cooldown = Math.max(0, building.cooldown - dt);
     }
   }

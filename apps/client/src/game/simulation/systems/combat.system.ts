@@ -108,7 +108,7 @@ function captureHex(state: GameState, front: Front, capturedBy: EmpireId): void 
   if (!cell || cell.owner !== defenderId) return;
   cell.owner = capturedBy;
 
-  if (cell.building && cell.building.kind === 'cannon') {
+  if (cell.building && (cell.building.kind === 'cannon' || cell.building.kind === 'battery')) {
     cell.building.cooldown = 0;
   }
   if (cell.building) cell.building.demolishAt = null;

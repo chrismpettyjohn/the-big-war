@@ -57,6 +57,14 @@ export interface CannonConfig {
   readonly destroysTerrain: readonly Terrain[];
 }
 
+export interface BatteryConfig {
+  readonly cooldown: number;
+
+  readonly range: number;
+
+  readonly damage: number;
+}
+
 export interface FrontConfig {
 
   readonly idleEndSeconds: number;
@@ -173,6 +181,7 @@ export interface GameConfig {
   readonly upgrades: UpgradeConfig;
   readonly demolish: DemolishConfig;
   readonly cannon: CannonConfig;
+  readonly battery: BatteryConfig;
   readonly front: FrontConfig;
   readonly combat: CombatConfig;
   readonly economy: EconomyConfig;

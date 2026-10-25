@@ -148,6 +148,18 @@ export const RESEARCH_NODES: readonly ResearchNode[] = [
     effects: [{ kind: 'unlock', key: 'building:machine_gun', label: 'Machine Gun' }],
   },
   {
+    id: 'heavy_artillery',
+    name: 'Heavy Artillery',
+    description: 'Unlocks artillery batteries that shell enemy lines on their own.',
+    kind: 'unlock',
+    branch: 'military',
+    cost: 100,
+    duration: 45,
+    requires: ['artillery'],
+    position: { col: 2, row: 1 },
+    effects: [{ kind: 'unlock', key: 'building:battery', label: 'Artillery Battery' }],
+  },
+  {
     id: 'reinforced_concrete',
     name: 'Reinforced Concrete',
     description: 'Unlocks bunkers that shrug off assaults and shelling.',

@@ -3,6 +3,7 @@ import type { GameState } from '../state/state.types';
 import { stepColumns } from './systems/columns.system';
 import { stepEconomy } from './systems/economy.system';
 import { stepResearch } from './systems/research.system';
+import { stepArtillery } from './systems/artillery.system';
 import { stepBuildings } from './systems/buildings.system';
 import { stepExpansion } from './systems/expansion.system';
 import { stepGathering } from './systems/gathering.system';
@@ -18,6 +19,7 @@ export const GAME_SYSTEMS: readonly System<GameState>[] = [
   stepResearch,
   stepRecruitment,
   stepBuildings,
+  stepArtillery,
   stepColumns,
   stepExpansion,
   stepCombat,

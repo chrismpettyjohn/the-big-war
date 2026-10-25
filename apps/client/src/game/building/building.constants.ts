@@ -12,6 +12,7 @@ export const BUILDING_KINDS: readonly BuildingKind[] = [
   'cannon',
   'trench',
   'machine_gun',
+  'battery',
   'bunker',
 ];
 

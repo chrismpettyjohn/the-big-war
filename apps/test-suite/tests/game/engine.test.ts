@@ -416,6 +416,36 @@ describe('engine field works', () => {
     const line = front.sideA.modifiers.lines.find(entry => entry.label === 'Bunker');
     expect(line?.defence).toBeCloseTo(1.75, 6);
   });
+
+  test('artillery batteries shell the enemy side automatically and reload', () => {
+    const state = makeState();
+    const battery = place(state, { q: 1, r: 4 }, 'battery');
+    const front = ensureFront(state, home, enemy);
+    front.sideA.mode = 'defence';
+    front.sideB.mode = 'defence';
+    front.sideA.troops = 20;
+    front.sideB.troops = 20;
+    step(state, FIXED_DT);
+    expect(front.sideB.troops).toBeCloseTo(20 - state.config.battery.damage, 6);
+    expect(front.sideA.troops).toBe(20);
+    expect(battery.cooldown).toBeGreaterThan(0);
+    const afterShot = front.sideB.troops;
+    run(state, 1);
+    expect(front.sideB.troops).toBe(afterShot);
+  });
+
+  test('bunkers halve shelling on the troops they cover', () => {
+    const state = makeState();
+    place(state, { q: 1, r: 4 }, 'battery');
+    place(state, { q: 5, r: 4 }, 'bunker');
+    const front = ensureFront(state, home, enemy);
+    front.sideA.mode = 'defence';
+    front.sideB.mode = 'defence';
+    front.sideA.troops = 20;
+    front.sideB.troops = 20;
+    step(state, FIXED_DT);
+    expect(front.sideB.troops).toBeCloseTo(20 - state.config.battery.damage * 0.5, 6);
+  });
 });
 
 describe('engine combat', () => {

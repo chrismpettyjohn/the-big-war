@@ -15,6 +15,7 @@ const BUILDING_LABELS: Readonly<Record<BuildingKind, string>> = {
   cannon: 'Cannon',
   trench: 'Trench',
   machine_gun: 'Machine Gun',
+  battery: 'Artillery Battery',
   bunker: 'Bunker',
 };
 
@@ -34,6 +35,7 @@ const BUILDING_DESCRIPTIONS: Readonly<Record<BuildingKind, string>> = {
   cannon: 'Fires at distant hexes to damage defenders and clear forests and mountains. Needs a reload between shots. Unlocked through research.',
   trench: 'Troops fighting from a trench hex defend 35% better. Cheap, and can be dug right next to other buildings to form unbroken lines.',
   machine_gun: 'Troops holding the line within 2 hexes hit attackers 50% harder and defend 20% better. No effect while attacking. Unlocked through research.',
+  battery: 'Shells the most crowded enemy front in range on its own, with no gold per shot. Unlocked through research.',
   bunker: 'Troops on this hex and the hexes beside it defend 75% better and take half damage from shelling. Unlocked through research.',
 };
 

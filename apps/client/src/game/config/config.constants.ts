@@ -23,6 +23,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     damage: 25,
     destroysTerrain: ['forest', 'mountain'],
   },
+  battery: { cooldown: 12, range: 4, damage: 6 },
   front: { idleEndSeconds: 5, idleTroops: 0, retreatPenalty: 0.25 },
   combat: {
     attackWeight: 1.0,
@@ -94,6 +95,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     cannon: { cost: 120, buildSeconds: 10, requiresResearch: 'artillery', requiresAdjacentTerrain: null },
     trench: { cost: 15, buildSeconds: 3, requiresResearch: null, requiresAdjacentTerrain: null },
     machine_gun: { cost: 60, buildSeconds: 6, requiresResearch: 'machine_guns', requiresAdjacentTerrain: null },
+    battery: { cost: 140, buildSeconds: 12, requiresResearch: 'heavy_artillery', requiresAdjacentTerrain: null },
     bunker: { cost: 110, buildSeconds: 10, requiresResearch: 'reinforced_concrete', requiresAdjacentTerrain: null },
   },
 };

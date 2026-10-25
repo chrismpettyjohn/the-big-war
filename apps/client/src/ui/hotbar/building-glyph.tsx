@@ -8,6 +8,7 @@ import {
   FaLayerGroup,
   FaShieldAlt,
   FaShoppingBag,
+  FaStar,
   FaUsers,
   FaVial,
   GiGem,
@@ -27,6 +28,7 @@ const GLYPHS: Record<BuildingKind, (props: { class?: string }) => JSX.Element> =
   cannon: FaCrosshairs,
   trench: FaLayerGroup,
   machine_gun: FaBolt,
+  battery: FaStar,
   bunker: FaBox,
 };
 
