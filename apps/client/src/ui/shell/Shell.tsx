@@ -23,6 +23,7 @@ import { DiplomacyPanel } from '../diplomacy-panel/DiplomacyPanel';
 import { createWorld, type WorldRenderer } from '../../render/world';
 import { Rail, RailAction } from '@the-big-war/frontend/ui/rail/Rail';
 import type { BuildingKind } from '../../game/building/building.types';
+import { pendingOffersTo } from '../../game/diplomacy/diplomacy.service';
 import { createAttractMode, type AttractMode } from '../../session/attract';
 import { createMatchRuntime, type MatchRuntime } from '../../session/runtime';
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
@@ -114,6 +115,11 @@ export const Shell = () => {
   };
   const closePanel = (id: Exclude<PanelId, null>) => () => setPanel(current => (current === id ? null : current));
 
+  const pendingOfferCount = () => {
+    store.version();
+    return pendingOffersTo(store.state, store.state.playerEmpire).length;
+  };
+
   const showingMatch = () => flow.screen() === 'match' || flow.screen() === 'end';
 
   return (
@@ -133,7 +139,7 @@ export const Shell = () => {
       </Show>
 
       <Show when={showingMatch()}>
-        <Hud />
+        <Hud controllers={runtime()?.controllers} />
 
         <Rail
           label="The Big War"
@@ -144,6 +150,7 @@ export const Shell = () => {
             label="Diplomacy"
             icon={<FaFlag />}
             active={panel() === 'diplomacy'}
+            badge={pendingOfferCount()}
             onClick={() => togglePanel('diplomacy')}
           />
           <RailAction
@@ -204,7 +211,6 @@ export const Shell = () => {
                 onInspect={() => setPanel(null)}
                 onArmy={() => setPanel('army')}
                 onBuild={() => setPanel('build')}
-                onDiplomacy={() => setPanel('diplomacy')}
               />
               <div class="hud-bottom-row">
                 <Hotbar

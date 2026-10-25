@@ -1,0 +1,69 @@
+.offer-prompts {
+  display: flex;
+  flex: 1 0 100%;
+  flex-direction: column;
+  gap: 4px;
+}
+.offer-prompts:empty {
+  display: none;
+}
+
+.offer-prompt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--street-border);
+  border-left: 3px solid var(--tint);
+  border-radius: var(--street-radius);
+  background: rgba(0, 0, 0, 0.85);
+  color: var(--street-text);
+  font-family: var(--street-font);
+  font-size: 12px;
+  text-shadow: var(--street-text-shadow);
+  animation: street-drawer-in 140ms ease-out;
+}
+
+.offer-prompt-flag {
+  flex: none;
+  font-size: 14px;
+}
+
+.offer-prompt-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.offer-prompt-timer {
+  flex: none;
+  color: var(--street-muted);
+  font-size: 10px;
+}
+
+.offer-prompt-action {
+  appearance: none;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  cursor: pointer;
+  font-family: var(--street-font);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: background 120ms ease, color 120ms ease;
+}
+.offer-prompt-action.is-good { background: var(--street-success-dim); color: var(--street-success); }
+.offer-prompt-action.is-bad { background: var(--street-danger-dim); color: var(--street-danger); }
+.offer-prompt-action.is-good:hover { background: var(--street-success); color: #fff; }
+.offer-prompt-action.is-bad:hover { background: var(--street-danger); color: #fff; }
+.offer-prompt-action:focus-visible {
+  outline: 2px solid var(--street-select);
+  outline-offset: 2px;
+}

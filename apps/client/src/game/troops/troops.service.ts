@@ -1,8 +1,8 @@
 import { ensureFront } from '../front/front.service';
 import type { GameState } from '../state/state.types';
-import type { BuildingKind } from '../building/building.types';
 import type { EmpireId } from '../empire/empire.types';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
+import type { BuildingKind } from '../building/building.types';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { distance, gridAt, gridInBounds, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 

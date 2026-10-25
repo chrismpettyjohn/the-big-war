@@ -86,6 +86,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
     nextBuildingId: 1,
     relations: {},
     offerCooldowns: {},
+    pendingOffers: [],
     agentAccumulator: 0,
   };
 
@@ -920,7 +921,7 @@ describe('engine staffing, diplomacy & bot integration', () => {
 
     expect(state.empires[1]!.alive).toBe(false);
     
-    expect(getRelation(state, 0, 1).status).toBe('neutral');
+    expect(getRelation(state, 0, 1).status).toBe('peace');
     
     expect(findFront(state, front.id)).toBeUndefined();
     expect(state.empires[0]!.soldiers).toBeCloseTo(soldiers0Before + 15, 0);

@@ -202,8 +202,7 @@ describe('config sanity', () => {
     expect(DEFAULT_GAME_CONFIG.cannon.cost).toBe(100);
     expect(DEFAULT_GAME_CONFIG.cannon.cooldown).toBe(30);
     expect(DEFAULT_GAME_CONFIG.demolish.durationSeconds).toBe(10);
-    expect(DEFAULT_GAME_CONFIG.diplomacy.peaceDurationSeconds).toBe(30);
-    expect(DEFAULT_GAME_CONFIG.diplomacy.pactDurationSeconds).toBe(90);
+    expect(DEFAULT_GAME_CONFIG.diplomacy.treatySeconds).toBe(60);
     expect(gridAt(createDevState().grid, { q: 0, r: 0 })).toBeDefined();
   });
 });

@@ -5,5 +5,4 @@ export interface MapMenuProps {
   readonly onInspect: () => void;
   readonly onArmy: () => void;
   readonly onBuild: () => void;
-  readonly onDiplomacy?: () => void;
 }

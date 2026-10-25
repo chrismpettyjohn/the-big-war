@@ -1,30 +1,17 @@
 import { disbandFront } from '../front/front.service';
 import type { GameState } from '../state/state.types';
 import type { EmpireId } from '../empire/empire.types';
-import type { AttackCheck, DiplomaticRelation, DiplomaticStatus, OfferCooldown, OfferKind } from './diplomacy.types';
+import type { AttackCheck, DiplomaticRelation, DiplomaticStatus, OfferCooldown, PendingOffer } from './diplomacy.types';
+
+const AT_PEACE: DiplomaticRelation = { status: 'peace', treatyUntil: null };
 
 export function relationKey(a: EmpireId, b: EmpireId): string {
   return a < b ? `${a}:${b}` : `${b}:${a}`;
 }
 
 export function getRelation(state: GameState, a: EmpireId, b: EmpireId): DiplomaticRelation {
-  if (a === b) {
-    return { status: 'neutral', expiresAt: null };
-  }
-  const key = relationKey(a, b);
-  const rel = state.relations?.[key];
-  if (!rel) {
-    return { status: 'neutral', expiresAt: null };
-  }
-  if (rel.expiresAt !== null && state.elapsed >= rel.expiresAt) {
-    return { status: 'neutral', expiresAt: null };
-  }
-  return rel;
-}
-
-export function getRawRelation(state: GameState, a: EmpireId, b: EmpireId): DiplomaticRelation | undefined {
-  if (a === b) return undefined;
-  return state.relations?.[relationKey(a, b)];
+  if (a === b) return AT_PEACE;
+  return state.relations?.[relationKey(a, b)] ?? AT_PEACE;
 }
 
 export function setRelation(
@@ -32,19 +19,22 @@ export function setRelation(
   a: EmpireId,
   b: EmpireId,
   status: DiplomaticStatus,
-  expiresAt: number | null = null,
+  treatyUntil: number | null = null,
 ): void {
   if (a === b) return;
   if (!state.relations) {
     state.relations = {};
   }
-  state.relations[relationKey(a, b)] = { status, expiresAt };
+  state.relations[relationKey(a, b)] = { status, treatyUntil };
+}
+
+export function treatySecondsLeft(state: GameState, a: EmpireId, b: EmpireId): number {
+  const { treatyUntil } = getRelation(state, a, b);
+  return treatyUntil === null ? 0 : Math.max(0, treatyUntil - state.elapsed);
 }
 
 export function isProtected(state: GameState, a: EmpireId, b: EmpireId): boolean {
-  if (a === b) return false;
-  const rel = getRelation(state, a, b);
-  return rel.status === 'peace' || rel.status === 'pact' || rel.status === 'alliance';
+  return a !== b && treatySecondsLeft(state, a, b) > 0;
 }
 
 export function canAttack(
@@ -55,23 +45,14 @@ export function canAttack(
   if (attacker === defender) {
     return { allowed: false, reason: 'invalid_target' };
   }
-  const rel = getRelation(state, attacker, defender);
-  if (rel.status === 'peace') {
+  if (isProtected(state, attacker, defender)) {
     return { allowed: false, reason: 'in_peace' };
-  }
-  if (rel.status === 'pact') {
-    return { allowed: false, reason: 'in_pact' };
-  }
-  if (rel.status === 'alliance') {
-    return { allowed: false, reason: 'in_alliance' };
   }
   return { allowed: true };
 }
 
 export function declareWar(state: GameState, attacker: EmpireId, defender: EmpireId): boolean {
-  if (attacker === defender) return false;
-  const status = getRelation(state, attacker, defender).status;
-  if (status === 'peace' || status === 'pact') return false;
+  if (attacker === defender || isProtected(state, attacker, defender)) return false;
   setRelation(state, attacker, defender, 'war', null);
   return true;
 }
@@ -85,26 +66,17 @@ export function endFrontsBetween(state: GameState, a: EmpireId, b: EmpireId): vo
     if (connectsAB) disbandFront(state, front);
   }
 }
+
 export function agreePeace(state: GameState, a: EmpireId, b: EmpireId): void {
   if (a === b) return;
-  const duration = state.config.diplomacy.peaceDurationSeconds;
-  setRelation(state, a, b, 'peace', state.elapsed + duration);
-  endFrontsBetween(state, a, b);
-}
-
-export function acceptPact(state: GameState, a: EmpireId, b: EmpireId): void {
-  if (a === b) return;
-  const duration = state.config.diplomacy.pactDurationSeconds;
-  setRelation(state, a, b, 'pact', state.elapsed + duration);
-}
-
-export function acceptAlliance(state: GameState, a: EmpireId, b: EmpireId): void {
-  if (a === b) return;
-  setRelation(state, a, b, 'alliance', null);
+  setRelation(state, a, b, 'peace', state.elapsed + state.config.diplomacy.treatySeconds);
   endFrontsBetween(state, a, b);
 }
 
 export function dissolveDiplomacy(state: GameState, empireId: EmpireId): void {
+  if (state.pendingOffers) {
+    state.pendingOffers = state.pendingOffers.filter(offer => offer.from !== empireId && offer.to !== empireId);
+  }
   if (!state.relations) return;
   for (const key of Object.keys(state.relations)) {
     const parts = key.split(':');
@@ -114,33 +86,64 @@ export function dissolveDiplomacy(state: GameState, empireId: EmpireId): void {
   }
 }
 
-export function offerKey(from: EmpireId, to: EmpireId, kind: OfferKind): string {
-  return `${from}>${to}:${kind}`;
+export function offerKey(from: EmpireId, to: EmpireId): string {
+  return `${from}>${to}`;
 }
 
-export function offerCooldown(state: GameState, from: EmpireId, to: EmpireId, kind: OfferKind): OfferCooldown | null {
-  const cooldown = state.offerCooldowns?.[offerKey(from, to, kind)];
+export function offerCooldown(state: GameState, from: EmpireId, to: EmpireId): OfferCooldown | null {
+  const cooldown = state.offerCooldowns?.[offerKey(from, to)];
   if (!cooldown || state.elapsed >= cooldown.until) return null;
   return cooldown;
 }
 
-export function rejectOffer(state: GameState, from: EmpireId, to: EmpireId, kind: OfferKind): void {
+export function rejectOffer(state: GameState, from: EmpireId, to: EmpireId): void {
   if (!state.offerCooldowns) state.offerCooldowns = {};
-  state.offerCooldowns[offerKey(from, to, kind)] = {
+  state.offerCooldowns[offerKey(from, to)] = {
     until: state.elapsed + state.config.diplomacy.rejectCooldownSeconds,
     rejectedBy: to,
   };
 }
 
-export function acceptsOffer(state: GameState, from: EmpireId, target: EmpireId, kind: OfferKind): boolean {
-  if (target === state.playerEmpire) return true;
+export function decidesOwnOffers(state: GameState, empireId: EmpireId): boolean {
+  return state.empires[empireId]?.isHuman === true;
+}
+
+export function pendingOffer(state: GameState, from: EmpireId, to: EmpireId): PendingOffer | null {
+  return state.pendingOffers?.find(offer => offer.from === from && offer.to === to) ?? null;
+}
+
+export function pendingOffersTo(state: GameState, to: EmpireId): PendingOffer[] {
+  return state.pendingOffers?.filter(offer => offer.to === to) ?? [];
+}
+
+export function proposeOffer(state: GameState, from: EmpireId, to: EmpireId): void {
+  if (!state.pendingOffers) state.pendingOffers = [];
+  state.pendingOffers.push({ from, to, expiresAt: state.elapsed + state.config.diplomacy.offerExpirySeconds });
+}
+
+export function takeOffer(state: GameState, from: EmpireId, to: EmpireId): PendingOffer | null {
+  const offer = pendingOffer(state, from, to);
+  if (offer) state.pendingOffers = state.pendingOffers.filter(other => other !== offer);
+  return offer;
+}
+
+export function expireOffers(state: GameState): void {
+  if (!state.pendingOffers?.length) return;
+  const live: PendingOffer[] = [];
+  for (const offer of state.pendingOffers) {
+    if (state.elapsed < offer.expiresAt) live.push(offer);
+    else rejectOffer(state, offer.from, offer.to);
+  }
+  state.pendingOffers = live;
+}
+
+export function acceptsOffer(state: GameState, from: EmpireId, target: EmpireId): boolean {
   const offerer = state.empires[from];
   const receiver = state.empires[target];
   if (!offerer || !receiver) return false;
   if (receiver.neutralState) return true;
   const offererStrength = offerer.soldiers + offerer.hexCount;
   const receiverStrength = receiver.soldiers + receiver.hexCount;
-  if (kind === 'peace') return receiverStrength <= offererStrength * 1.5;
-  if (kind === 'alliance') return receiverStrength <= offererStrength * 1.25;
-  return receiverStrength <= offererStrength * 2;
+  const leniency = 1.5 - state.config.bot.aggression;
+  return receiverStrength <= offererStrength * 1.5 * leniency;
 }

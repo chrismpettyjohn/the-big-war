@@ -5,7 +5,7 @@ import { refreshHexCounts } from '../../empire/empire.service';
 import { removeDemolishedBuildings } from './buildings.system';
 import { assignFrontClusters } from '../combat/front-clusters.service';
 import { gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
-import { dissolveDiplomacy, endFrontsBetween } from '../../diplomacy/diplomacy.service';
+import { dissolveDiplomacy, endFrontsBetween, expireOffers } from '../../diplomacy/diplomacy.service';
 
 export function stepHousekeeping(state: GameState): void {
   assignFrontClusters(state);
@@ -13,6 +13,7 @@ export function stepHousekeeping(state: GameState): void {
   removeDemolishedBuildings(state);
   refreshHexCounts(state);
   eliminateDeadEmpires(state);
+  expireOffers(state);
 }
 
 function endIdleAndBrokenFronts(state: GameState): void {

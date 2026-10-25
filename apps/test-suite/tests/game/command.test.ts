@@ -81,6 +81,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
     nextBuildingId: 1,
     relations: {},
     offerCooldowns: {},
+    pendingOffers: [],
     agentAccumulator: 0,
   };
   const half = grid.width / 2;

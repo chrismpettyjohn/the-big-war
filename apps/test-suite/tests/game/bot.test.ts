@@ -18,7 +18,7 @@ import { emptyModifierTotals } from '@the-big-war/client/game/modifier/modifier.
 import { gridAt, makeGrid } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { BOT_PERSONALITIES, BOT_TUNING } from '@the-big-war/client/game/bot/bot.constants';
 import { recomputeEmpireBonuses } from '@the-big-war/client/game/research/research.service';
-import { declareWar, getRelation } from '@the-big-war/client/game/diplomacy/diplomacy.service';
+import { declareWar, getRelation, pendingOffer } from '@the-big-war/client/game/diplomacy/diplomacy.service';
 
 const FACTION_IDS = ['ironclad', 'league', 'verdant', 'academy'];
 
@@ -83,6 +83,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
     nextBuildingId: 1,
     relations: {},
     offerCooldowns: {},
+    pendingOffers: [],
     agentAccumulator: 0,
   };
   const strip = Math.floor(grid.width / empires.length);
@@ -165,7 +166,7 @@ describe('botTick discipline', () => {
         if (command.type === 'SendTroops' || command.type === 'SetFrontMode' ||
             command.type === 'PlaceBuilding' || command.type === 'FireCannon' ||
             command.type === 'StartResearch' || command.type === 'OfferPeace' ||
-            command.type === 'OfferPact') {
+            command.type === 'DeclareWar') {
           expect(command.empire).toBe(1);
         } else {
           throw new Error(`bot emitted an unexpected command: ${command.type}`);
@@ -267,6 +268,7 @@ describe('botTick behaviour', () => {
     const empire = state.empires[1]!;
     empire.soldiers = 400; 
     empire.reserveCap = 500;
+    declareWar(state, 1, 2);
     const bot = createBot({ empire: 1, seed: 7, personality: { aggression: 1, economy: 0 } });
     const commands = botTick(bot, state, 0.5);
     const send = commands.find(command => command.type === 'SendTroops');
@@ -276,6 +278,16 @@ describe('botTick behaviour', () => {
       expect(gridAt(state.grid, send.hex)!.owner).toBe(1);
       expect(gridAt(state.grid, send.target)!.owner).not.toBe(1);
     }
+  });
+
+  test('a bot never marches into an empire it is not at war with', () => {
+    const state = makeState();
+    const empire = state.empires[1]!;
+    empire.soldiers = 400;
+    empire.reserveCap = 500;
+    const bot = createBot({ empire: 1, seed: 7, personality: { aggression: 0.3, economy: 0.7 } });
+    const commands = botTick(bot, state, 0.5);
+    expect(commands.some(command => command.type === 'SendTroops')).toBe(false);
   });
 
   test('a turtle bot with a reserve at the floor sends nothing', () => {
@@ -377,20 +389,36 @@ describe('bot diplomacy & naval actions', () => {
       expect(peaceCmd.target).toBe(0);
       const res = dispatch(state, peaceCmd);
       expect(res.ok).toBe(true);
+      expect(getRelation(state, 1, 0).status).toBe('war');
+      expect(pendingOffer(state, 1, 0)).not.toBeNull();
+      expect(botTick(bot, state, 0.5).some(c => c.type === 'OfferPeace')).toBe(false);
+
+      expect(dispatch(state, { type: 'RespondOffer', empire: 0, from: 1, accept: true }).ok).toBe(true);
       expect(getRelation(state, 1, 0).status).toBe('peace');
     }
   });
 
-  test('bot evaluates diplomacy and offers pact when neutral with low pressure', () => {
-    const state = makeState();
-    const bot = createBot({ empire: 1, seed: 7, personality: { aggression: 0.4, economy: 0.6 } });
-    const commands = botTick(bot, state, 0.5);
-    const pactCmd = commands.find(c => c.type === 'OfferPact');
-    expect(pactCmd).toBeDefined();
-    if (pactCmd && pactCmd.type === 'OfferPact') {
-      const res = dispatch(state, pactCmd);
-      expect(res.ok).toBe(true);
-      expect(getRelation(state, 1, pactCmd.target).status).toBe('pact');
+  test('a bot on easy difficulty never declares war on its own', () => {
+    const state = makeState(tinyConfig({ bot: { ...DEFAULT_GAME_CONFIG.bot, aggression: 0.2 } }));
+    state.empires[1]!.soldiers = 400;
+    const bot = createBot({ empire: 1, seed: 7, personality: { aggression: 0.6, economy: 0.2 } });
+    for (let tick = 0; tick < 500; tick++) {
+      expect(botTick(bot, state, 0.5).some(c => c.type === 'DeclareWar')).toBe(false);
+    }
+  });
+
+  test('a bot on hard difficulty declares war on a weaker neighbour', () => {
+    const state = makeState(tinyConfig({ bot: { ...DEFAULT_GAME_CONFIG.bot, aggression: 0.8 } }));
+    state.empires[1]!.soldiers = 400;
+    const bot = createBot({ empire: 1, seed: 7, personality: { aggression: 0.6, economy: 0.2 } });
+    let war = null;
+    for (let tick = 0; tick < 2000 && !war; tick++) {
+      war = botTick(bot, state, 0.5).find(c => c.type === 'DeclareWar') ?? null;
+    }
+    expect(war).not.toBeNull();
+    if (war && war.type === 'DeclareWar') {
+      expect(dispatch(state, war).ok).toBe(true);
+      expect(getRelation(state, 1, war.target).status).toBe('war');
     }
   });
 });

@@ -1,5 +1,7 @@
 import './Hud.css';
+import type { HudProps } from './Hud.types';
 import { gameStore } from '../../game/store/store.service';
+import { OfferPrompts } from '../offer-prompts/OfferPrompts';
 import type { GameSpeed } from '../../game/config/config.types';
 import { createEffect, createSignal, For, onCleanup } from 'solid-js';
 import { FaAtom, FaUsers, GiCoin, GiCrossedSwords } from '@the-big-war/frontend/ui/icons/icons';
@@ -10,7 +12,9 @@ const rate = (value: number): string => `${value >= 0 ? '+' : ''}${Number(value.
 
 const rateClass = (value: number): string => `hud-rate kit-num ${value <= 0 ? 'is-danger' : 'is-success'}`;
 
-export const Hud = () => {
+export type { HudProps };
+
+export const Hud = (props: HudProps) => {
   const store = gameStore();
   const [speedOpen, setSpeedOpen] = createSignal(false);
   let speedDrop: HTMLDivElement | undefined;
@@ -150,6 +154,7 @@ export const Hud = () => {
           </div>
         </div>
       </div>
+      <OfferPrompts controllers={props.controllers} />
     </header>
   );
 };

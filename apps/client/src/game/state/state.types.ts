@@ -5,8 +5,8 @@ import type { Empire, EmpireId } from '../empire/empire.types';
 import type { Rng } from '@the-big-war/game-engine/rng/rng.types';
 import type { GameConfig, GameSpeed } from '../config/config.types';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
-import type { DiplomaticRelation, OfferCooldown } from '../diplomacy/diplomacy.types';
 import type { SimulationState } from '@the-big-war/game-engine/simulation/simulation.types';
+import type { DiplomaticRelation, OfferCooldown, PendingOffer } from '../diplomacy/diplomacy.types';
 
 export type EndReason = 'elimination';
 
@@ -63,6 +63,7 @@ export interface GameState extends SimulationState {
 
   relations: Record<string, DiplomaticRelation>;
   offerCooldowns: Record<string, OfferCooldown>;
+  pendingOffers: PendingOffer[];
 }
 
 export type CreateState = (config: GameConfig) => GameState;

@@ -10,9 +10,8 @@ import { handleDemolishBuilding, handlePlaceBuilding } from './handlers/building
 import { handleSelectFaction, handleSetGameSpeed, handleSetPaused } from './handlers/match.handler';
 import {
   handleDeclareWar,
-  handleOfferAlliance,
-  handleOfferPact,
   handleOfferPeace,
+  handleRespondOffer,
 } from './handlers/diplomacy.handler';
 
 export const dispatch = createDispatcher<GameState, Command, CommandResult>({
@@ -27,9 +26,8 @@ export const dispatch = createDispatcher<GameState, Command, CommandResult>({
   FireCannon: handleFireCannon,
   StartResearch: handleStartResearch,
   OfferPeace: handleOfferPeace,
-  OfferPact: handleOfferPact,
-  OfferAlliance: handleOfferAlliance,
   DeclareWar: handleDeclareWar,
+  RespondOffer: handleRespondOffer,
 });
 
 export function dispatchAll(state: GameState, commands: readonly Command[]): CommandResult[] {

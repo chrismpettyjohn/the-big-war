@@ -152,14 +152,16 @@ export interface RecruitConfig {
 export interface BotConfig {
 
   readonly tickSeconds: number;
+
+  readonly aggression: number;
 }
 
 export interface DiplomacyConfig {
 
-  readonly peaceDurationSeconds: number;
-
-  readonly pactDurationSeconds: number;
+  readonly treatySeconds: number;
   readonly rejectCooldownSeconds: number;
+
+  readonly offerExpirySeconds: number;
 }
 
 export interface GameConfig {

@@ -63,13 +63,12 @@ const ERROR_LABELS: Readonly<Record<CommandError, string>> = {
   no_empire: 'No empire',
   research_unavailable: 'Research unavailable',
   in_peace: 'Under peace treaty',
-  in_pact: 'Under non-aggression pact',
-  in_alliance: 'Allied empire',
   already_at_war: 'Already at war',
-  cannot_declare_war_under_protection: 'Protected by agreement',
   invalid_diplomacy: 'Invalid diplomatic action',
   offer_rejected: 'Offer rejected',
   offer_cooldown: 'Offer recently rejected',
+  offer_pending: 'Offer awaiting a reply',
+  offer_missing: 'Offer no longer stands',
 };
 
 export function errorLabel(reason: CommandError): string {

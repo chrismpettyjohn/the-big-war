@@ -8,7 +8,7 @@ import type { HexCell, HexGrid } from '@the-big-war/client/game/map/map.types';
 import { makeGrid } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { DEFAULT_GAME_CONFIG } from '@the-big-war/client/game/config/config.constants';
 import { emptyModifierTotals } from '@the-big-war/client/game/modifier/modifier.service';
-import { agreePeace, declareWar, getRelation, isProtected, offerCooldown, relationKey } from '@the-big-war/client/game/diplomacy/diplomacy.service';
+import { acceptsOffer, agreePeace, declareWar, expireOffers, getRelation, isProtected, offerCooldown, pendingOffer, relationKey } from '@the-big-war/client/game/diplomacy/diplomacy.service';
 
 function createTestState(configOverrides: Partial<GameConfig> = {}): GameState {
   const config: GameConfig = {
@@ -76,6 +76,7 @@ function createTestState(configOverrides: Partial<GameConfig> = {}): GameState {
     nextBuildingId: 1,
     relations: {},
     offerCooldowns: {},
+    pendingOffers: [],
     agentAccumulator: 0,
   };
 }
@@ -88,10 +89,10 @@ describe('diplomacy contracts', () => {
     expect(relationKey(5, 2)).toBe('2:5');
   });
 
-  test('all nations start neutral by default', () => {
+  test('all nations start at peace with no treaty', () => {
     const state = createTestState();
-    expect(getRelation(state, 0, 1).status).toBe('neutral');
-    expect(getRelation(state, 1, 0).status).toBe('neutral');
+    expect(getRelation(state, 0, 1).status).toBe('peace');
+    expect(getRelation(state, 1, 0).status).toBe('peace');
     expect(isProtected(state, 0, 1)).toBe(false);
   });
 
@@ -121,7 +122,7 @@ describe('diplomacy contracts', () => {
     if (!result.ok) expect(result.reason).toBe('invalid_diplomacy');
   });
 
-  test('offer peace during war dissolves fronts and grants 30s protection', () => {
+  test('offer peace during war dissolves fronts and starts a treaty', () => {
     const state = createTestState();
     
     dispatch(state, {
@@ -145,7 +146,7 @@ describe('diplomacy contracts', () => {
 
     const rel = getRelation(state, 0, 1);
     expect(rel.status).toBe('peace');
-    expect(rel.expiresAt).toBe(state.elapsed + 30);
+    expect(rel.treatyUntil).toBe(state.elapsed + state.config.diplomacy.treatySeconds);
 
     expect(state.fronts.length).toBe(0);
     expect(state.empires[0]!.soldiers).toBe(100);
@@ -162,59 +163,14 @@ describe('diplomacy contracts', () => {
     if (!attackBlocked.ok) expect(attackBlocked.reason).toBe('in_peace');
   });
 
-  test('peace protection expires back to neutral after duration', () => {
+  test('the treaty lapses but peace holds', () => {
     const state = createTestState();
     agreePeace(state, 0, 1);
+    expect(isProtected(state, 0, 1)).toBe(true);
+
+    state.elapsed = state.config.diplomacy.treatySeconds + 1;
     expect(getRelation(state, 0, 1).status).toBe('peace');
-
-    state.elapsed = 31;
-    expect(getRelation(state, 0, 1).status).toBe('neutral');
     expect(isProtected(state, 0, 1)).toBe(false);
-  });
-
-  test('pact offers 90s protection and blocks attacks', () => {
-    const state = createTestState();
-    const pactResult = dispatch(state, {
-      type: 'OfferPact',
-      empire: 0,
-      target: 1,
-    });
-    expect(pactResult.ok).toBe(true);
-
-    const rel = getRelation(state, 0, 1);
-    expect(rel.status).toBe('pact');
-    expect(rel.expiresAt).toBe(state.elapsed + 90);
-
-    const attackBlocked = dispatch(state, {
-      type: 'SendTroops',
-      empire: 0,
-      hex: { q: 3, r: 0 },
-      target: { q: 4, r: 0 },
-      percent: 50,
-      intent: 'attack',
-    });
-    expect(attackBlocked.ok).toBe(false);
-    if (!attackBlocked.ok) expect(attackBlocked.reason).toBe('in_pact');
-
-    const repeatPact = dispatch(state, {
-      type: 'OfferPact',
-      empire: 0,
-      target: 1,
-    });
-    expect(repeatPact.ok).toBe(false);
-    if (!repeatPact.ok) expect(repeatPact.reason).toBe('in_pact');
-  });
-
-  test('cannot offer pact while at war', () => {
-    const state = createTestState();
-    declareWar(state, 0, 1);
-    const result = dispatch(state, {
-      type: 'OfferPact',
-      empire: 0,
-      target: 1,
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toBe('already_at_war');
   });
 
   test('a much stronger bot rejects peace and the offer goes on cooldown', () => {
@@ -226,23 +182,86 @@ describe('diplomacy contracts', () => {
     expect(first.ok).toBe(false);
     if (!first.ok) expect(first.reason).toBe('offer_rejected');
     expect(getRelation(state, 0, 1).status).toBe('war');
-    expect(offerCooldown(state, 0, 1, 'peace')?.rejectedBy).toBe(1);
+    expect(offerCooldown(state, 0, 1)?.rejectedBy).toBe(1);
 
     const retry = dispatch(state, { type: 'OfferPeace', empire: 0, target: 1 });
     if (!retry.ok) expect(retry.reason).toBe('offer_cooldown');
 
     state.elapsed += state.config.diplomacy.rejectCooldownSeconds;
-    expect(offerCooldown(state, 0, 1, 'peace')).toBeNull();
+    expect(offerCooldown(state, 0, 1)).toBeNull();
   });
 
-  test('declare war works from neutral but not under a pact', () => {
+  test('declare war works at peace but not during a treaty', () => {
     const state = createTestState();
     expect(dispatch(state, { type: 'DeclareWar', empire: 0, target: 1 }).ok).toBe(true);
     expect(getRelation(state, 0, 1).status).toBe('war');
 
-    expect(dispatch(state, { type: 'OfferPact', empire: 0, target: 2 }).ok).toBe(true);
+    const repeat = dispatch(state, { type: 'DeclareWar', empire: 0, target: 1 });
+    if (!repeat.ok) expect(repeat.reason).toBe('already_at_war');
+
+    agreePeace(state, 0, 2);
     const blocked = dispatch(state, { type: 'DeclareWar', empire: 0, target: 2 });
     expect(blocked.ok).toBe(false);
-    if (!blocked.ok) expect(blocked.reason).toBe('cannot_declare_war_under_protection');
+    if (!blocked.ok) expect(blocked.reason).toBe('in_peace');
+  });
+
+  test('peace offers to the player wait for the player to accept', () => {
+    const state = createTestState();
+    declareWar(state, 0, 1);
+    expect(dispatch(state, { type: 'OfferPeace', empire: 1, target: 0 }).ok).toBe(true);
+    expect(getRelation(state, 0, 1).status).toBe('war');
+    expect(pendingOffer(state, 1, 0)).not.toBeNull();
+
+    const repeat = dispatch(state, { type: 'OfferPeace', empire: 1, target: 0 });
+    if (!repeat.ok) expect(repeat.reason).toBe('offer_pending');
+
+    expect(dispatch(state, { type: 'RespondOffer', empire: 0, from: 1, accept: true }).ok).toBe(true);
+    expect(getRelation(state, 0, 1).status).toBe('peace');
+    expect(isProtected(state, 0, 1)).toBe(true);
+    expect(pendingOffer(state, 1, 0)).toBeNull();
+  });
+
+  test('declining an offer puts the offerer on cooldown', () => {
+    const state = createTestState();
+    declareWar(state, 0, 1);
+    dispatch(state, { type: 'OfferPeace', empire: 1, target: 0 });
+    expect(dispatch(state, { type: 'RespondOffer', empire: 0, from: 1, accept: false }).ok).toBe(true);
+    expect(getRelation(state, 0, 1).status).toBe('war');
+    expect(offerCooldown(state, 1, 0)?.rejectedBy).toBe(0);
+
+    const stale = dispatch(state, { type: 'RespondOffer', empire: 0, from: 1, accept: true });
+    if (!stale.ok) expect(stale.reason).toBe('offer_missing');
+  });
+
+  test('unanswered offers expire as rejections', () => {
+    const state = createTestState();
+    declareWar(state, 0, 1);
+    dispatch(state, { type: 'OfferPeace', empire: 1, target: 0 });
+    state.elapsed += state.config.diplomacy.offerExpirySeconds;
+    expireOffers(state);
+    expect(pendingOffer(state, 1, 0)).toBeNull();
+    expect(offerCooldown(state, 1, 0)).not.toBeNull();
+    expect(getRelation(state, 0, 1).status).toBe('war');
+  });
+
+  test('a stale offer cannot be accepted once the war is over', () => {
+    const state = createTestState();
+    declareWar(state, 0, 1);
+    dispatch(state, { type: 'OfferPeace', empire: 1, target: 0 });
+    agreePeace(state, 0, 1);
+    const result = dispatch(state, { type: 'RespondOffer', empire: 0, from: 1, accept: true });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('invalid_diplomacy');
+  });
+
+  test('aggressive bots are harder to make peace with', () => {
+    const calm = createTestState({ bot: { ...DEFAULT_GAME_CONFIG.bot, aggression: 0.2 } });
+    const angry = createTestState({ bot: { ...DEFAULT_GAME_CONFIG.bot, aggression: 0.8 } });
+    for (const state of [calm, angry]) {
+      state.empires[0]!.soldiers = 80;
+      state.empires[1]!.soldiers = 100;
+    }
+    expect(acceptsOffer(calm, 0, 1)).toBe(true);
+    expect(acceptsOffer(angry, 0, 1)).toBe(false);
   });
 });

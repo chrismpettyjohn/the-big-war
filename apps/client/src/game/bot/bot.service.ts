@@ -26,7 +26,6 @@ export function botTick(bot: Bot, state: GameState, _dt: number): Command[] {
 
   const diplomacyCommand = evaluateDiplomacy(bot, state, empire);
   if (diplomacyCommand) commands.push(diplomacyCommand);
-  const pactTarget = diplomacyCommand?.type === 'OfferPact' ? diplomacyCommand.target : -1;
 
   const research = researchCommand(bot, empire);
   if (research) commands.push(research);
@@ -36,7 +35,7 @@ export function botTick(bot: Bot, state: GameState, _dt: number): Command[] {
   const cannon = cannonCommand(bot, state, empire);
   if (cannon) commands.push(cannon);
 
-  const troops = troopCommand(bot, state, empire, pactTarget);
+  const troops = troopCommand(bot, state, empire);
   if (troops) commands.push(troops);
 
   commands.push(...frontModeCommands(bot, state));

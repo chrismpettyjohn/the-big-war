@@ -24,6 +24,7 @@ export function createBaseState(config: GameConfig, grid: HexGrid, empires: Empi
     nextBuildingId: 1,
     relations: {},
     offerCooldowns: {},
+    pendingOffers: [],
     agentAccumulator: 0,
   };
 }

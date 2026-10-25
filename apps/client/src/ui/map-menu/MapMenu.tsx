@@ -6,7 +6,7 @@ import { terrainLabel } from '../text';
 import type { MapMenuProps } from './MapMenu.types';
 import type { Front } from '../../game/front/front.types';
 import { gameStore } from '../../game/store/store.service';
-import { getRelation } from '../../game/diplomacy/diplomacy.service';
+import { getRelation, treatySecondsLeft } from '../../game/diplomacy/diplomacy.service';
 import { gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { ContextMenu, type MenuEntry } from '@the-big-war/frontend/ui/context-menu/ContextMenu';
 
@@ -91,55 +91,18 @@ export const MapMenu = (props: MapMenuProps) => {
         });
       }
 
-      const rel = getRelation(store.state, player(), current.owner);
-      if (rel.status === 'war') {
-        list.push({
-          type: 'item',
-          label: 'Offer Peace',
-          note: '30s Protection',
-          onClick: () => {
-            const result = store.dispatch({
-              type: 'OfferPeace',
-              empire: player(),
-              target: current.owner,
-            });
-            if (!result.ok) props.controllers.notice(result.reason);
-          },
-        });
-      } else if (rel.status === 'neutral') {
-        list.push({
-          type: 'item',
-          label: 'Offer Pact',
-          note: '90s Non-Aggression',
-          onClick: () => {
-            const result = store.dispatch({
-              type: 'OfferPact',
-              empire: player(),
-              target: current.owner,
-            });
-            if (!result.ok) props.controllers.notice(result.reason);
-          },
-        });
-      } else {
-        const remaining = Math.max(
-          0,
-          Math.ceil((rel.expiresAt ?? store.state.elapsed) - store.state.elapsed),
-        );
-        list.push({
-          type: 'item',
-          label: 'Diplomacy',
-          note: `Protected for ${remaining}s`,
-          onClick: () => props.onDiplomacy?.(),
-        });
-      }
-
-      if (props.onDiplomacy && rel.status !== 'peace' && rel.status !== 'pact' && rel.status !== 'alliance') {
-        list.push({
-          type: 'item',
-          label: 'Diplomacy',
-          onClick: () => props.onDiplomacy!(),
-        });
-      }
+      const atWar = getRelation(store.state, player(), current.owner).status === 'war';
+      const treaty = Math.ceil(treatySecondsLeft(store.state, player(), current.owner));
+      list.push({
+        type: 'item',
+        label: atWar ? 'Make Peace' : 'Declare War',
+        note: treaty > 0 ? `Treaty ${treaty}s` : undefined,
+        disabled: treaty > 0,
+        onClick: () => {
+          const result = store.dispatch({ type: atWar ? 'OfferPeace' : 'DeclareWar', empire: player(), target: current.owner });
+          if (!result.ok) props.controllers.notice(result.reason);
+        },
+      });
 
       list.push({ type: 'divider' });
     }

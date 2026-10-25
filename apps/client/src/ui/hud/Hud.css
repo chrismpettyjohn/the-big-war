@@ -82,6 +82,7 @@
 .street-tray .hud-speed-menu .street-action {
     justify-content: flex-start;
     width: 100%;
+    height: 26px;
     padding: 0 10px;
     font-size: 13px;
 }

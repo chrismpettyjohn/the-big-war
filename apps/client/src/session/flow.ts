@@ -31,6 +31,8 @@ export const DIFFICULTY_ORDER: readonly Difficulty[] = ['easy', 'normal', 'hard'
 
 const BOT_TICK_SCALE: Readonly<Record<Difficulty, number>> = { easy: 2, normal: 1, hard: 0.5 };
 
+const BOT_AGGRESSION: Readonly<Record<Difficulty, number>> = { easy: 0.2, normal: 0.5, hard: 0.8 };
+
 export const MIN_EMPIRES = 2;
 export const MAX_EMPIRES = 6;
 
@@ -69,7 +71,11 @@ export function configFromSettings(settings: MatchSettings, playerName = ''): Ga
       humanName: playerName.trim() || undefined,
       neutralStates: NEUTRAL_STATE_COUNTS[settings.neutralStates ?? 'none'],
     },
-    bot: { ...DEFAULT_GAME_CONFIG.bot, tickSeconds: DEFAULT_GAME_CONFIG.bot.tickSeconds * BOT_TICK_SCALE[settings.difficulty] },
+    bot: {
+      ...DEFAULT_GAME_CONFIG.bot,
+      tickSeconds: DEFAULT_GAME_CONFIG.bot.tickSeconds * BOT_TICK_SCALE[settings.difficulty],
+      aggression: BOT_AGGRESSION[settings.difficulty],
+    },
   };
 }
 

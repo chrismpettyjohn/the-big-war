@@ -1,0 +1,50 @@
+import './OfferPrompts.css';
+import { For } from 'solid-js';
+import { factionIcon } from '../text';
+import { gameStore } from '../../game/store/store.service';
+import type { OfferPromptsProps } from './OfferPrompts.types';
+import { FaCheck, FaTimes } from '@the-big-war/frontend/ui/icons/icons';
+import { pendingOffersTo } from '../../game/diplomacy/diplomacy.service';
+import type { PendingOffer } from '../../game/diplomacy/diplomacy.types';
+
+export type { OfferPromptsProps };
+
+export const OfferPrompts = (props: OfferPromptsProps) => {
+  const store = gameStore();
+  const live = () => {
+    store.version();
+    return store.state;
+  };
+  const offers = () => pendingOffersTo(live(), live().playerEmpire);
+
+  const respond = (offer: PendingOffer, accept: boolean) => {
+    const result = store.dispatch({ type: 'RespondOffer', empire: offer.to, from: offer.from, accept });
+    if (!result.ok) props.controllers?.notice(result.reason);
+  };
+
+  return (
+    <div class="offer-prompts" aria-live="polite">
+      <For each={offers()}>
+        {offer => {
+          const empire = () => live().empires[offer.from];
+          const secondsLeft = () => Math.max(0, Math.ceil(offer.expiresAt - live().elapsed));
+          return (
+            <div class="offer-prompt" style={{ '--tint': `var(--faction-${offer.from})` }}>
+              <span class="offer-prompt-flag">{factionIcon(empire()?.factionId ?? '')}</span>
+              <span class="offer-prompt-text">
+                <strong>{empire()?.name}</strong> offers peace
+              </span>
+              <span class="offer-prompt-timer kit-num">{secondsLeft()}s</span>
+              <button type="button" class="offer-prompt-action is-good" onClick={() => respond(offer, true)}>
+                <FaCheck /> Accept
+              </button>
+              <button type="button" class="offer-prompt-action is-bad" onClick={() => respond(offer, false)}>
+                <FaTimes /> Decline
+              </button>
+            </div>
+          );
+        }}
+      </For>
+    </div>
+  );
+};

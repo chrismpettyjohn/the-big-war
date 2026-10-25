@@ -15,4 +15,8 @@ export const BOT_TUNING = {
   siteScanLimit: 60,
   attackSuperiority: 1.1,
   defenceThreshold: 0.8,
+  warAggressionFloor: 0.4,
+  warChancePerSecond: 0.06,
+  warSuperiorityBase: 1.6,
+  multiFrontAggression: 0.85,
 };

@@ -1,11 +1,11 @@
-import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import type { GameState } from '../../state/state.types';
 import { NEUTRAL_OWNER } from '../../empire/empire.constants';
 import { canAttack, declareWar } from '../../diplomacy/diplomacy.service';
 import type { CommandResult, SendTroopsCommand } from '../commands.types';
 import { ok, fail } from '@the-big-war/game-engine/commands/command.service';
-import { joinFront, launchExpedition, marchPath, stagingHex } from '../../troops/troops.service';
+import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import { joinFront, launchExpedition, marchPath, stagingHex } from '../../troops/troops.service';
 
 export function handleSendTroops(state: GameState, command: SendTroopsCommand): CommandResult {
   const empire = state.empires[command.empire];

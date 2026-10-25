@@ -1,37 +1,25 @@
 import './DeploySlider.css';
 import type { DeploySliderProps } from './DeploySlider.types';
-import { createSignal, onCleanup, onMount, Show } from 'solid-js';
-import { FaCaretDown, FaCaretUp, FaUndo } from '@the-big-war/frontend/ui/icons/icons';
+import { FaUndo, GiCrossedSwords } from '@the-big-war/frontend/ui/icons/icons';
+import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 
 export type { DeploySliderProps };
 
-const HOLD_DELAY_MS = 300;
-const HOLD_REPEAT_MS = 50;
+const PERCENTS = [25, 50, 75, 100] as const;
 
 export const DeploySlider = (props: DeploySliderProps) => {
   const percent = () => props.controllers.troopPercent();
-  let delay: ReturnType<typeof setTimeout> | undefined;
-  let repeat: ReturnType<typeof setInterval> | undefined;
+  const [open, setOpen] = createSignal(false);
+  let drop: HTMLDivElement | undefined;
 
-  const step = (dir: 1 | -1) =>
-    props.controllers.setTroopPercent(Math.min(100, Math.max(1, percent() + dir)));
-
-  const stop = () => {
-    clearTimeout(delay);
-    clearInterval(repeat);
-    delay = repeat = undefined;
-  };
-
-  const start = (dir: 1 | -1, event: PointerEvent) => {
-    event.preventDefault();
-    stop();
-    step(dir);
-    delay = setTimeout(() => {
-      repeat = setInterval(() => step(dir), HOLD_REPEAT_MS);
-    }, HOLD_DELAY_MS);
-  };
-
-  onCleanup(stop);
+  createEffect(() => {
+    if (!open()) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (drop && !drop.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutside);
+    onCleanup(() => document.removeEventListener('pointerdown', closeOnOutside));
+  });
 
   const [height, setHeight] = createSignal<number | null>(null);
   onMount(() => {
@@ -41,23 +29,6 @@ export const DeploySlider = (props: DeploySliderProps) => {
     observer.observe(hotbar);
     onCleanup(() => observer.disconnect());
   });
-
-  const caret = (dir: 1 | -1) => (
-    <button
-      type="button"
-      class="deploy-slider-caret"
-      aria-label={dir > 0 ? 'Deploy more troops' : 'Deploy fewer troops'}
-      onPointerDown={event => start(dir, event)}
-      onPointerUp={stop}
-      onPointerLeave={stop}
-      onPointerCancel={stop}
-      onKeyDown={event => {
-        if (event.key === 'Enter' || event.key === ' ') step(dir);
-      }}
-    >
-      {dir > 0 ? <FaCaretUp /> : <FaCaretDown />}
-    </button>
-  );
 
   const trayHeight = () => (height() === null ? undefined : `${height()}px`);
 
@@ -78,12 +49,60 @@ export const DeploySlider = (props: DeploySliderProps) => {
         </div>
       </Show>
       <div class="deploy-slider street-tray kit-glass" style={{ height: trayHeight() }}>
-        <span class="deploy-slider-label kit-num" aria-live="polite">
-          {percent()}% troops
-        </span>
-        <div class="deploy-slider-carets">
-          {caret(1)}
-          {caret(-1)}
+        <div
+          ref={el => (drop = el)}
+          class={`hud-speed-drop deploy-slider-drop${open() ? ' is-open' : ''}`}
+          onPointerEnter={event => {
+            if (event.pointerType === 'mouse') setOpen(true);
+          }}
+          onPointerLeave={event => {
+            const focused = document.activeElement;
+            const keyboardFocused =
+              focused instanceof HTMLElement && event.currentTarget.contains(focused) && focused.matches(':focus-visible');
+            if (!keyboardFocused) setOpen(false);
+          }}
+          onFocusIn={event => {
+            if ((event.target as HTMLElement).matches(':focus-visible')) setOpen(true);
+          }}
+          onFocusOut={event => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+          }}
+          onKeyDown={event => {
+            if (event.key === 'Escape') setOpen(false);
+          }}
+        >
+          <button
+            type="button"
+            class="street-action deploy-slider-trigger"
+            aria-label="Change troop deployment"
+            title="Troop deployment"
+            aria-haspopup="menu"
+            aria-expanded={open()}
+            aria-live="polite"
+            onClick={() => setOpen(!open())}
+          >
+            <GiCrossedSwords />
+            <span class="deploy-slider-value">{percent()}%</span>
+          </button>
+          <div class="hud-speed-menu kit-glass" role="menu" aria-label="Troop deployment">
+            <For each={PERCENTS}>
+              {value => (
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={percent() === value}
+                  class={`street-action hud-speed${percent() === value ? ' is-active' : ''}`}
+                  onClick={event => {
+                    props.controllers.setTroopPercent(value);
+                    setOpen(false);
+                    event.currentTarget.blur();
+                  }}
+                >
+                  {value}%
+                </button>
+              )}
+            </For>
+          </div>
         </div>
       </div>
     </div>

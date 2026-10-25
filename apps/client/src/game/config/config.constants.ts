@@ -74,11 +74,11 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     draftSecondsPerSoldier: 0.1,
     draftUntilRatio: 0.25,
   },
-  bot: { tickSeconds: 0.5 },
+  bot: { tickSeconds: 0.5, aggression: 0.5 },
   diplomacy: {
-    peaceDurationSeconds: 30,
-    pactDurationSeconds: 90,
+    treatySeconds: 60,
     rejectCooldownSeconds: 20,
+    offerExpirySeconds: 20,
   },
   buildings: {
     city: { cost: 100, buildSeconds: 12, requiresResearch: null, requiresAdjacentTerrain: null },

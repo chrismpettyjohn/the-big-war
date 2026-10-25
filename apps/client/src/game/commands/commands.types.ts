@@ -18,13 +18,12 @@ export type CommandError =
   | 'cooldown'
   | 'research_unavailable'
   | 'in_peace'
-  | 'in_pact'
-  | 'in_alliance'
   | 'already_at_war'
-  | 'cannot_declare_war_under_protection'
   | 'invalid_diplomacy'
   | 'offer_rejected'
-  | 'offer_cooldown';
+  | 'offer_cooldown'
+  | 'offer_pending'
+  | 'offer_missing';
 
 export interface SendTroopsCommand {
   readonly type: 'SendTroops';
@@ -104,22 +103,17 @@ export interface OfferPeaceCommand {
   readonly target: EmpireId;
 }
 
-export interface OfferPactCommand {
-  readonly type: 'OfferPact';
-  readonly empire: EmpireId;
-  readonly target: EmpireId;
-}
-
-export interface OfferAllianceCommand {
-  readonly type: 'OfferAlliance';
-  readonly empire: EmpireId;
-  readonly target: EmpireId;
-}
-
 export interface DeclareWarCommand {
   readonly type: 'DeclareWar';
   readonly empire: EmpireId;
   readonly target: EmpireId;
+}
+
+export interface RespondOfferCommand {
+  readonly type: 'RespondOffer';
+  readonly empire: EmpireId;
+  readonly from: EmpireId;
+  readonly accept: boolean;
 }
 
 export type Command =
@@ -134,9 +128,8 @@ export type Command =
   | SelectFactionCommand
   | SetPausedCommand
   | OfferPeaceCommand
-  | OfferPactCommand
-  | OfferAllianceCommand
-  | DeclareWarCommand;
+  | DeclareWarCommand
+  | RespondOfferCommand;
 
 export type CommandType = Command['type'];
 

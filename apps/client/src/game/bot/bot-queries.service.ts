@@ -4,8 +4,8 @@ import type { GameState } from '../state/state.types';
 import type { EmpireId } from '../empire/empire.types';
 import { hasUnlock } from '../research/research.service';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
-import type { CannonShot, HostileEdge } from './bot.types';
 import type { BuildingKind } from '../building/building.types';
+import type { Bot, CannonShot, HostileEdge } from './bot.types';
 import { hasNeighbourTerrain } from '../building/building.service';
 import { canAttack, getRelation } from '../diplomacy/diplomacy.service';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
@@ -66,6 +66,23 @@ export function findCannonShot(state: GameState, empireId: EmpireId): CannonShot
   return null;
 }
 
+export function effectiveAggression(bot: Bot, state: GameState): number {
+  const shifted = bot.personality.aggression + state.config.bot.aggression - 0.5;
+  return Math.min(1, Math.max(0, shifted));
+}
+
+export function borderingEmpires(state: GameState, empireId: EmpireId): Set<EmpireId> {
+  const found = new Set<EmpireId>();
+  for (const cell of state.grid.cells) {
+    if (cell.owner !== empireId) continue;
+    for (const neighbour of neighbors({ q: cell.q, r: cell.r })) {
+      const owner = gridAt(state.grid, neighbour)?.owner;
+      if (owner !== undefined && owner >= 0 && owner !== empireId) found.add(owner);
+    }
+  }
+  return found;
+}
+
 export function troopsOnFrontsAgainst(state: GameState, empireA: EmpireId, empireB: EmpireId): number {
   let total = 0;
   for (const front of state.fronts) {
@@ -75,7 +92,7 @@ export function troopsOnFrontsAgainst(state: GameState, empireA: EmpireId, empir
   return total;
 }
 
-export function hostileEdges(state: GameState, empireId: EmpireId, ignoredDefender: EmpireId = -1): HostileEdge[] {
+export function hostileEdges(state: GameState, empireId: EmpireId): HostileEdge[] {
   const edges: HostileEdge[] = [];
   const neutralState = state.empires[empireId]?.neutralState ?? false;
   for (const cell of state.grid.cells) {
@@ -83,8 +100,8 @@ export function hostileEdges(state: GameState, empireId: EmpireId, ignoredDefend
     for (const neighbour of neighbors({ q: cell.q, r: cell.r })) {
       const other = gridAt(state.grid, neighbour);
       if (!other || other.owner === empireId) continue;
-      if (other.owner === ignoredDefender) continue;
-      if (neutralState && (other.owner < 0 || getRelation(state, empireId, other.owner).status !== 'war')) continue;
+      if (neutralState && other.owner < 0) continue;
+      if (other.owner >= 0 && getRelation(state, empireId, other.owner).status !== 'war') continue;
       if (!canAttack(state, empireId, other.owner).allowed) continue;
       edges.push({ from: { q: cell.q, r: cell.r }, target: { q: other.q, r: other.r }, defender: other.owner });
     }
