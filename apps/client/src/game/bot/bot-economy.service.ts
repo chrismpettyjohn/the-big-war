@@ -19,6 +19,7 @@ const MILITARY_PLAN: readonly BuildingKind[] = [
   'battery',
   'machine_gun',
   'bunker',
+  'tank',
   'market',
   'farm',
   'city',

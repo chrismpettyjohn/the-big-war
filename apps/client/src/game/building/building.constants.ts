@@ -14,6 +14,7 @@ export const BUILDING_KINDS: readonly BuildingKind[] = [
   'machine_gun',
   'battery',
   'bunker',
+  'tank',
 ];
 
 export const PRODUCTION_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingKind>([
@@ -24,6 +25,6 @@ export const PRODUCTION_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingK
   'farm',
 ]);
 
-export const FREE_STANDING_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingKind>(['trench']);
+export const FREE_STANDING_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingKind>(['trench', 'tank']);
 
 export const FLAT_COST_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingKind>(['trench']);

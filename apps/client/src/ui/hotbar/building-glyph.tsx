@@ -14,6 +14,7 @@ import {
   GiGem,
   GiPineTree,
   GiSprout,
+  GiTank,
 } from '@the-big-war/frontend/ui/icons/icons';
 
 const GLYPHS: Record<BuildingKind, (props: { class?: string }) => JSX.Element> = {
@@ -30,6 +31,7 @@ const GLYPHS: Record<BuildingKind, (props: { class?: string }) => JSX.Element> =
   machine_gun: FaBolt,
   battery: FaStar,
   bunker: FaBox,
+  tank: GiTank,
 };
 
 export function buildingGlyph(kind: BuildingKind): JSX.Element {

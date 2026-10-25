@@ -17,6 +17,7 @@ const BUILDING_LABELS: Readonly<Record<BuildingKind, string>> = {
   machine_gun: 'Machine Gun',
   battery: 'Artillery Battery',
   bunker: 'Bunker',
+  tank: 'Tank',
 };
 
 export function buildingLabel(kind: BuildingKind): string {
@@ -33,10 +34,11 @@ const BUILDING_DESCRIPTIONS: Readonly<Record<BuildingKind, string>> = {
   barracks: 'Raises how many troops you can hold in reserve and lets you attack from nearby hexes.',
   fort: 'Troops within its radius fight 50% more effectively.',
   cannon: 'Fires at distant hexes to damage defenders and clear forests and mountains. Needs a reload between shots. Unlocked through research.',
-  trench: 'Troops fighting from a trench hex defend 35% better. Cheap, and can be dug right next to other buildings to form unbroken lines.',
+  trench: 'Troops fighting from a trench hex defend 35% better. Cheap, and can be dug right next to other buildings to form unbroken lines. Enemy tanks within 2 hexes cancel the bonus.',
   machine_gun: 'Troops holding the line within 2 hexes hit attackers 50% harder and defend 20% better. No effect while attacking. Unlocked through research.',
   battery: 'Shells the most crowded enemy front in range on its own, with no gold per shot. Unlocked through research.',
   bunker: 'Troops on this hex and the hexes beside it defend 75% better and take half damage from shelling. Unlocked through research.',
+  tank: 'Attacks into hexes within 2 of it are 60% stronger and ignore enemy trenches. When your troops take a hex next to it, the tank rolls forward onto it. Unlocked through research.',
 };
 
 export function buildingDescription(kind: BuildingKind): string {

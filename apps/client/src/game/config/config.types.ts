@@ -140,6 +140,7 @@ export interface SupportConfig {
 
   readonly machineGunRadius: number;
   readonly bunkerRadius: number;
+  readonly tankRadius: number;
 
 }
 

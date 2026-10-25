@@ -32,6 +32,7 @@ function resolveFrontSide(
   multiFrontBonus: number,
 ): FrontModifiersResult {
   const side: FrontSide = which === 'A' ? front.sideA : front.sideB;
+  const enemy: FrontSide = which === 'A' ? front.sideB : front.sideA;
   const homeHex = which === 'A' ? front.hexA : front.hexB;
   const enemyHex = which === 'A' ? front.hexB : front.hexA;
   const empire = state.empires[side.empire];
@@ -77,25 +78,30 @@ function resolveFrontSide(
 
   const support = state.config.support;
   const trench = countSupport(state, side.empire, homeHex, 0, k => k === 'trench');
+  const enemyTanks = countSupport(state, enemy.empire, homeHex, support.tankRadius, k => k === 'tank');
   const machineGuns = countSupport(state, side.empire, homeHex, support.machineGunRadius, k => k === 'machine_gun');
   const bunkers = countSupport(state, side.empire, homeHex, support.bunkerRadius, k => k === 'bunker');
+  const tanks = countSupport(state, side.empire, enemyHex, support.tankRadius, k => k === 'tank');
 
   const cityDefenceMul = 1 + ENGINE_TUNING.cityDefenceBonusPer * cityDefence;
   const cityAttackMul = 1 + ENGINE_TUNING.cityAttackBonusPer * cityAttack;
   const barracksMul = 1 + ENGINE_TUNING.barracksAttackBonusPer * barracks;
   const fortMul = forts > 0 ? 1 + ENGINE_TUNING.fortBonus : 1;
-  const trenchMul = trench > 0 ? 1 + ENGINE_TUNING.trenchDefenceBonus : 1;
+  const trenchMul = trench > 0 && enemyTanks === 0 ? 1 + ENGINE_TUNING.trenchDefenceBonus : 1;
   const holding = side.mode === 'defence' && machineGuns > 0;
   const machineGunAttackMul = holding ? 1 + ENGINE_TUNING.machineGunAttackBonus : 1;
   const machineGunDefenceMul = holding ? 1 + ENGINE_TUNING.machineGunDefenceBonus : 1;
   const bunkerMul = bunkers > 0 ? 1 + ENGINE_TUNING.bunkerDefenceBonus : 1;
+  const tankMul = tanks > 0 ? 1 + ENGINE_TUNING.tankAttackBonus : 1;
   if (cityDefence > 0) lines.push({ label: 'City defence', attack: 1, defence: cityDefenceMul });
   if (cityAttack > 0) lines.push({ label: 'City attack', attack: cityAttackMul, defence: 1 });
   if (barracks > 0) lines.push({ label: 'Barracks', attack: barracksMul, defence: 1 });
   if (forts > 0) lines.push({ label: 'Fort', attack: fortMul, defence: fortMul });
-  if (trench > 0) lines.push({ label: 'Trench', attack: 1, defence: trenchMul });
+  if (trench > 0 && enemyTanks > 0) lines.push({ label: 'Trench (overrun by tanks)', attack: 1, defence: 1 });
+  else if (trench > 0) lines.push({ label: 'Trench', attack: 1, defence: trenchMul });
   if (holding) lines.push({ label: 'Machine guns', attack: machineGunAttackMul, defence: machineGunDefenceMul });
   if (bunkers > 0) lines.push({ label: 'Bunker', attack: 1, defence: bunkerMul });
+  if (tanks > 0) lines.push({ label: 'Tanks', attack: tankMul, defence: 1 });
   if (multiFrontBonus > 0) lines.push({ label: 'Multi-front', attack: 1 + multiFrontBonus, defence: 1 });
 
   const counterattack: FrontSide['mode'] = side.mode;
@@ -112,6 +118,7 @@ function resolveFrontSide(
     barracksMul *
     fortMul *
     machineGunAttackMul *
+    tankMul *
     counterAttackMul *
     (1 + multiFrontBonus);
   const defence =

@@ -382,13 +382,24 @@ describe('engine field works', () => {
     return front;
   }
 
-  test('a trench on the home hex boosts defence', () => {
+  test('a trench on the home hex boosts defence unless enemy tanks are adjacent', () => {
     const dug = makeState();
     place(dug, home, 'trench');
     const front = standoff(dug);
     step(dug, FIXED_DT);
     const trench = front.sideA.modifiers.lines.find(line => line.label === 'Trench');
     expect(trench?.defence).toBeCloseTo(1.35, 6);
+
+    const overrun = makeState();
+    place(overrun, home, 'trench');
+    place(overrun, { q: 4, r: 3 }, 'tank');
+    const overrunFront = standoff(overrun);
+    step(overrun, FIXED_DT);
+    const labels = overrunFront.sideA.modifiers.lines.map(line => line.label);
+    expect(labels).not.toContain('Trench');
+    expect(labels).toContain('Trench (overrun by tanks)');
+    expect(overrunFront.sideB.modifiers.lines.map(line => line.label)).toContain('Tanks');
+    expect(overrunFront.sideB.modifiers.attack).toBeGreaterThan(front.sideB.modifiers.attack);
   });
 
   test('machine guns only fire for a side holding the line', () => {
@@ -445,6 +456,19 @@ describe('engine field works', () => {
     front.sideB.troops = 20;
     step(state, FIXED_DT);
     expect(front.sideB.troops).toBeCloseTo(20 - state.config.battery.damage * 0.5, 6);
+  });
+
+  test('tanks roll onto hexes captured next to them', () => {
+    const state = makeState();
+    const tank = place(state, home, 'tank');
+    const front = ensureFront(state, home, enemy);
+    front.sideA.mode = 'attack';
+    front.sideA.troops = 100;
+    front.sideB.troops = 0;
+    run(state, 4);
+    expect(gridAt(state.grid, enemy)!.owner).toBe(0);
+    expect(gridAt(state.grid, enemy)!.building).toBe(tank);
+    expect(gridAt(state.grid, home)!.building).toBeNull();
   });
 });
 

@@ -5,7 +5,8 @@ import type { EmpireId } from '../../empire/empire.types';
 import { terrainDefenceAt } from '../../map/terrain.service';
 import { buildFrontContext } from '../combat/front-context.service';
 import { assignFrontClusters } from '../combat/front-clusters.service';
-import { gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
+import { gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export function stepCombat(state: GameState, dt: number): void {
   const combat = state.config.combat;
@@ -112,8 +113,23 @@ function captureHex(state: GameState, front: Front, capturedBy: EmpireId): void 
     cell.building.cooldown = 0;
   }
   if (cell.building) cell.building.demolishAt = null;
+  else advanceTank(state, targetHex, capturedBy);
 
   if (front.sideA.empire === defenderId) front.sideA.troops = 0;
   else front.sideB.troops = 0;
 }
 
+
+function advanceTank(state: GameState, hex: Axial, owner: EmpireId): void {
+  const cell = gridAt(state.grid, hex);
+  if (!cell || cell.terrain !== 'plain') return;
+  for (const neighbour of neighbors(hex)) {
+    const from = gridAt(state.grid, neighbour);
+    const tank = from?.building;
+    if (!from || from.owner !== owner || tank?.kind !== 'tank') continue;
+    if (tank.buildRemaining > 0 || tank.demolishAt !== null) continue;
+    cell.building = tank;
+    from.building = null;
+    return;
+  }
+}

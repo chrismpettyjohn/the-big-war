@@ -171,6 +171,18 @@ export const RESEARCH_NODES: readonly ResearchNode[] = [
     position: { col: 1, row: 2 },
     effects: [{ kind: 'unlock', key: 'building:bunker', label: 'Bunker' }],
   },
+  {
+    id: 'armour',
+    name: 'Armour',
+    description: 'Unlocks tanks that spearhead attacks and roll over trenches.',
+    kind: 'unlock',
+    branch: 'military',
+    cost: 140,
+    duration: 60,
+    requires: ['machine_guns', 'heavy_artillery'],
+    position: { col: 3, row: 1 },
+    effects: [{ kind: 'unlock', key: 'building:tank', label: 'Tank' }],
+  },
 
   {
     id: 'surveying',

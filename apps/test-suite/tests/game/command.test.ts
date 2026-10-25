@@ -395,6 +395,7 @@ describe('PlaceBuilding field works', () => {
     ['machine_gun', 'machine_guns'],
     ['battery', 'heavy_artillery'],
     ['bunker', 'reinforced_concrete'],
+    ['tank', 'armour'],
   ] as const;
 
   for (const [kind, nodeId] of gated) {

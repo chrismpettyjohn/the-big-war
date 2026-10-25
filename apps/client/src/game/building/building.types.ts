@@ -16,7 +16,8 @@ export type BuildingKind =
   | 'trench'
   | 'machine_gun'
   | 'battery'
-  | 'bunker';
+  | 'bunker'
+  | 'tank';
 
 export type GathererPhase = 'idle' | 'outbound' | 'working' | 'returning';
 

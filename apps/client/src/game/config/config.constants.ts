@@ -59,6 +59,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     minerRadius: 2,
     machineGunRadius: 2,
     bunkerRadius: 1,
+    tankRadius: 2,
   },
   gather: {
     workersPerBuilding: 2,
@@ -97,5 +98,6 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     machine_gun: { cost: 60, buildSeconds: 6, requiresResearch: 'machine_guns', requiresAdjacentTerrain: null },
     battery: { cost: 140, buildSeconds: 12, requiresResearch: 'heavy_artillery', requiresAdjacentTerrain: null },
     bunker: { cost: 110, buildSeconds: 10, requiresResearch: 'reinforced_concrete', requiresAdjacentTerrain: null },
+    tank: { cost: 160, buildSeconds: 10, requiresResearch: 'armour', requiresAdjacentTerrain: null },
   },
 };
