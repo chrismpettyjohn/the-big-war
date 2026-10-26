@@ -1,8 +1,9 @@
 import type { HexCell } from '../map/map.types';
 import { ownTrench } from '../trench/trench.service';
 import type { GameState } from '../state/state.types';
-import { hasUnlock } from '../research/research.service';
+import { hasUnlock, isComplete } from '../research/research.service';
 import type { CommandError } from '../commands/commands.types';
+import type { BarracksTierConfig } from '../config/config.types';
 import type { Empire, EmpireId } from '../empire/empire.types';
 import { ENGINE_TUNING } from '../simulation/simulation.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
@@ -127,5 +128,29 @@ function machineGunMountError(state: GameState, empire: Empire, hex: Axial): Com
   if (!hasUnlock(empire, 'building:machine_gun')) return 'not_researched';
   const trench = ownTrench(state, empire.id, hex);
   if (!trench || trench.machineGun) return 'invalid_target';
+  return null;
+}
+
+export function barracksTier(state: GameState, building: Building): BarracksTierConfig {
+  const tiers = state.config.barracksTiers;
+  return tiers[Math.min(tiers.length, Math.max(1, building.level)) - 1]!;
+}
+
+export function nextBarracksTier(state: GameState, building: Building): BarracksTierConfig | null {
+  if (building.kind !== 'barracks') return null;
+  return state.config.barracksTiers[building.level] ?? null;
+}
+
+export function upgradeError(state: GameState, empireId: EmpireId, hex: Axial): CommandError | null {
+  const empire = state.empires[empireId];
+  if (!empire || !empire.alive) return 'no_empire';
+  const cell = gridAt(state.grid, hex);
+  const building = cell?.building;
+  if (!cell || cell.owner !== empireId || !building || building.buildRemaining > 0) return 'invalid_target';
+  if (building.demolishAt !== null) return 'invalid_target';
+  const next = nextBarracksTier(state, building);
+  if (!next) return 'invalid_target';
+  if (next.requiresResearch !== null && !isComplete(empire.research, next.requiresResearch)) return 'not_researched';
+  if (empire.gold < next.upgradeCost) return 'insufficient_gold';
   return null;
 }

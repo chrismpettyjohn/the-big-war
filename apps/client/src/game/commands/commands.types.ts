@@ -66,6 +66,12 @@ export interface DemolishBuildingCommand {
   readonly hex: Axial;
 }
 
+export interface UpgradeBuildingCommand {
+  readonly type: 'UpgradeBuilding';
+  readonly empire: EmpireId;
+  readonly hex: Axial;
+}
+
 export interface ManTrenchCommand {
   readonly type: 'ManTrench';
   readonly empire: EmpireId;
@@ -145,6 +151,7 @@ export type Command =
   | RetreatFrontCommand
   | PlaceBuildingCommand
   | DemolishBuildingCommand
+  | UpgradeBuildingCommand
   | ManTrenchCommand
   | LeaveTrenchCommand
   | TrenchAttackCommand

@@ -2,8 +2,13 @@ import type { GameState } from '../../state/state.types';
 import { ENGINE_TUNING } from '../../simulation/simulation.constants';
 import { ok, fail } from '@the-big-war/game-engine/commands/command.service';
 import { gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
-import { buildingCost, createBuilding, placementError } from '../../building/building.service';
-import type { CommandResult, DemolishBuildingCommand, PlaceBuildingCommand } from '../commands.types';
+import { buildingCost, createBuilding, nextBarracksTier, placementError, upgradeError } from '../../building/building.service';
+import type {
+  CommandResult,
+  DemolishBuildingCommand,
+  PlaceBuildingCommand,
+  UpgradeBuildingCommand,
+} from '../commands.types';
 
 export function handlePlaceBuilding(state: GameState, command: PlaceBuildingCommand): CommandResult {
   const error = placementError(state, command.empire, command.hex, command.kind);
@@ -31,5 +36,14 @@ export function handleDemolishBuilding(state: GameState, command: DemolishBuildi
   if (cell.owner !== command.empire) return fail(command.type, 'invalid_target');
 
   cell.building.demolishAt = state.elapsed + state.config.demolish.durationSeconds;
+  return ok(command.type);
+}
+
+export function handleUpgradeBuilding(state: GameState, command: UpgradeBuildingCommand): CommandResult {
+  const error = upgradeError(state, command.empire, command.hex);
+  if (error) return fail(command.type, error);
+  const building = gridAt(state.grid, command.hex)!.building!;
+  state.empires[command.empire]!.gold -= nextBarracksTier(state, building)!.upgradeCost;
+  building.level += 1;
   return ok(command.type);
 }
