@@ -55,7 +55,7 @@ export class BuildingsLayer {
   }
 
   drawGhost(ghost: PlacementGhost | null, hexSize: number): void {
-    if (!ghost) {
+    if (!ghost || ghost.kind === 'trench') {
       if (this.ghost.parent) this.container.removeChild(this.ghost);
       return;
     }
@@ -93,9 +93,16 @@ export class BuildingsLayer {
         const cell = grid.cells[r * width + q];
         const building = cell?.building ?? null;
         if (!building) continue;
+        const center = axialToPixel({ q, r }, hexSize);
+        if (building.kind === 'trench') {
+          if (building.buildRemaining > 0) {
+            const total = specs.trench.buildSeconds || 1;
+            this.drawProgress(center.x, center.y, hexSize, 1 - building.buildRemaining / total);
+          }
+          continue;
+        }
         seen.add(building.id);
         const entry = this.acquire(building, hexSize);
-        const center = axialToPixel({ q, r }, hexSize);
         entry.object.position.set(center.x, center.y);
         this.drawBorder(center.x, center.y, hexSize);
         if (building.kind === 'fort' && building.buildRemaining <= 0) {

@@ -7,6 +7,7 @@ import type { Command, CommandError, CommandResult } from './commands.types';
 import { handleRetreatFront, handleSetFrontMode } from './handlers/front.handler';
 import { createDispatcher } from '@the-big-war/game-engine/commands/command.service';
 import { handleDemolishBuilding, handlePlaceBuilding } from './handlers/building.handler';
+import { handleLeaveTrench, handleManTrench, handleTrenchAttack } from './handlers/trench.handler';
 import { handleSelectFaction, handleSetGameSpeed, handleSetPaused } from './handlers/match.handler';
 import {
   handleDeclareWar,
@@ -23,6 +24,9 @@ export const dispatch = createDispatcher<GameState, Command, CommandResult>({
   RetreatFront: handleRetreatFront,
   PlaceBuilding: handlePlaceBuilding,
   DemolishBuilding: handleDemolishBuilding,
+  ManTrench: handleManTrench,
+  LeaveTrench: handleLeaveTrench,
+  TrenchAttack: handleTrenchAttack,
   FireCannon: handleFireCannon,
   StartResearch: handleStartResearch,
   OfferPeace: handleOfferPeace,

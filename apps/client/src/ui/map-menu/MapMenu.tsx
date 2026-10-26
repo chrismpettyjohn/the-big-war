@@ -126,6 +126,33 @@ export const MapMenu = (props: MapMenuProps) => {
           },
         });
       }
+      const trench = current.building?.kind === 'trench' && current.building.buildRemaining <= 0 ? current.building : null;
+      if (trench) {
+        const order = (type: 'ManTrench' | 'LeaveTrench', percent: number) => {
+          const target = menu();
+          if (!target) return;
+          const result = store.dispatch({ type, empire: player(), hex: target.hex, percent });
+          if (!result.ok) props.controllers.notice(result.reason);
+        };
+        list.push({
+          type: 'item',
+          label: `Man trench  ·  ${props.controllers.troopPercent()}%`,
+          note: `${Math.floor(trench.garrison)}/${store.state.config.trench.capacity}`,
+          onClick: () => order('ManTrench', props.controllers.troopPercent()),
+        });
+        if (trench.garrison >= 1) {
+          list.push({ type: 'item', label: 'Withdraw', onClick: () => order('LeaveTrench', 100) });
+          list.push({
+            type: 'item',
+            label: 'Attack from trench',
+            danger: true,
+            onClick: () => {
+              const target = menu();
+              if (target) props.controllers.setTool({ kind: 'trench-attack', from: target.hex });
+            },
+          });
+        }
+      }
       if (current.building) {
         list.push({
           type: 'item',

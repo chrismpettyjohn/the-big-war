@@ -1,14 +1,20 @@
 import { ownerColor } from './theme';
 import type { SoldierFrame } from './pixel-sprites';
+import type { HexCell } from '../game/map/map.types';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
+import type { EmpireId } from '../game/empire/empire.types';
 import type { Front, FrontSide } from '../game/front/front.types';
+import { trenchFront, trenchShape, trenchSlots } from './trench-geometry';
 import { columnLegDuration } from '../game/simulation/systems/columns.system';
 import type { Column, Expedition, GameState } from '../game/state/state.types';
 import { SOLDIER_SIZE, SOLDIER_SPRITES, SPRITE_PALETTE } from './pixel-sprites';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
-import { axialToPixel } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import { axialToPixel, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 const MAX_SOLDIERS_PER_SIDE = 30;
+const MAX_TRENCH_SOLDIERS = 8;
+const FIRE_CYCLE = 0.45;
+const IDLE_CYCLE = 1.3;
 const SOLDIER_SCALE = 0.32;
 const ATTACK_CYCLE = 0.6;
 const MARCH_CYCLE = 0.5;
@@ -37,9 +43,10 @@ export class SoldiersLayer {
     this.used = 0;
     this.labelsUsed = 0;
     for (const front of fronts) {
-      this.drawSide(front, front.sideA, front.hexA, front.hexB, hexSize, elapsed);
-      this.drawSide(front, front.sideB, front.hexB, front.hexA, hexSize, elapsed);
+      this.drawSide(state, front, front.sideA, front.hexA, front.hexB, hexSize);
+      this.drawSide(state, front, front.sideB, front.hexB, front.hexA, hexSize);
     }
+    this.drawGarrisons(state, hexSize);
     for (const expedition of expeditions) this.drawSquads(expedition, hexSize, elapsed);
     for (const column of state.columns) this.drawColumn(state, column, hexSize, elapsed);
     this.drawGatherers(state, hexSize, elapsed);
@@ -58,9 +65,15 @@ export class SoldiersLayer {
     this.textures.clear();
   }
 
-  private drawSide(front: Front, side: FrontSide, from: Axial, to: Axial, hexSize: number, elapsed: number): void {
+  private drawSide(state: GameState, front: Front, side: FrontSide, from: Axial, to: Axial, hexSize: number): void {
+    const elapsed = state.elapsed;
     const count = Math.min(MAX_SOLDIERS_PER_SIDE, Math.ceil(side.troops));
     if (count <= 0) return;
+    const home = gridAt(state.grid, from);
+    if (side.mode === 'defence' && home?.owner === side.empire && home.building?.kind === 'trench') {
+      this.drawInTrench(state, home, side.troops, side.empire, true, hexSize);
+      return;
+    }
     const a = axialToPixel(from, hexSize);
     const b = axialToPixel(to, hexSize);
     let dx = b.x - a.x;
@@ -103,6 +116,51 @@ export class SoldiersLayer {
     }
     const headroom = SOLDIER_SIZE * pixel * 0.85 + hexSize * 0.08;
     this.drawCount(Math.ceil(side.troops), color, sumX / count, topY - headroom, hexSize);
+  }
+
+  private drawGarrisons(state: GameState, hexSize: number): void {
+    for (const cell of state.grid.cells) {
+      const building = cell.building;
+      if (!building || building.kind !== 'trench' || building.garrison <= 0) continue;
+      this.drawInTrench(state, cell, building.garrison, cell.owner, false, hexSize);
+    }
+  }
+
+  private drawInTrench(
+    state: GameState,
+    cell: HexCell,
+    troops: number,
+    empire: EmpireId,
+    firing: boolean,
+    hexSize: number,
+  ): void {
+    const shape = trenchShape(state.grid, cell);
+    const front = trenchFront(shape);
+    const center = axialToPixel(cell, hexSize);
+    const slots = trenchSlots(shape, hexSize, Math.min(MAX_TRENCH_SOLDIERS, Math.ceil(troops)));
+    const color = ownerColor(empire);
+    const pixel = (hexSize * SOLDIER_SCALE) / SOLDIER_SIZE;
+    let sumX = 0;
+    let topY = Number.POSITIVE_INFINITY;
+    slots.forEach((slot, i) => {
+      const phase = state.elapsed + i * 0.23 + ((cell.q * 7 + cell.r * 13) % 10) / 10;
+      let frame: SoldierFrame = 'crouch';
+      if (firing) {
+        const t = (phase / FIRE_CYCLE) % 1;
+        frame = t < 0.18 ? 'fire' : 'aim';
+      } else if (Math.floor(phase / IDLE_CYCLE) % 5 === 0) frame = 'aim';
+      const sprite = this.acquire();
+      sprite.texture = this.texture(color, frame);
+      const flip = front.x < 0;
+      sprite.scale.set(flip ? -pixel : pixel, pixel);
+      sprite.position.set(center.x + slot.x, center.y + slot.y);
+      sprite.zIndex = sprite.position.y;
+      sumX += sprite.position.x;
+      topY = Math.min(topY, sprite.position.y);
+    });
+    if (slots.length === 0) return;
+    const headroom = SOLDIER_SIZE * pixel * 0.7 + hexSize * 0.08;
+    this.drawCount(Math.ceil(troops), color, sumX / slots.length, topY - headroom, hexSize);
   }
 
   private drawCount(troops: number, color: number, x: number, y: number, hexSize: number): void {

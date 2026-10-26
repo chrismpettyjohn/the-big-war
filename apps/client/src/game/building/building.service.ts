@@ -1,8 +1,9 @@
-import type { Terrain } from '../map/map.types';
+import { ownTrench } from '../trench/trench.service';
 import type { GameState } from '../state/state.types';
-import type { EmpireId } from '../empire/empire.types';
 import { hasUnlock } from '../research/research.service';
+import type { HexCell, Terrain } from '../map/map.types';
 import type { CommandError } from '../commands/commands.types';
+import type { Empire, EmpireId } from '../empire/empire.types';
 import { ENGINE_TUNING } from '../simulation/simulation.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
@@ -20,6 +21,8 @@ export function createBuilding(state: GameState, kind: BuildingKind, level: numb
     demolishAt: null,
     buildRemaining,
     gatherers: [],
+    garrison: 0,
+    machineGun: false,
   };
 }
 
@@ -50,7 +53,8 @@ export function ownedBuildings(state: GameState, empireId: EmpireId): OwnedBuild
 export function countBuildingsOfKind(state: GameState, empireId: EmpireId, kind: BuildingKind): number {
   let count = 0;
   for (const cell of state.grid.cells) {
-    if (cell.owner === empireId && cell.building?.kind === kind && cell.building.buildRemaining <= 0) count += 1;
+    if (cell.owner !== empireId || !cell.building || cell.building.buildRemaining > 0) continue;
+    if (kind === 'machine_gun' ? cell.building.machineGun : cell.building.kind === kind) count += 1;
   }
   return count;
 }
@@ -58,7 +62,8 @@ export function countBuildingsOfKind(state: GameState, empireId: EmpireId, kind:
 function countPlacedOfKind(state: GameState, empireId: EmpireId, kind: BuildingKind): number {
   let count = 0;
   for (const cell of state.grid.cells) {
-    if (cell.owner === empireId && cell.building?.kind === kind) count += 1;
+    if (cell.owner !== empireId || !cell.building) continue;
+    if (kind === 'machine_gun' ? cell.building.machineGun : cell.building.kind === kind) count += 1;
   }
   return count;
 }
@@ -68,7 +73,7 @@ export function countSupport(
   empireId: EmpireId,
   hex: Axial,
   radius: number,
-  predicate: (kind: BuildingKind) => boolean,
+  predicate: (kind: BuildingKind, cell: HexCell) => boolean,
   minLevel = 1,
   square = false,
 ): number {
@@ -76,7 +81,7 @@ export function countSupport(
   for (const candidate of square ? squareArea(hex, radius) : area(hex, radius)) {
     const cell = gridAt(state.grid, candidate);
     if (!cell || cell.owner !== empireId || !cell.building || cell.building.buildRemaining > 0) continue;
-    if (predicate(cell.building.kind) && cell.building.level >= minLevel) count += 1;
+    if (predicate(cell.building.kind, cell) && cell.building.level >= minLevel) count += 1;
   }
   return count;
 }
@@ -137,6 +142,8 @@ export function placementError(
   if (empire.gold < buildingCost(state, empireId, kind)) return 'insufficient_gold';
   if (empire.civilians < ENGINE_TUNING.civiliansPerBuild) return 'insufficient_civilians';
 
+  if (kind === 'machine_gun') return machineGunMountError(state, empire, hex);
+
   if (cell.owner !== empireId || cell.building !== null) return 'invalid_target';
 
   if (cell.terrain !== 'plain' && CLEARS_TERRAIN[kind] !== cell.terrain) return 'invalid_target';
@@ -148,5 +155,12 @@ export function placementError(
   }
 
   if (!isFreeStanding(kind) && hasNeighbourBuilding(state, hex)) return 'invalid_target';
+  return null;
+}
+
+function machineGunMountError(state: GameState, empire: Empire, hex: Axial): CommandError | null {
+  if (!hasUnlock(empire, 'building:machine_gun')) return 'not_researched';
+  const trench = ownTrench(state, empire.id, hex);
+  if (!trench || trench.machineGun) return 'invalid_target';
   return null;
 }

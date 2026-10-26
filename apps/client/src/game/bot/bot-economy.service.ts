@@ -1,14 +1,14 @@
 import type { Bot } from './bot.types';
 import { BOT_TUNING } from './bot.constants';
-import type { Empire } from '../empire/empire.types';
 import type { GameState } from '../state/state.types';
 import type { Command } from '../commands/commands.types';
 import type { BuildingKind } from '../building/building.types';
+import type { Empire, EmpireId } from '../empire/empire.types';
 import type { ResearchNode } from '../research/research.types';
 import { RESEARCH_NODES } from '../research/research.constants';
-import { findCannonShot, findSite } from './bot-queries.service';
 import { meetsRequirements } from '../research/research.service';
 import { chance } from '@the-big-war/game-engine/rng/rng.service';
+import { findCannonShot, findSite, unmannedBorderTrench } from './bot-queries.service';
 
 const ECONOMY_PLAN: readonly BuildingKind[] = ['market', 'farm', 'lumberjack', 'miner', 'lab', 'city'];
 
@@ -76,6 +76,28 @@ export function constructionCommands(bot: Bot, state: GameState, empire: Empire)
     if (site) commands.push({ type: 'PlaceBuilding', empire: bot.empire, hex: site, kind: 'barracks' });
   }
   return commands;
+}
+
+export function trenchCommands(bot: Bot, state: GameState, empire: Empire): Command[] {
+  const commands: Command[] = [];
+  const reserveFloor = empire.reserveCap * BOT_TUNING.reserveFloorRatio;
+  const unmanned = unmannedBorderTrench(state, bot.empire);
+  if (unmanned && empire.soldiers > reserveFloor) {
+    commands.push({ type: 'ManTrench', empire: bot.empire, hex: unmanned, percent: BOT_TUNING.trenchManPercent });
+  }
+
+  if (countPlacedTrenches(state, bot.empire) >= BOT_TUNING.trenchTarget) return commands;
+  if (empire.gold < state.config.buildings.trench.cost) return commands;
+  if (!chance(bot.rng, BOT_TUNING.militaryBuildChance * bot.personality.aggression)) return commands;
+  const site = findSite(state, bot.empire, 'trench');
+  if (site) commands.push({ type: 'PlaceBuilding', empire: bot.empire, hex: site, kind: 'trench' });
+  return commands;
+}
+
+function countPlacedTrenches(state: GameState, empireId: EmpireId): number {
+  let count = 0;
+  for (const cell of state.grid.cells) if (cell.owner === empireId && cell.building?.kind === 'trench') count += 1;
+  return count;
 }
 
 export function cannonCommand(bot: Bot, state: GameState, empire: Empire): Command | null {

@@ -3,6 +3,7 @@
 import { describe, expect, test } from 'bun:test';
 import { createRng } from '@the-big-war/game-engine/rng/rng.service';
 import type { Empire } from '@the-big-war/client/game/empire/empire.types';
+import { findSite } from '@the-big-war/client/game/bot/bot-queries.service';
 import type { GameState } from '@the-big-war/client/game/state/state.types';
 import { botTick, createBot } from '@the-big-war/client/game/bot/bot.service';
 import { dispatch } from '@the-big-war/client/game/commands/commands.service';
@@ -101,7 +102,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
 }
 
 function city(state: GameState, level = 1): Building {
-  return { id: state.nextBuildingId++, kind: 'city', level, cooldown: 0, growth: 0, demolishAt: null, buildRemaining: 0, gatherers: [] };
+  return { id: state.nextBuildingId++, kind: 'city', level, cooldown: 0, growth: 0, demolishAt: null, buildRemaining: 0, gatherers: [], garrison: 0, machineGun: false };
 }
 
 function countHexes(state: GameState, empireId: number): void {
@@ -220,6 +221,24 @@ describe('botTick discipline', () => {
 });
 
 describe('botTick behaviour', () => {
+  test('a bot only mounts machine guns in its own trenches, and mans border trenches', () => {
+    const state = makeState();
+    state.empires[1]!.unlocks.push('building:machine_gun');
+    expect(findSite(state, 1, 'machine_gun')).toBeNull();
+
+    const site = findSite(state, 1, 'trench');
+    expect(site).not.toBeNull();
+    const cell = gridAt(state.grid, site!)!;
+    cell.building = { ...city(state), kind: 'trench' };
+    expect(findSite(state, 1, 'machine_gun')).toEqual(site);
+
+    state.empires[1]!.soldiers = state.empires[1]!.reserveCap;
+    const bot = createBot({ empire: 1, seed: 7 });
+    const man = botTick(bot, state, 0.5).find(command => command.type === 'ManTrench');
+    expect(man).toBeDefined();
+    if (man && man.type === 'ManTrench') expect(man.hex).toEqual(site);
+  });
+
   test('an economy bot places a building when gold and a site allow', () => {
     const state = makeState();
     const empire = state.empires[1]!;

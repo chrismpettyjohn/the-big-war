@@ -7,7 +7,8 @@ import type { Axial, Pixel } from '@the-big-war/game-engine/world-tile/world-til
 export type Tool =
   | { readonly kind: 'idle' }
   | { readonly kind: 'place'; readonly building: BuildingKind }
-  | { readonly kind: 'cannon'; readonly from: Axial };
+  | { readonly kind: 'cannon'; readonly from: Axial }
+  | { readonly kind: 'trench-attack'; readonly from: Axial };
 
 export interface ContextMenuState {
   readonly at: Pixel;

@@ -1,6 +1,7 @@
 import { ENGINE_TUNING } from '../simulation.constants';
 import type { GameState } from '../../state/state.types';
 import type { EmpireId } from '../../empire/empire.types';
+import { returnToReserve } from '../../troops/troops.service';
 import type { Building } from '../../building/building.types';
 
 export function stepBuildings(state: GameState, dt: number): void {
@@ -20,7 +21,9 @@ export function removeDemolishedBuildings(state: GameState): void {
   for (const cell of state.grid.cells) {
     const building = cell.building;
     if (!building || building.demolishAt === null) continue;
-    if (building.demolishAt <= state.elapsed) cell.building = null;
+    if (building.demolishAt > state.elapsed) continue;
+    if (building.garrison > 0) returnToReserve(state, cell.owner, building.garrison);
+    cell.building = null;
   }
 }
 

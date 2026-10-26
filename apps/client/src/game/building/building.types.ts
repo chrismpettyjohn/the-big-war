@@ -45,6 +45,10 @@ export interface Building {
   buildRemaining: number;
 
   gatherers: Gatherer[];
+
+  garrison: number;
+
+  machineGun: boolean;
 }
 
 export interface OwnedBuilding {

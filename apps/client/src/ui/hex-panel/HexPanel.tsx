@@ -9,6 +9,7 @@ import { gameStore } from '../../game/store/store.service';
 import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
 import type { ModifierLine } from '../../game/front/front.types';
 import type { Building } from '../../game/building/building.types';
+import { defendersOn, isMannedMachineGun } from '../../game/trench/trench.service';
 import { distance, gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export type { HexPanelProps };
@@ -18,6 +19,8 @@ function buildingState(building: Building): string {
   if (building.kind === 'cannon' && building.cooldown > 0) {
     parts.push(`Reloading ${building.cooldown.toFixed(0)}s`);
   }
+  if (building.kind === 'trench') parts.push(`${Math.floor(building.garrison)} troops`);
+  if (building.machineGun) parts.push('MG');
   if (building.kind === 'farm') parts.push(`+${Math.round(building.growth * 100)}%`);
   if (building.demolishAt !== null) parts.push('Demolish');
   return parts.join(' · ');
@@ -91,6 +94,40 @@ export const HexPanel = (props: HexPanelProps) => {
     const selected = hex();
     if (!selected) return;
     props.controllers.setTool({ kind: 'cannon', from: selected });
+    props.onClose();
+  };
+
+  const trench = () => {
+    const current = building();
+    return current && current.kind === 'trench' && isOwn() && current.buildRemaining <= 0 ? current : null;
+  };
+  const trenchDefenders = () => {
+    const current = cell();
+    return current ? defendersOn(store.state, current) : 0;
+  };
+  const machineGunStatus = () => {
+    const current = cell();
+    if (!current?.building?.machineGun) return 'None';
+    return isMannedMachineGun(store.state, current) ? 'Manned' : 'Unmanned';
+  };
+  const trenchTargets = () => {
+    const selected = hex();
+    if (!selected) return 0;
+    return neighbors(selected).filter(candidate => {
+      const owner = gridAt(store.state.grid, candidate)?.owner;
+      return owner !== undefined && owner >= 0 && owner !== player();
+    }).length;
+  };
+  const orderTrench = (type: 'ManTrench' | 'LeaveTrench', percent: number) => {
+    const selected = hex();
+    if (!selected) return;
+    const result = store.dispatch({ type, empire: player(), hex: selected, percent });
+    if (!result.ok) props.controllers.notice(result.reason);
+  };
+  const startTrenchAttack = () => {
+    const selected = hex();
+    if (!selected) return;
+    props.controllers.setTool({ kind: 'trench-attack', from: selected });
     props.onClose();
   };
 
@@ -171,6 +208,50 @@ export const HexPanel = (props: HexPanelProps) => {
                       </div>
                     </Show>
                   </Show>
+                </div>
+              )}
+            </Show>
+
+            <Show when={trench()}>
+              {entry => (
+                <div class="kit-col">
+                  <span class="street-label">Trench</span>
+                  <Bar
+                    label="Garrison"
+                    ratio={entry().garrison / Math.max(1, store.state.config.trench.capacity)}
+                    value={`${Math.floor(entry().garrison)} / ${store.state.config.trench.capacity}`}
+                    variant="accent"
+                  />
+                  <Show when={trenchDefenders() > 0}>
+                    <span class="kit-note kit-num">Manning the line: {Math.floor(trenchDefenders())}</span>
+                  </Show>
+                  <span class="kit-note">Machine gun: {machineGunStatus()}</span>
+                  <div class="kit-row">
+                    <button
+                      type="button"
+                      class="kit-button"
+                      disabled={entry().garrison >= store.state.config.trench.capacity || (store.state.empires[player()]?.soldiers ?? 0) < 1}
+                      onClick={() => orderTrench('ManTrench', props.controllers.troopPercent())}
+                    >
+                      Man trench · {props.controllers.troopPercent()}%
+                    </button>
+                    <button
+                      type="button"
+                      class="kit-button is-ghost"
+                      disabled={entry().garrison < 1}
+                      onClick={() => orderTrench('LeaveTrench', 100)}
+                    >
+                      Withdraw
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    class="kit-button is-danger"
+                    disabled={entry().garrison < 1 || trenchTargets() === 0}
+                    onClick={startTrenchAttack}
+                  >
+                    Attack from trench
+                  </button>
                 </div>
               )}
             </Show>

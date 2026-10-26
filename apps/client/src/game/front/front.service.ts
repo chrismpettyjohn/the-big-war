@@ -1,6 +1,7 @@
 import type { GameState } from '../state/state.types';
 import type { EmpireId } from '../empire/empire.types';
 import { NEUTRAL_FRONT_MODIFIERS } from './front.constants';
+import { addToGarrison, ownTrench } from '../trench/trench.service';
 import type { Front, FrontId, FrontSide, FrontSideKey } from './front.types';
 import { gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
@@ -78,17 +79,18 @@ export function sideOf(front: Front, empire: EmpireId): FrontSide | null {
   return null;
 }
 
-export function returnFrontTroops(state: GameState, side: FrontSide): void {
+export function returnFrontTroops(state: GameState, side: FrontSide, home: Axial | null = null): void {
   const empire = state.empires[side.empire];
   if (!empire || !empire.alive) return;
   if (side.troops <= 0) return;
-  empire.soldiers += side.troops;
+  const trench = home ? ownTrench(state, side.empire, home) : null;
+  empire.soldiers += trench ? addToGarrison(state, trench, side.troops) : side.troops;
   side.troops = 0;
 }
 
 export function disbandFront(state: GameState, front: Front): void {
-  returnFrontTroops(state, front.sideA);
-  returnFrontTroops(state, front.sideB);
+  returnFrontTroops(state, front.sideA, front.hexA);
+  returnFrontTroops(state, front.sideB, front.hexB);
   removeFront(state, front.id);
 }
 

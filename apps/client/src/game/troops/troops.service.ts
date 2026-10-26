@@ -2,6 +2,7 @@ import { ensureFront } from '../front/front.service';
 import type { GameState } from '../state/state.types';
 import type { EmpireId } from '../empire/empire.types';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
+import { garrisonedTroops } from '../trench/trench.service';
 import type { BuildingKind } from '../building/building.types';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { distance, gridAt, gridInBounds, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
@@ -95,6 +96,7 @@ export function deployedTroops(state: GameState, empire: EmpireId): number {
     for (const squad of expedition.squads) total += squad.troops;
   }
   for (const column of state.columns) if (column.empire === empire) total += column.troops;
+  total += garrisonedTroops(state, empire);
   for (const front of state.fronts) {
     if (front.sideA.empire === empire) total += front.sideA.troops;
     if (front.sideB.empire === empire) total += front.sideB.troops;

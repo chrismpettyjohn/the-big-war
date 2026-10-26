@@ -13,6 +13,7 @@ export type CommandError =
   | 'insufficient_science'
   | 'insufficient_troops'
   | 'reserve_full'
+  | 'trench_full'
   | 'invalid_target'
   | 'not_researched'
   | 'cooldown'
@@ -63,6 +64,28 @@ export interface DemolishBuildingCommand {
   readonly type: 'DemolishBuilding';
   readonly empire: EmpireId;
   readonly hex: Axial;
+}
+
+export interface ManTrenchCommand {
+  readonly type: 'ManTrench';
+  readonly empire: EmpireId;
+  readonly hex: Axial;
+  readonly percent: number;
+}
+
+export interface LeaveTrenchCommand {
+  readonly type: 'LeaveTrench';
+  readonly empire: EmpireId;
+  readonly hex: Axial;
+  readonly percent: number;
+}
+
+export interface TrenchAttackCommand {
+  readonly type: 'TrenchAttack';
+  readonly empire: EmpireId;
+  readonly hex: Axial;
+  readonly target: Axial;
+  readonly percent: number;
 }
 
 export interface FireCannonCommand {
@@ -122,6 +145,9 @@ export type Command =
   | RetreatFrontCommand
   | PlaceBuildingCommand
   | DemolishBuildingCommand
+  | ManTrenchCommand
+  | LeaveTrenchCommand
+  | TrenchAttackCommand
   | FireCannonCommand
   | StartResearchCommand
   | SetGameSpeedCommand

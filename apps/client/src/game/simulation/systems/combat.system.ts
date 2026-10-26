@@ -1,8 +1,9 @@
-import type { Front } from '../../front/front.types';
 import { ENGINE_TUNING } from '../simulation.constants';
+import { ownTrench } from '../../trench/trench.service';
 import type { GameState } from '../../state/state.types';
 import type { EmpireId } from '../../empire/empire.types';
 import { terrainDefenceAt } from '../../map/terrain.service';
+import type { Front, FrontSide } from '../../front/front.types';
 import { buildFrontContext } from '../combat/front-context.service';
 import { assignFrontClusters } from '../combat/front-clusters.service';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
@@ -14,6 +15,8 @@ export function stepCombat(state: GameState, dt: number): void {
   assignFrontClusters(state);
 
   for (const front of state.fronts) {
+    manTrenchUnderAttack(state, front.sideA, front.hexA, front.sideB);
+    manTrenchUnderAttack(state, front.sideB, front.hexB, front.sideA);
 
     const context = buildFrontContext(state, front);
     if (!context) continue;
@@ -90,6 +93,16 @@ export function stepCombat(state: GameState, dt: number): void {
   }
 }
 
+function manTrenchUnderAttack(state: GameState, side: FrontSide, home: Axial, enemy: FrontSide): void {
+  if (enemy.mode === 'defence' || enemy.troops <= 0) return;
+  if (side.troops > 0 && side.mode !== 'defence') return;
+  const trench = ownTrench(state, side.empire, home);
+  if (!trench || trench.garrison <= 0) return;
+  if (side.troops <= 0) side.mode = 'defence';
+  side.troops += trench.garrison;
+  trench.garrison = 0;
+}
+
 function pressureOf(
   attackerTroops: number,
   attack: number,
@@ -113,6 +126,7 @@ function captureHex(state: GameState, front: Front, capturedBy: EmpireId): void 
     cell.building.cooldown = 0;
   }
   if (cell.building) cell.building.demolishAt = null;
+  if (cell.building) cell.building.garrison = 0;
   else advanceTank(state, targetHex, capturedBy);
 
   if (front.sideA.empire === defenderId) front.sideA.troops = 0;

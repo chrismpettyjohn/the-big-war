@@ -19,7 +19,7 @@ import { gridAt, makeGrid } from '@the-big-war/game-engine/world-tile/world-tile
 import { recomputeEmpireBonuses } from '@the-big-war/client/game/research/research.service';
 import { declareWar, getRelation } from '@the-big-war/client/game/diplomacy/diplomacy.service';
 import type { Building, BuildingKind } from '@the-big-war/client/game/building/building.types';
-import { launchExpedition as launchTroops } from '@the-big-war/client/game/troops/troops.service';
+import { deployedTroops, launchExpedition as launchTroops } from '@the-big-war/client/game/troops/troops.service';
 
 const FACTIONS = ['ironclad', 'league', 'verdant', 'academy'];
 
@@ -105,7 +105,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
 }
 
 function building(state: GameState, kind: BuildingKind, level = 1, growth = 0): Building {
-  return { id: state.nextBuildingId++, kind, level, cooldown: 0, growth, demolishAt: null, buildRemaining: 0, gatherers: [] };
+  return { id: state.nextBuildingId++, kind, level, cooldown: 0, growth, demolishAt: null, buildRemaining: 0, gatherers: [], garrison: 0, machineGun: false };
 }
 
 function place(state: GameState, hex: { q: number; r: number }, kind: BuildingKind, level = 1): Building {
@@ -402,9 +402,69 @@ describe('engine field works', () => {
     expect(overrunFront.sideB.modifiers.attack).toBeGreaterThan(front.sideB.modifiers.attack);
   });
 
+  function nest(state: GameState, garrison: number): Building {
+    const trench = place(state, { q: 2, r: 4 }, 'trench');
+    trench.machineGun = true;
+    trench.garrison = garrison;
+    return trench;
+  }
+
+  test('machine guns only fire from a manned trench', () => {
+    const empty = makeState();
+    nest(empty, 0);
+    const emptyFront = standoff(empty);
+    step(empty, FIXED_DT);
+    expect(emptyFront.sideA.modifiers.lines.map(entry => entry.label)).not.toContain('Machine guns');
+  });
+
+  test('a garrison mans the trench line when attacked and returns afterwards', () => {
+    const state = makeState();
+    const trench = place(state, home, 'trench');
+    trench.garrison = 12;
+    const front = ensureFront(state, enemy, home);
+    front.sideA.mode = 'attack';
+    front.sideA.troops = 4;
+    step(state, FIXED_DT);
+    const defender = front.sideB;
+    expect(trench.garrison).toBe(0);
+    expect(defender.mode).toBe('defence');
+    expect(defender.troops).toBeGreaterThan(10);
+
+    front.sideA.troops = 0;
+    const reserve = state.empires[0]!.soldiers;
+    const survivors = defender.troops;
+    step(state, FIXED_DT);
+    expect(state.fronts).not.toContain(front);
+    expect(trench.garrison + state.empires[0]!.soldiers - reserve).toBeCloseTo(survivors, 0);
+    expect(trench.garrison).toBeGreaterThan(0);
+  });
+
+  test('garrisons count as deployed, are lost on capture and return on demolish', () => {
+    const state = makeState();
+    const trench = place(state, home, 'trench');
+    trench.garrison = 7;
+    expect(deployedTroops(state, 0)).toBe(7);
+
+    trench.demolishAt = state.elapsed;
+    const reserve = state.empires[0]!.soldiers;
+    step(state, FIXED_DT);
+    expect(gridAt(state.grid, home)!.building).toBeNull();
+    expect(state.empires[0]!.soldiers).toBeGreaterThanOrEqual(reserve + 7);
+
+    const lost = makeState();
+    const held = place(lost, home, 'trench');
+    held.garrison = 1;
+    const front = ensureFront(lost, enemy, home);
+    front.sideA.mode = 'attack';
+    front.sideA.troops = 500;
+    for (let i = 0; i < 2000 && gridAt(lost.grid, home)!.owner === 0; i++) step(lost, FIXED_DT);
+    expect(gridAt(lost.grid, home)!.owner).toBe(1);
+    expect(held.garrison).toBe(0);
+  });
+
   test('machine guns only fire for a side holding the line', () => {
     const holding = makeState();
-    place(holding, { q: 2, r: 4 }, 'machine_gun');
+    nest(holding, 5);
     const front = standoff(holding);
     step(holding, FIXED_DT);
     const line = front.sideA.modifiers.lines.find(entry => entry.label === 'Machine guns');
@@ -412,7 +472,7 @@ describe('engine field works', () => {
     expect(line?.defence).toBeCloseTo(1.2, 6);
 
     const attacking = makeState();
-    place(attacking, { q: 2, r: 4 }, 'machine_gun');
+    nest(attacking, 5);
     const attackFront = standoff(attacking);
     attackFront.sideA.mode = 'attack';
     step(attacking, FIXED_DT);
@@ -983,7 +1043,7 @@ describe('engine staffing, diplomacy & bot integration', () => {
       level: 1,
       cooldown: 0,
       growth: 0,
-      demolishAt: null, buildRemaining: 0, gatherers: [],
+      demolishAt: null, buildRemaining: 0, gatherers: [], garrison: 0, machineGun: false,
     };
     gridAt(state.grid, { q: 0, r: 2 })!.building = {
       id: state.nextBuildingId++,
@@ -991,7 +1051,7 @@ describe('engine staffing, diplomacy & bot integration', () => {
       level: 1,
       cooldown: 0,
       growth: 0,
-      demolishAt: null, buildRemaining: 0, gatherers: [],
+      demolishAt: null, buildRemaining: 0, gatherers: [], garrison: 0, machineGun: false,
     };
 
     empire.civilians = 2;

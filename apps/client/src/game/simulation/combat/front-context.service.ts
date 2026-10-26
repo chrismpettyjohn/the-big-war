@@ -2,6 +2,7 @@ import { ENGINE_TUNING } from '../simulation.constants';
 import type { GameState } from '../../state/state.types';
 import type { EmpireId } from '../../empire/empire.types';
 import { countSupport } from '../../building/building.service';
+import { isMannedMachineGun } from '../../trench/trench.service';
 import type { FrontModifiersResult, FrontTickContext } from '../simulation.types';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
 import { terrainAt, terrainDefenceAt, terrainLabel } from '../../map/terrain.service';
@@ -79,7 +80,9 @@ function resolveFrontSide(
   const support = state.config.support;
   const trench = countSupport(state, side.empire, homeHex, 0, k => k === 'trench');
   const enemyTanks = countSupport(state, enemy.empire, homeHex, support.tankRadius, k => k === 'tank');
-  const machineGuns = countSupport(state, side.empire, homeHex, support.machineGunRadius, k => k === 'machine_gun');
+  const machineGuns = countSupport(state, side.empire, homeHex, support.machineGunRadius, (_, cell) =>
+    isMannedMachineGun(state, cell),
+  );
   const bunkers = countSupport(state, side.empire, homeHex, support.bunkerRadius, k => k === 'bunker');
   const tanks = countSupport(state, side.empire, enemyHex, support.tankRadius, k => k === 'tank');
 

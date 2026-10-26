@@ -99,6 +99,20 @@ export function createControllers(deps: ControllerDeps): Controllers {
     else notice(result.reason);
   };
 
+  const trenchAttack = (from: Axial, target: Axial) => {
+    if (distance(from, target) !== 1 || !foreign(target)) {
+      notice('invalid_target');
+      return;
+    }
+    const result = store.dispatch({ type: 'TrenchAttack', empire: player(), hex: from, target, percent: troopPercent() });
+    if (!result.ok) {
+      notice(result.reason);
+      return;
+    }
+    deps.onTroopsSent?.(from, target);
+    setTool({ kind: 'idle' });
+  };
+
   const selectHex = (hex: Axial | null) => {
     setSelectedHex(hex);
     setContextMenu(null);
@@ -140,6 +154,10 @@ export function createControllers(deps: ControllerDeps): Controllers {
         return;
       }
       fireCannon(active.from, hex);
+      return;
+    }
+    if (active.kind === 'trench-attack') {
+      trenchAttack(active.from, hex);
       return;
     }
 

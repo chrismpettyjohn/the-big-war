@@ -95,7 +95,7 @@ function makeState(config: GameConfig = tinyConfig()): GameState {
 }
 
 function makeBuilding(state: GameState, kind: BuildingKind, level = 1): Building {
-  return { id: state.nextBuildingId++, kind, level, cooldown: 0, growth: 0, demolishAt: null, buildRemaining: 0, gatherers: [] };
+  return { id: state.nextBuildingId++, kind, level, cooldown: 0, growth: 0, demolishAt: null, buildRemaining: 0, gatherers: [], garrison: 0, machineGun: false };
 }
 
 function borderEdge(state: GameState, left: number, right: number): { a: { q: number; r: number }; b: { q: number; r: number } } {
@@ -392,7 +392,6 @@ describe('PlaceBuilding', () => {
 
 describe('PlaceBuilding field works', () => {
   const gated = [
-    ['machine_gun', 'machine_guns'],
     ['battery', 'heavy_artillery'],
     ['bunker', 'reinforced_concrete'],
     ['tank', 'armour'],
@@ -426,6 +425,85 @@ describe('PlaceBuilding field works', () => {
     expect(buildingCost(state, 0, 'trench')).toBe(cost);
     const market = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 2, r: 2 }, kind: 'market' });
     expect(market.ok).toBe(true);
+  });
+});
+
+describe('Trenches', () => {
+  const trenchHex = { q: 4, r: 2 };
+  const enemyHex = { q: 5, r: 2 };
+
+  function dug(state: GameState): Building {
+    const trench = makeBuilding(state, 'trench');
+    gridAt(state.grid, trenchHex)!.building = trench;
+    return trench;
+  }
+
+  test('machine guns must be mounted in a finished trench of your own', () => {
+    const state = makeState();
+    const locked = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: trenchHex, kind: 'machine_gun' });
+    expect(locked.ok).toBe(false);
+    if (!locked.ok) expect(locked.reason).toBe('not_researched');
+
+    state.empires[0]!.unlocks.push('building:machine_gun');
+    const open = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 3 }, kind: 'machine_gun' });
+    expect(open.ok).toBe(false);
+
+    const trench = dug(state);
+    trench.buildRemaining = 2;
+    const unfinished = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: trenchHex, kind: 'machine_gun' });
+    expect(unfinished.ok).toBe(false);
+
+    trench.buildRemaining = 0;
+    const mounted = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: trenchHex, kind: 'machine_gun' });
+    expect(mounted.ok).toBe(true);
+    expect(gridAt(state.grid, trenchHex)!.building).toBe(trench);
+    expect(trench.machineGun).toBe(true);
+
+    const twice = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: trenchHex, kind: 'machine_gun' });
+    expect(twice.ok).toBe(false);
+  });
+
+  test('ManTrench moves reserve troops in up to capacity', () => {
+    const state = makeState();
+    const trench = dug(state);
+    const result = dispatch(state, { type: 'ManTrench', empire: 0, hex: trenchHex, percent: 100 });
+    expect(result.ok).toBe(true);
+    expect(trench.garrison).toBe(state.config.trench.capacity);
+    expect(state.empires[0]!.soldiers).toBe(100 - state.config.trench.capacity);
+
+    const full = dispatch(state, { type: 'ManTrench', empire: 0, hex: trenchHex, percent: 100 });
+    expect(full.ok).toBe(false);
+    if (!full.ok) expect(full.reason).toBe('trench_full');
+
+    const plain = dispatch(state, { type: 'ManTrench', empire: 0, hex: { q: 3, r: 4 }, percent: 50 });
+    expect(plain.ok).toBe(false);
+  });
+
+  test('LeaveTrench returns troops to the reserve', () => {
+    const state = makeState();
+    const trench = dug(state);
+    trench.garrison = 10;
+    const result = dispatch(state, { type: 'LeaveTrench', empire: 0, hex: trenchHex, percent: 100 });
+    expect(result.ok).toBe(true);
+    expect(trench.garrison).toBe(0);
+    expect(state.empires[0]!.soldiers).toBe(110);
+  });
+
+  test('TrenchAttack sends the garrison onto an attacking front', () => {
+    const state = makeState();
+    const trench = dug(state);
+    trench.garrison = 10;
+    const far = dispatch(state, { type: 'TrenchAttack', empire: 0, hex: trenchHex, target: { q: 6, r: 2 }, percent: 50 });
+    expect(far.ok).toBe(false);
+
+    const result = dispatch(state, { type: 'TrenchAttack', empire: 0, hex: trenchHex, target: enemyHex, percent: 50 });
+    expect(result.ok).toBe(true);
+    expect(trench.garrison).toBe(5);
+    const front = state.fronts[0]!;
+    const side = front.sideA.empire === 0 ? front.sideA : front.sideB;
+    expect(side.troops).toBe(5);
+    expect(side.mode).toBe('attack');
+    expect(state.empires[0]!.soldiers).toBe(100);
   });
 });
 

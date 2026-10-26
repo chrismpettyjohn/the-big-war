@@ -4,6 +4,7 @@ import { OverlayLayer } from './overlay-layer';
 import { SoldiersLayer } from './soldiers-layer';
 import { BuildingsLayer } from './buildings-layer';
 import type { OverlayState } from './overlay-layer';
+import { FieldworksLayer } from './fieldworks-layer';
 import { NationLabelsLayer } from './nation-labels-layer';
 import type { GameState } from '../game/state/state.types';
 import { TerrainLayer, visibleHexRange } from './terrain-layer';
@@ -58,6 +59,7 @@ export function createWorld(options: WorldOptions): WorldRenderer {
 
   const stage = new Container();
   const terrain = new TerrainLayer();
+  const fieldworks = new FieldworksLayer();
   const buildings = new BuildingsLayer();
   const overlay = new OverlayLayer();
   const soldiers = new SoldiersLayer();
@@ -147,6 +149,7 @@ export function createWorld(options: WorldOptions): WorldRenderer {
       cameraState.y + size.height / cameraState.scale,
     );
     terrain.draw(state.grid, hexSize, range);
+    fieldworks.draw(state.grid, hexSize, range, overlayState.ghost);
     nationLabels.draw(state, hexSize);
     buildings.draw(state.grid, hexSize, range, state.elapsed, state.config.buildings, state.config.support.fortDefenceRadius);
     buildings.drawGhost(overlayState.ghost, hexSize);
@@ -207,7 +210,7 @@ export function createWorld(options: WorldOptions): WorldRenderer {
         resolution: Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1),
         autoDensity: true,
       });
-      stage.addChild(terrain.container, worldBorder, nationLabels.container, buildings.container, overlay.container, soldiers.container, fx.container);
+      stage.addChild(terrain.container, fieldworks.container, worldBorder, nationLabels.container, buildings.container, overlay.container, soldiers.container, fx.container);
       app.stage.addChild(stage);
       options.host.appendChild(app.canvas);
       app.canvas.style.display = 'block';
@@ -272,6 +275,7 @@ export function createWorld(options: WorldOptions): WorldRenderer {
       resizeObserver = null;
       if (options.autoStart ?? true) app.ticker.remove(onTick);
       buildings.reset();
+      fieldworks.reset();
       soldiers.reset();
       fx.clear();
       terrain.invalidate();

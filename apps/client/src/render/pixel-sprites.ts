@@ -220,7 +220,7 @@ export const BUILDING_SPRITES: Readonly<Record<BuildingKind, readonly string[]>>
 
 export const SOLDIER_SIZE = 8;
 
-export type SoldierFrame = 'idle' | 'step' | 'windup' | 'strike';
+export type SoldierFrame = 'idle' | 'step' | 'windup' | 'strike' | 'crouch' | 'aim' | 'fire';
 
 export const SOLDIER_SPRITES: Readonly<Record<SoldierFrame, readonly string[]>> = {
   idle: [
@@ -262,5 +262,35 @@ export const SOLDIER_SPRITES: Readonly<Record<SoldierFrame, readonly string[]>> 
     '.kcck...',
     '.kddk...',
     'kk...kk.',
+  ],
+  crouch: [
+    '........',
+    '........',
+    '..kk..s.',
+    '.kwwk.s.',
+    '.kwwk.d.',
+    'kcccckd.',
+    'kcccck..',
+    '........',
+  ],
+  aim: [
+    '........',
+    '........',
+    '..kk.....',
+    '.kwwk....',
+    '.kwwkddss.',
+    'kcccck...',
+    'kcccck...',
+    '........',
+  ],
+  fire: [
+    '........',
+    '........',
+    '..kk......',
+    '.kwwk.....',
+    '.kwwkddssy',
+    'kcccck....',
+    'kcccck....',
+    '........',
   ],
 };

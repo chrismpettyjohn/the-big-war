@@ -24,6 +24,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     destroysTerrain: ['forest', 'mountain'],
   },
   battery: { cooldown: 12, range: 4, damage: 6 },
+  trench: { capacity: 20 },
   front: { idleEndSeconds: 5, idleTroops: 0, retreatPenalty: 0.25 },
   combat: {
     attackWeight: 1.0,

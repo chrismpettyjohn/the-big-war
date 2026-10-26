@@ -6,7 +6,7 @@ import { evaluateDiplomacy } from './bot-diplomacy.service';
 import { createRng } from '@the-big-war/game-engine/rng/rng.service';
 import type { Agent } from '@the-big-war/game-engine/agent/agent.types';
 import { frontModeCommands, troopCommand } from './bot-military.service';
-import { cannonCommand, constructionCommands, researchCommand } from './bot-economy.service';
+import { cannonCommand, constructionCommands, researchCommand, trenchCommands } from './bot-economy.service';
 
 export function createBot(options: BotOptions): Bot {
   const personality =
@@ -31,6 +31,7 @@ export function botTick(bot: Bot, state: GameState, _dt: number): Command[] {
   if (research) commands.push(research);
 
   commands.push(...constructionCommands(bot, state, empire));
+  commands.push(...trenchCommands(bot, state, empire));
 
   const cannon = cannonCommand(bot, state, empire);
   if (cannon) commands.push(cannon);

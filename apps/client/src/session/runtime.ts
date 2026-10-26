@@ -147,9 +147,9 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
               valid: placementError(store.state, store.state.playerEmpire, hover, tool.building) === null,
             }
           : null,
-      cannonFrom: tool.kind === 'cannon' ? tool.from : null,
-      cannonRange: store.state.config.cannon.range,
-      cannonTarget: tool.kind === 'cannon' ? controllers.hoverHex() : null,
+      cannonFrom: tool.kind === 'cannon' || tool.kind === 'trench-attack' ? tool.from : null,
+      cannonRange: tool.kind === 'trench-attack' ? 1 : store.state.config.cannon.range,
+      cannonTarget: tool.kind === 'cannon' || tool.kind === 'trench-attack' ? controllers.hoverHex() : null,
     });
     world.render(store.state);
 

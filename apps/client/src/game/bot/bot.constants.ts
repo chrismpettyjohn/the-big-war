@@ -11,6 +11,8 @@ export const BOT_TUNING = {
   researchScienceFloor: 50,
   reserveFloorRatio: 0.25,
   militaryBuildChance: 0.5,
+  trenchTarget: 4,
+  trenchManPercent: 30,
   cannonFireChance: 0.7,
   siteScanLimit: 60,
   attackSuperiority: 1.1,
