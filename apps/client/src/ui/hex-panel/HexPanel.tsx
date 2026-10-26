@@ -50,6 +50,7 @@ export const HexPanel = (props: HexPanelProps) => {
 
   const hex = () => props.controllers.selectedHex();
   const cell = () => {
+    store.version();
     const selected = hex();
     return selected ? (gridAt(store.state.grid, selected) ?? null) : null;
   };
@@ -90,11 +91,21 @@ export const HexPanel = (props: HexPanelProps) => {
     return !!current && current.kind === 'cannon' && isOwn() && current.cooldown <= 0;
   };
 
+  const liveBuilding = () => {
+    store.version();
+    return building();
+  };
+  const currentTier = () => {
+    const current = liveBuilding();
+    return current?.kind === 'barracks' ? barracksTier(store.state, current) : null;
+  };
   const nextTier = () => {
+    store.version();
     const current = building();
     return current && isOwn() && current.buildRemaining <= 0 ? nextBarracksTier(store.state, current) : null;
   };
   const upgradeBlocker = () => {
+    store.version();
     const selected = hex();
     return selected ? upgradeError(store.state, player(), selected) : null;
   };
@@ -188,7 +199,7 @@ export const HexPanel = (props: HexPanelProps) => {
                 <div class="kit-col">
                   <div class="kit-row">
                     <strong class="hud-card-name">{buildingLabel(entry().kind)}</strong>
-                    <span class="street-drawer-panel-kind">{buildingState(entry())}</span>
+                    <span class="street-drawer-panel-kind">{buildingState(liveBuilding() ?? entry())}</span>
                   </div>
                   <Show when={isOwn()}>
                     <div class="kit-row">
@@ -209,16 +220,18 @@ export const HexPanel = (props: HexPanelProps) => {
                         </button>
                       </Show>
                     </div>
-                    <Show when={entry().kind === 'barracks'}>
-                      <span class="kit-note kit-num">
-                        Trains {barracksTier(store.state, entry()).troop} · {barracksTier(store.state, entry()).goldPerSoldier} gold each
-                      </span>
+                    <Show when={currentTier()}>
+                      {tier => (
+                        <span class="kit-note kit-num">
+                          Trains {tier().troop} · {tier().goldPerSoldier} gold each
+                        </span>
+                      )}
                     </Show>
                     <Show when={nextTier()}>
                       {tier => (
                         <div class="kit-col">
                           <button type="button" class="kit-button" disabled={upgradeBlocker() !== null} onClick={upgrade}>
-                            Upgrade to {ROMAN[entry().level] ?? entry().level + 1} ({tier().troop}) · {tier().upgradeCost} Gold
+                            Upgrade to {ROMAN[liveBuilding()?.level ?? 0]} ({tier().troop}) · {tier().upgradeCost} Gold
                           </button>
                           <Show when={upgradeBlocker() === 'not_researched' && tier().requiresResearch}>
                             {nodeId => (
