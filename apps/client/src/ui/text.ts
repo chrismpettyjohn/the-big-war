@@ -31,7 +31,7 @@ const BUILDING_DESCRIPTIONS: Readonly<Record<BuildingKind, string>> = {
   miner: 'Workers walk to the nearest ore deposit in your territory and haul back ore worth far more than wood. Ore is rare, so fight for it.',
   farm: 'Speeds up population growth. Each farm adds more, up to a cap.',
   lab: 'Produces science for research, plus a little gold.',
-  barracks: 'Raises how many troops you can hold in reserve and lets you attack from nearby hexes.',
+  barracks: 'Trains troops, raises how many you can hold in reserve and lets you attack from nearby hexes. Upgrade it to level II (Grenadiers) and III (Machine Gunners) once researched: better troops hit harder but train slower and cost more gold each.',
   fort: 'Troops within its radius fight 50% more effectively.',
   cannon: 'Fires at distant hexes to damage defenders and clear forests and blast passes through mountains. Needs a reload between shots. Unlocked through research.',
   trench: 'Dug into the ground and links up with neighbouring trenches. Click it to station up to 20 troops, who man the line when attacked and defend 35% better. You can also attack straight out of it. Enemy tanks within 2 hexes cancel the bonus.',

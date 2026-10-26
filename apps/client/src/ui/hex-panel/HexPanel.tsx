@@ -11,12 +11,18 @@ import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
 import type { ModifierLine } from '../../game/front/front.types';
 import type { Building } from '../../game/building/building.types';
 import { defendersOn, isMannedMachineGun } from '../../game/trench/trench.service';
+import { RESEARCH_BY_ID } from '../../game/research/research.constants';
+import { barracksTier, nextBarracksTier, upgradeError } from '../../game/building/building.service';
 import { distance, gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export type { HexPanelProps };
 
+const ROMAN = ['I', 'II', 'III'];
+
 function buildingState(building: Building): string {
-  const parts: string[] = [`L${building.level}`];
+  const store = gameStore();
+  const parts: string[] = [building.kind === 'barracks' ? `L${ROMAN[building.level - 1] ?? building.level}` : `L${building.level}`];
+  if (building.kind === 'barracks') parts.push(barracksTier(store.state, building).troop);
   if (building.kind === 'cannon' && building.cooldown > 0) {
     parts.push(`Reloading ${building.cooldown.toFixed(0)}s`);
   }
@@ -82,6 +88,21 @@ export const HexPanel = (props: HexPanelProps) => {
   const canFire = () => {
     const current = building();
     return !!current && current.kind === 'cannon' && isOwn() && current.cooldown <= 0;
+  };
+
+  const nextTier = () => {
+    const current = building();
+    return current && isOwn() && current.buildRemaining <= 0 ? nextBarracksTier(store.state, current) : null;
+  };
+  const upgradeBlocker = () => {
+    const selected = hex();
+    return selected ? upgradeError(store.state, player(), selected) : null;
+  };
+  const upgrade = () => {
+    const selected = hex();
+    if (!selected) return;
+    const result = store.dispatch({ type: 'UpgradeBuilding', empire: player(), hex: selected });
+    if (!result.ok) props.controllers.notice(result.reason);
   };
 
   const demolish = () => {
@@ -188,6 +209,25 @@ export const HexPanel = (props: HexPanelProps) => {
                         </button>
                       </Show>
                     </div>
+                    <Show when={entry().kind === 'barracks'}>
+                      <span class="kit-note kit-num">
+                        Trains {barracksTier(store.state, entry()).troop} · {barracksTier(store.state, entry()).goldPerSoldier} gold each
+                      </span>
+                    </Show>
+                    <Show when={nextTier()}>
+                      {tier => (
+                        <div class="kit-col">
+                          <button type="button" class="kit-button" disabled={upgradeBlocker() !== null} onClick={upgrade}>
+                            Upgrade to {ROMAN[entry().level] ?? entry().level + 1} ({tier().troop}) · {tier().upgradeCost} Gold
+                          </button>
+                          <Show when={upgradeBlocker() === 'not_researched' && tier().requiresResearch}>
+                            {nodeId => (
+                              <span class="kit-note">Requires {RESEARCH_BY_ID.get(nodeId())?.name ?? nodeId()}</span>
+                            )}
+                          </Show>
+                        </div>
+                      )}
+                    </Show>
                     <Show
                       when={confirmDemolish()}
                       fallback={
