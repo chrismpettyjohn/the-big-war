@@ -12,6 +12,7 @@ import { EndScreen } from '../end-screen/EndScreen';
 import { WikiPanel } from '../wiki-panel/WikiPanel';
 import { BuildPanel } from '../build-panel/BuildPanel';
 import { MenuScreen } from '../menu-screen/MenuScreen';
+import { SmallScreen } from '../small-screen/SmallScreen';
 import { gameStore } from '../../game/store/store.service';
 import type { NoticesProps, PanelId } from './Shell.types';
 import { DeploySlider } from '../deploy-slider/DeploySlider';
@@ -232,6 +233,7 @@ export const Shell = () => {
       </Show>
 
       <AboutView />
+      <SmallScreen />
     </>
   );
 };
