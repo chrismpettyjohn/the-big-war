@@ -7,14 +7,13 @@ import { nearestOwnedHex } from '../game/troops/troops.service';
 import type { BuildingKind } from '../game/building/building.types';
 import type { CommandError } from '../game/commands/commands.types';
 import type { Axial, Pixel } from '@the-big-war/game-engine/world-tile/world-tile.types';
-import { distance, gridAt, neighbors, pixelToHex } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import type {
   CommandNotice,
-  ContextMenuState,
   ControllerDeps,
   Controllers,
   Tool,
 } from './controllers.types';
+import { distance, gridAt, neighbors, pixelToHex } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export type * from './controllers.types';
 
@@ -26,7 +25,6 @@ export function createControllers(deps: ControllerDeps): Controllers {
   const [hoverHex, setHoverHex] = createSignal<Axial | null>(null);
   const [tool, setToolSignal] = createSignal<Tool>({ kind: 'idle' });
   const [troopPercent, setTroopPercentSignal] = createSignal(50);
-  const [contextMenu, setContextMenu] = createSignal<ContextMenuState | null>(null);
   const [notices, setNotices] = createSignal<readonly CommandNotice[]>([]);
 
   const state = () => store.state;
@@ -115,7 +113,6 @@ export function createControllers(deps: ControllerDeps): Controllers {
 
   const selectHex = (hex: Axial | null) => {
     setSelectedHex(hex);
-    setContextMenu(null);
   };
 
   const setTool = (next: Tool) => {
@@ -126,20 +123,12 @@ export function createControllers(deps: ControllerDeps): Controllers {
   const cancelTool = () => {
     if (tool().kind !== 'idle') setTool({ kind: 'idle' });
     else setSelectedHex(null);
-    setContextMenu(null);
   };
 
-  const tap = (at: Pixel, button: 'primary' | 'secondary') => {
-    setContextMenu(null);
+  const tap = (at: Pixel) => {
     const hex = hexAtScreen(at);
     if (!hex) {
       setSelectedHex(null);
-      return;
-    }
-
-    if (button === 'secondary') {
-      if (tool().kind !== 'idle') cancelTool();
-      else secondary(at);
       return;
     }
 
@@ -176,7 +165,6 @@ export function createControllers(deps: ControllerDeps): Controllers {
     const hex = hexAtScreen(at);
     if (!hex) return;
     setSelectedHex(hex);
-    setContextMenu({ at, hex });
   };
 
   const key = (pressed: string) => {
@@ -198,18 +186,12 @@ export function createControllers(deps: ControllerDeps): Controllers {
     hoverHex,
     tool,
     troopPercent,
-    contextMenu,
     notices,
     selectHex,
     setHover: setHoverHex,
     setTroopPercent: percent => setTroopPercentSignal(Math.round(Math.min(100, Math.max(1, percent)))),
     setTool,
     cancelTool,
-    openContextMenu: (at, hex) => {
-      setSelectedHex(hex);
-      setContextMenu({ at, hex });
-    },
-    closeContextMenu: () => setContextMenu(null),
     hexAtScreen,
     tap,
     dragOver: client => setHoverHex(deps.clientToHex(client)),

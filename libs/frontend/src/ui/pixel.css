@@ -42,7 +42,6 @@ canvas {
 .nitro-sidebar,
 .street-drawer-tier-panel,
 .street-drawer-panel,
-.nitro-context-menu,
 .kit-glass {
   border: 1px solid var(--street-border);
   border-radius: var(--street-radius);

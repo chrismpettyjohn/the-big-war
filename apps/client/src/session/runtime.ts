@@ -102,10 +102,13 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
         syncCameraMoved();
         return;
       case 'tap':
-        controllers.tap(intent.at, intent.button);
+        controllers.tap(intent.at);
         return;
       case 'longPress':
         controllers.secondary(intent.at);
+        return;
+      case 'cancel':
+        if (controllers.tool().kind === 'place') controllers.cancelTool();
         return;
       case 'hover':
         controllers.setHover(localToHex(intent.at));
@@ -185,11 +188,6 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
         centreOnWorld(point);
         syncCameraMoved();
       }
-    },
-    hexTopToClient(hex: Axial): Pixel {
-      const hexSize = store.state.config.map.hexSize;
-      const centre = axialToPixel(hex, hexSize);
-      return world.worldToScreen(centre.x, centre.y - hexSize / 2);
     },
     fillScreenFromLeft(): void {
       const grid = store.state.grid;

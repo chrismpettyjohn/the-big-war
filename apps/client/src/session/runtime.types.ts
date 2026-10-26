@@ -2,7 +2,7 @@ import type { Accessor } from 'solid-js';
 import type { Controllers } from './controllers';
 import type { WorldRenderer } from '../render/world';
 import type { GameStore } from '../game/store/store.types';
-import type { Axial, Pixel } from '@the-big-war/game-engine/world-tile/world-tile.types';
+import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 
 export interface MatchRuntimeOptions {
   readonly store: GameStore;
@@ -25,8 +25,6 @@ export interface MatchRuntime {
   fillScreenFromLeft(): void;
   
   centreOnHex(hex: Axial): void;
-
-  hexTopToClient(hex: Axial): Pixel;
 
   resetCamera(): void;
 }

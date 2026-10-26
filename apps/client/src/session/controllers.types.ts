@@ -10,11 +10,6 @@ export type Tool =
   | { readonly kind: 'cannon'; readonly from: Axial }
   | { readonly kind: 'trench-attack'; readonly from: Axial };
 
-export interface ContextMenuState {
-  readonly at: Pixel;
-  readonly hex: Axial;
-}
-
 export interface CommandNotice {
   readonly id: number;
   readonly reason: CommandError;
@@ -25,7 +20,6 @@ export interface Controllers {
   readonly hoverHex: Accessor<Axial | null>;
   readonly tool: Accessor<Tool>;
   readonly troopPercent: Accessor<number>;
-  readonly contextMenu: Accessor<ContextMenuState | null>;
   readonly notices: Accessor<readonly CommandNotice[]>;
 
   selectHex(hex: Axial | null): void;
@@ -33,12 +27,10 @@ export interface Controllers {
   setTroopPercent(percent: number): void;
   setTool(tool: Tool): void;
   cancelTool(): void;
-  openContextMenu(at: Pixel, hex: Axial): void;
-  closeContextMenu(): void;
 
   hexAtScreen(at: Pixel): Axial | null;
 
-  tap(at: Pixel, button: 'primary' | 'secondary'): void;
+  tap(at: Pixel): void;
 
   dragOver(client: Pixel): void;
   dropAt(client: Pixel): void;

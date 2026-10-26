@@ -5,8 +5,6 @@ import { Hud } from '../hud/Hud';
 import { errorLabel } from '../text';
 import { Hotbar } from '../hotbar/Hotbar';
 import { openAbout } from '../about/about';
-import { MapMenu } from '../map-menu/MapMenu';
-import { TileTip } from '../tile-tip/TileTip';
 import { AboutView } from '../about/AboutView';
 import { VOID_COLOR } from '../../render/theme';
 import { ArmyPanel } from '../army-panel/ArmyPanel';
@@ -205,13 +203,6 @@ export const Shell = () => {
         <Show when={runtime()}>
           {active => (
             <>
-              <TileTip runtime={active()} />
-              <MapMenu
-                controllers={active().controllers}
-                onInspect={() => setPanel(null)}
-                onArmy={() => setPanel('army')}
-                onBuild={() => setPanel('build')}
-              />
               <div class="hud-bottom-row">
                 <Hotbar
                   controllers={active().controllers}

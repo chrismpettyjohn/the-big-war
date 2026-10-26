@@ -30,8 +30,12 @@ export function attachInput(host: InputHost): () => void {
   };
 
   const onPointerDown = (event: PointerEvent) => {
+    if (event.button !== 0) {
+      event.preventDefault();
+      if (event.button === 2) host.onIntent({ kind: 'cancel' });
+      return;
+    }
     const at = localPoint(event);
-    const button = event.button === 2 ? 'secondary' : 'primary';
     const state: PointerState = {
       id: event.pointerId,
       startX: at.x,
@@ -39,7 +43,6 @@ export function attachInput(host: InputHost): () => void {
       lastX: at.x,
       lastY: at.y,
       dragging: false,
-      button,
       timer: null,
       consumed: false,
     };
@@ -59,15 +62,13 @@ export function attachInput(host: InputHost): () => void {
       return;
     }
 
-    if (button === 'primary') {
-      state.timer = setTimeout(() => {
-        state.timer = null;
-        if (!state.dragging) {
-          state.consumed = true;
-          host.onIntent({ kind: 'longPress', at: { x: state.startX, y: state.startY } });
-        }
-      }, HELD_LONG_MS);
-    }
+    state.timer = setTimeout(() => {
+      state.timer = null;
+      if (!state.dragging) {
+        state.consumed = true;
+        host.onIntent({ kind: 'longPress', at: { x: state.startX, y: state.startY } });
+      }
+    }, HELD_LONG_MS);
   };
 
   const onPointerMove = (event: PointerEvent) => {
@@ -138,13 +139,8 @@ export function attachInput(host: InputHost): () => void {
     }
 
     const at = localPoint(event);
-    if (state.button === 'secondary') {
-      host.onIntent({ kind: 'tap', at, button: 'secondary' });
-      return;
-    }
-    
     if (Math.hypot(at.x - state.startX, at.y - state.startY) <= DRAG_THRESHOLD) {
-      host.onIntent({ kind: 'tap', at, button: 'primary' });
+      host.onIntent({ kind: 'tap', at });
     }
   };
 
@@ -176,7 +172,7 @@ export function attachInput(host: InputHost): () => void {
   host.element.addEventListener('pointercancel', onPointerCancel);
   host.element.addEventListener('pointerleave', onPointerLeave);
   host.element.addEventListener('wheel', onWheel, { passive: false });
-  host.element.addEventListener('contextmenu', onContextMenu);
+  window.addEventListener('contextmenu', onContextMenu);
   window.addEventListener('keydown', onKeyDown);
 
   return () => {
@@ -188,7 +184,7 @@ export function attachInput(host: InputHost): () => void {
     host.element.removeEventListener('pointercancel', onPointerCancel);
     host.element.removeEventListener('pointerleave', onPointerLeave);
     host.element.removeEventListener('wheel', onWheel);
-    host.element.removeEventListener('contextmenu', onContextMenu);
+    window.removeEventListener('contextmenu', onContextMenu);
     window.removeEventListener('keydown', onKeyDown);
   };
 }

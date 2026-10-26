@@ -7,7 +7,7 @@
 .world-host {
   position: absolute;
   inset: 0;
-  cursor: grab;
+  cursor: default;
   touch-action: none;
 }
 .world-host.is-dragging {
