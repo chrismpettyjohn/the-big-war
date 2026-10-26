@@ -17,8 +17,6 @@ export interface BuildingConfig {
   readonly buildSeconds: number;
 
   readonly requiresResearch: string | null;
-
-  readonly requiresAdjacentTerrain: Terrain | null;
 }
 
 export interface StartConfig {
@@ -138,9 +136,6 @@ export interface SupportConfig {
   readonly barracksAttackRadius: number;
 
   readonly fortDefenceRadius: number;
-
-  readonly lumberjackRadius: number;
-  readonly minerRadius: number;
 
   readonly machineGunRadius: number;
   readonly bunkerRadius: number;

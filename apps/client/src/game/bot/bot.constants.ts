@@ -14,7 +14,6 @@ export const BOT_TUNING = {
   trenchTarget: 4,
   trenchManPercent: 30,
   cannonFireChance: 0.7,
-  siteScanLimit: 60,
   attackSuperiority: 1.1,
   defenceThreshold: 0.8,
   warAggressionFloor: 0.4,

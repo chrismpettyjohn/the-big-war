@@ -166,6 +166,15 @@ describe('engine economy', () => {
     expect(open.empires[0]!.gold).toBe(0);
   });
 
+  test('lumberjacks walk to forest anywhere in their territory', () => {
+    const state = makeState();
+    gridAt(state.grid, { q: 3, r: 6 })!.terrain = 'forest';
+    place(state, { q: 0, r: 1 }, 'lumberjack');
+    state.empires[0]!.gold = 0;
+    run(state, 20);
+    expect(state.empires[0]!.gold).toBeGreaterThan(0);
+  });
+
   test('a forest tile turns to plain once its loads are used up', () => {
     const state = makeState();
     const tree: HexCell = gridAt(state.grid, { q: 1, r: 2 })!;

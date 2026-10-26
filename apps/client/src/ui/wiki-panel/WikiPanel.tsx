@@ -3,10 +3,10 @@ import { buildingIcon } from '../building-icon';
 import { createEffect, For, Show } from 'solid-js';
 import type { WikiPanelProps } from './WikiPanel.types';
 import { gameStore } from '../../game/store/store.service';
+import { buildingDescription, buildingLabel } from '../text';
 import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
 import type { BuildingKind } from '../../game/building/building.types';
 import { BUILDING_KINDS } from '../../game/building/building.constants';
-import { buildingDescription, buildingLabel, terrainLabel } from '../text';
 
 export type { WikiPanelProps };
 
@@ -39,9 +39,6 @@ export const WikiPanel = (props: WikiPanelProps) => {
                   </span>
                 </div>
                 <p class="wiki-entry-body">{buildingDescription(kind)}</p>
-                <Show when={spec().requiresAdjacentTerrain}>
-                  {terrain => <span class="kit-note">Next to {terrainLabel(terrain()).toLowerCase()}</span>}
-                </Show>
                 <Show when={spec().requiresResearch}>
                   <span class="kit-note">Requires research</span>
                 </Show>

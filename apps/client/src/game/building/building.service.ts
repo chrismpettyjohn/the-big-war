@@ -1,15 +1,15 @@
+import type { HexCell } from '../map/map.types';
 import { ownTrench } from '../trench/trench.service';
 import type { GameState } from '../state/state.types';
 import { hasUnlock } from '../research/research.service';
-import type { HexCell, Terrain } from '../map/map.types';
 import type { CommandError } from '../commands/commands.types';
 import type { Empire, EmpireId } from '../empire/empire.types';
 import { ENGINE_TUNING } from '../simulation/simulation.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
+import { area, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import type { Building, BuildingId, BuildingKind, OwnedBuilding } from './building.types';
-import { area, gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
-import { FLAT_COST_BUILDINGS, FREE_STANDING_BUILDINGS, PRODUCTION_BUILDINGS } from './building.constants';
+import { CLEARS_TERRAIN, FLAT_COST_BUILDINGS, PRODUCTION_BUILDINGS } from './building.constants';
 
 export function createBuilding(state: GameState, kind: BuildingKind, level: number, buildRemaining: number): Building {
   return {
@@ -99,35 +99,6 @@ export function shellingFactor(state: GameState, empireId: EmpireId, hex: Axial)
   return bunkers > 0 ? ENGINE_TUNING.bunkerShelling : 1;
 }
 
-export function hasAdjacentTerrain(state: GameState, hex: Axial, terrain: Terrain): boolean {
-  if (gridAt(state.grid, hex)?.terrain === terrain) return true;
-  return hasNeighbourTerrain(state, hex, terrain);
-}
-
-export function hasNeighbourTerrain(state: GameState, hex: Axial, terrain: Terrain): boolean {
-  for (const neighbour of neighbors(hex)) {
-    if (gridAt(state.grid, neighbour)?.terrain === terrain) return true;
-  }
-  return false;
-}
-
-export function isFreeStanding(kind: BuildingKind): boolean {
-  return FREE_STANDING_BUILDINGS.has(kind);
-}
-
-export function hasNeighbourBuilding(state: GameState, hex: Axial): boolean {
-  for (const neighbour of neighbors(hex)) {
-    const building = gridAt(state.grid, neighbour)?.building;
-    if (building && !isFreeStanding(building.kind)) return true;
-  }
-  return false;
-}
-
-const CLEARS_TERRAIN: Partial<Record<BuildingKind, Terrain>> = {
-  lumberjack: 'forest',
-  miner: 'mountain',
-};
-
 export function placementError(
   state: GameState,
   empireId: EmpireId,
@@ -149,12 +120,6 @@ export function placementError(
   if (cell.terrain !== 'plain' && CLEARS_TERRAIN[kind] !== cell.terrain) return 'invalid_target';
 
   if (spec.requiresResearch !== null && !hasUnlock(empire, `building:${kind}`)) return 'not_researched';
-
-  if (spec.requiresAdjacentTerrain !== null && !hasAdjacentTerrain(state, hex, spec.requiresAdjacentTerrain)) {
-    return 'invalid_target';
-  }
-
-  if (!isFreeStanding(kind) && hasNeighbourBuilding(state, hex)) return 'invalid_target';
   return null;
 }
 

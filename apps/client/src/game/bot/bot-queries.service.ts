@@ -1,4 +1,3 @@
-import { BOT_TUNING } from './bot.constants';
 import type { HexCell } from '../map/map.types';
 import { ownTrench } from '../trench/trench.service';
 import type { GameState } from '../state/state.types';
@@ -7,18 +6,17 @@ import { hasUnlock } from '../research/research.service';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
 import type { BuildingKind } from '../building/building.types';
 import type { Bot, CannonShot, HostileEdge } from './bot.types';
+import { GATHERED_TERRAIN } from '../building/building.constants';
 import { canAttack, getRelation } from '../diplomacy/diplomacy.service';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
-import { hasNeighbourBuilding, hasNeighbourTerrain } from '../building/building.service';
 import { distance, gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export function ownedCells(state: GameState, empireId: EmpireId): HexCell[] {
   return state.grid.cells.filter(cell => cell.owner === empireId);
 }
 
-export function isFreeSite(state: GameState, cell: HexCell): boolean {
-  if (cell.building !== null) return false;
-  return !hasNeighbourBuilding(state, { q: cell.q, r: cell.r });
+export function isFreeSite(cell: HexCell): boolean {
+  return cell.building === null && cell.terrain === 'plain';
 }
 
 export function findSite(state: GameState, empireId: EmpireId, kind: BuildingKind): Axial | null {
@@ -30,21 +28,29 @@ export function findSite(state: GameState, empireId: EmpireId, kind: BuildingKin
   }
   if (kind === 'machine_gun') return unarmedTrench(state, empireId);
   if (kind === 'trench') return borderTrenchSite(state, empireId);
-  let fallback: Axial | null = null;
-  let scanned = 0;
-  for (const cell of ownedCells(state, empireId)) {
-    if (scanned >= BOT_TUNING.siteScanLimit) break;
-    const hex = { q: cell.q, r: cell.r };
-    if (!isFreeSite(state, cell)) continue;
-    if (spec.requiresAdjacentTerrain !== null) {
-      if (hasNeighbourTerrain(state, hex, spec.requiresAdjacentTerrain)) return hex;
-      continue;
+  const gathered = GATHERED_TERRAIN[kind];
+  if (gathered) return gathererSite(state, empireId, gathered);
+  const site = ownedCells(state, empireId).find(isFreeSite);
+  return site ? { q: site.q, r: site.r } : null;
+}
+
+function gathererSite(state: GameState, empireId: EmpireId, terrain: HexCell['terrain']): Axial | null {
+  const owned = ownedCells(state, empireId);
+  const resources = owned.filter(cell => cell.terrain === terrain && cell.building === null);
+  if (resources.length === 0) return null;
+  let best: Axial | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const cell of owned) {
+    if (!isFreeSite(cell)) continue;
+    for (const resource of resources) {
+      const d = distance(cell, resource);
+      if (d >= bestDistance) continue;
+      bestDistance = d;
+      best = { q: cell.q, r: cell.r };
     }
-    if (cell.terrain === 'plain') return hex;
-    if (fallback === null) fallback = hex;
-    scanned += 1;
+    if (bestDistance <= 1) break;
   }
-  return fallback;
+  return best;
 }
 
 export function bordersForeignEmpire(state: GameState, empireId: EmpireId, hex: Axial): boolean {

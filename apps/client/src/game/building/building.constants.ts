@@ -1,3 +1,4 @@
+import type { Terrain } from '../map/map.types';
 import type { BuildingKind } from './building.types';
 
 export const BUILDING_KINDS: readonly BuildingKind[] = [
@@ -25,6 +26,14 @@ export const PRODUCTION_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingK
   'farm',
 ]);
 
-export const FREE_STANDING_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingKind>(['trench', 'tank']);
-
 export const FLAT_COST_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingKind>(['trench']);
+
+export const GATHERED_TERRAIN: Readonly<Partial<Record<BuildingKind, Terrain>>> = {
+  lumberjack: 'forest',
+  miner: 'mountain',
+};
+
+export const CLEARS_TERRAIN: Readonly<Partial<Record<BuildingKind, Terrain>>> = {
+  lumberjack: 'forest',
+  miner: 'mountain',
+};

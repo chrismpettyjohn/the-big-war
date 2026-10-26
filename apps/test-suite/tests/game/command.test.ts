@@ -349,12 +349,12 @@ describe('PlaceBuilding', () => {
     if (!result.ok) expect(result.reason).toBe('invalid_target');
   });
 
-  test('rejects a hex adjacent to another building (spacing rule)', () => {
+  test('allows a building directly next to another building', () => {
     const state = makeState();
-    
     const result = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 1, r: 0 }, kind: 'market' });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toBe('invalid_target');
+    expect(result.ok).toBe(true);
+    const neighbour = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 2, r: 0 }, kind: 'farm' });
+    expect(neighbour.ok).toBe(true);
   });
 
   test('rejects a second building on an occupied hex', () => {
@@ -364,12 +364,15 @@ describe('PlaceBuilding', () => {
     expect(result.ok).toBe(false);
   });
 
-  test('honours requiresAdjacentTerrain (lumberjack needs forest)', () => {
-    const noForest = makeState();
-    const rejected = dispatch(noForest, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'lumberjack' });
-    expect(rejected.ok).toBe(false);
-    if (!rejected.ok) expect(rejected.reason).toBe('invalid_target');
+  test('lumberjacks and miners can go on any open plain, far from their resource', () => {
+    const state = makeState();
+    const lumberjack = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'lumberjack' });
+    expect(lumberjack.ok).toBe(true);
+    const miner = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 3 }, kind: 'miner' });
+    expect(miner.ok).toBe(true);
+  });
 
+  test('a lumberjack placed on forest clears it', () => {
     const withForest = makeState();
     gridAt(withForest.grid, { q: 3, r: 2 })!.terrain = 'forest';
     const accepted = dispatch(withForest, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'lumberjack' });

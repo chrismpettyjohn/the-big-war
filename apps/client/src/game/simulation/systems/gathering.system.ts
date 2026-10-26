@@ -3,14 +3,10 @@ import type { EmpireId } from '../../empire/empire.types';
 import type { HexCell, Terrain } from '../../map/map.types';
 import { refillUnlimited } from '../../empire/empire.service';
 import type { Gatherer } from '../../building/building.types';
+import { GATHERED_TERRAIN } from '../../building/building.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
-import { area, distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
-
-const GATHERED_TERRAIN: Partial<Record<string, Terrain>> = {
-  lumberjack: 'forest',
-  miner: 'mountain',
-};
+import { distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export function stepGathering(state: GameState, dt: number): void {
   const gather = state.config.gather;
@@ -22,12 +18,11 @@ export function stepGathering(state: GameState, dt: number): void {
     const empire = state.empires[cell.owner];
     if (!empire || !empire.alive) continue;
     const home = { q: cell.q, r: cell.r };
-    const radius = building.kind === 'lumberjack' ? state.config.support.lumberjackRadius : state.config.support.minerRadius;
     while (building.gatherers.length < gather.workersPerBuilding) {
       building.gatherers.push({ pos: home, target: null, phase: 'idle', progress: 0, duration: 0 });
     }
     for (const gatherer of building.gatherers) {
-      const delivered = stepGatherer(state, gatherer, home, cell.owner, terrain, radius, dt);
+      const delivered = stepGatherer(state, gatherer, home, cell.owner, terrain, dt);
       if (delivered <= 0) continue;
       empire.gold += resolveModifier(delivered * gather.goldPerLoad, empire.bonuses.goldIncome);
       refillUnlimited(empire);
@@ -41,12 +36,11 @@ function stepGatherer(
   home: Axial,
   owner: EmpireId,
   terrain: Terrain,
-  radius: number,
   dt: number,
 ): number {
   const gather = state.config.gather;
   if (gatherer.phase === 'idle') {
-    const target = nearestResource(state, home, owner, terrain, radius);
+    const target = nearestResource(state, home, owner, terrain);
     if (!target) {
       gatherer.pos = home;
       return 0;
@@ -105,15 +99,14 @@ function harvest(state: GameState, cell: HexCell): void {
   cell.harvested = 0;
 }
 
-function nearestResource(state: GameState, home: Axial, owner: EmpireId, terrain: Terrain, radius: number): Axial | null {
+function nearestResource(state: GameState, home: Axial, owner: EmpireId, terrain: Terrain): Axial | null {
   let best: Axial | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
-  for (const candidate of area(home, radius)) {
-    const cell = gridAt(state.grid, candidate);
-    if (!cell || cell.terrain !== terrain || cell.owner !== owner || cell.building) continue;
-    const d = distance(home, candidate);
+  for (const cell of state.grid.cells) {
+    if (cell.terrain !== terrain || cell.owner !== owner || cell.building) continue;
+    const d = distance(home, cell);
     if (d < bestDistance) {
-      best = candidate;
+      best = { q: cell.q, r: cell.r };
       bestDistance = d;
     }
   }
