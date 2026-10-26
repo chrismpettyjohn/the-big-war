@@ -84,7 +84,7 @@ export const MenuScreen = (props: MenuScreenProps) => {
   const slots = () => [props.faction, ...props.settings.bots];
   const openSlots = () => Array.from({ length: MAX_EMPIRES - slots().length });
   const canRemove = () => slots().length > MIN_EMPIRES;
-  const botNames = () => empireNames(props.settings.seed, slots().length);
+  const botNames = () => empireNames(props.settings.seed, slots().length, [props.playerName.trim() || 'Zombo']);
 
   const pickedFaction = () => {
     const target = picking();

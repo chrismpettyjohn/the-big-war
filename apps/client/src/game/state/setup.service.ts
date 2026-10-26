@@ -81,12 +81,13 @@ function neutralStateCount(config: GameConfig): number {
 function createEmpires(config: GameConfig): Empire[] {
   const empires: Empire[] = [];
   const total = config.start.empireCount + neutralStateCount(config);
-  const names = empireNames(config.map.seed, total);
+  const humanName = config.start.humanName?.trim() || 'Zombo';
+  const names = empireNames(config.map.seed, total, [humanName]);
   for (let id = 0; id < total; id++) {
     empires.push(
       createEmpire(config, {
         id,
-        name: id === 0 ? (config.start.humanName?.trim() || 'Zombo') : (names[id] ?? `Empire ${id}`),
+        name: id === 0 ? humanName : (names[id] ?? `Empire ${id}`),
         factionId: '',
         isHuman: id === 0,
         neutralState: id >= config.start.empireCount,
