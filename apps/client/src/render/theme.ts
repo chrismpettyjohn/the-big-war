@@ -66,6 +66,12 @@ export const TERRAIN_FILL_MIX: TerrainMixMap = {
   ore: 1.0,
 };
 
+export const PAVE_MORTAR = 0x6a6358;
+export const PAVE_STONES: readonly number[] = [0x9a9283, 0x8b8374, 0xa59d8d];
+export const PAVE_STREET = 0x57514a;
+export const PAVE_CURB = 0xb8b09f;
+export const PAVE_OWNER_TINT = 0.14;
+
 export const HEX_SHADE_MIN = -0.06;
 export const HEX_SHADE_MAX = 0.06;
 

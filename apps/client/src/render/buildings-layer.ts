@@ -4,9 +4,9 @@ import type { HexRange } from './terrain-layer';
 import type { HexCell } from '../game/map/map.types';
 import type { PlacementGhost } from './overlay-layer.types';
 import { BUILDING_SPRITES, SPRITE_PALETTE, SPRITE_SIZE } from './pixel-sprites';
+import { axialToPixel } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import type { AxialGrid } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import type { Building, BuildingKind, BuildingId } from '../game/building/building.types';
-import { axialToPixel, hexCorners } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 const GHOST_ALPHA = 0.6;
 const INVALID_GHOST_ALPHA = 0.35;
@@ -17,9 +17,6 @@ const BAR_WIDTH = 0.7;
 const BAR_HEIGHT = 0.1;
 const BAR_BACK = 0x1b1330;
 const BAR_FILL = 0xffd35c;
-const BORDER_COLOR = 0xffd35c;
-const BORDER_ALPHA = 0.7;
-const BORDER_INSET = 0.92;
 const FORT_RING_COLOR = 0x9a9a9a;
 const FORT_RING_ALPHA = 0.55;
 const FORT_RING_FILL_ALPHA = 0.06;
@@ -104,7 +101,6 @@ export class BuildingsLayer {
         seen.add(building.id);
         const entry = this.acquire(building, hexSize);
         entry.object.position.set(center.x, center.y);
-        this.drawBorder(center.x, center.y, hexSize);
         if (building.kind === 'fort' && building.buildRemaining <= 0) {
           this.drawFortRing(center.x, center.y, (fortRadius + 0.5) * hexSize);
         }
@@ -135,12 +131,6 @@ export class BuildingsLayer {
       this.release(id, entry);
     }
     this.container.addChild(this.progress);
-  }
-
-  private drawBorder(x: number, y: number, hexSize: number): void {
-    const points = hexCorners({ x, y }, hexSize * BORDER_INSET).flatMap(corner => [corner.x, corner.y]);
-    this.progress.poly(points);
-    this.progress.stroke({ color: BORDER_COLOR, alpha: BORDER_ALPHA, width: Math.max(1, hexSize * 0.06) });
   }
 
   private drawFortRing(x: number, y: number, radius: number): void {

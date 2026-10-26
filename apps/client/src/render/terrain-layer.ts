@@ -2,14 +2,20 @@
 
 import { Container, Graphics } from 'pixi.js';
 import type { HexCell } from '../game/map/map.types';
+import type { BuildingKind } from '../game/building/building.types';
 import type { Pixel } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { DIRECTIONS } from '@the-big-war/game-engine/world-tile/world-tile.constants';
 import type { AxialGrid } from '@the-big-war/game-engine/world-tile/world-tile.types';
-import { axialToPixel, pixelToHex } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import { axialToPixel, gridAt, pixelToHex } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import {
   HEX_BORDER_DARKEN,
   HEX_BORDER_WIDTH,
   NEUTRAL_BORDER_COLOR,
+  PAVE_CURB,
+  PAVE_MORTAR,
+  PAVE_OWNER_TINT,
+  PAVE_STONES,
+  PAVE_STREET,
   SEA_COLOR,
   TERRAIN_FILL_MIX,
   TERRAIN_TINTS,
@@ -81,11 +87,23 @@ export function terrainSignature(
               ? 2
               : 3;
       
-      const packed = ((cell.owner + 2) << 2) | terrainBits;
+      const packed = ((cell.owner + 2) << 3) | (isPaved(cell) ? 4 : 0) | terrainBits;
       hash = ((hash ^ packed) * 16777619) >>> 0;
     }
   }
   return hash;
+}
+
+const UNPAVED: ReadonlySet<BuildingKind> = new Set<BuildingKind>(['trench', 'tank']);
+
+function isPaved(cell: HexCell | undefined): boolean {
+  return !!cell?.building && !UNPAVED.has(cell.building.kind);
+}
+
+function stoneHash(q: number, r: number, row: number, col: number): number {
+  let h = (q * 73856093) ^ (r * 19349663) ^ (row * 83492791) ^ (col * 2654435761);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) % PAVE_STONES.length;
 }
 
 function hexFillColor(cell: HexCell): number {
@@ -167,6 +185,13 @@ export class TerrainLayer {
     for (let r = range.minR; r <= range.maxR; r++) {
       for (let q = range.minQ; q <= range.maxQ; q++) {
         const cell = grid.cells[r * width + q];
+        if (cell && isPaved(cell)) this.drawPavement(grid, cell, hexSize);
+      }
+    }
+
+    for (let r = range.minR; r <= range.maxR; r++) {
+      for (let q = range.minQ; q <= range.maxQ; q++) {
+        const cell = grid.cells[r * width + q];
         if (!cell || cell.owner < 0) continue;
         const x = q * hexSize;
         const y = r * hexSize;
@@ -182,6 +207,48 @@ export class TerrainLayer {
         this.fills.stroke({ width: HEX_BORDER_WIDTH, color: hexBorderColor(cell), alpha: 1 });
       }
     }
+  }
+
+  private drawPavement(grid: AxialGrid<HexCell>, cell: HexCell, hexSize: number): void {
+    const g = this.fills;
+    const { q, r } = cell;
+    const x = q * hexSize;
+    const y = r * hexSize;
+    const unit = hexSize / 16;
+    const tint = (color: number) => (cell.owner >= 0 ? mixColor(color, ownerColor(cell.owner), PAVE_OWNER_TINT) : color);
+
+    g.rect(x, y, hexSize, hexSize);
+    g.fill({ color: tint(PAVE_MORTAR) });
+    PAVE_STONES.forEach((stone, shade) => {
+      for (let row = 0; row < 4; row++) {
+        const offset = row % 2 === 1 ? -2.5 : 0;
+        for (let col = 0, left = offset; left < 16; col++, left += 5) {
+          if (stoneHash(q, r, row, col) !== shade) continue;
+          const from = Math.max(0, left) + 0.5;
+          const to = Math.min(16, left + 5) - 0.5;
+          if (to <= from) continue;
+          g.rect(x + from * unit, y + (row * 4 + 0.5) * unit, (to - from) * unit, 3 * unit);
+        }
+      }
+      g.fill({ color: tint(stone) });
+    });
+
+    const links = DIRECTIONS.filter(dir => isPaved(gridAt(grid, { q: q + dir.q, r: r + dir.r })));
+    if (links.length === 0) return;
+    const cx = x + hexSize / 2;
+    const cy = y + hexSize / 2;
+    const street = (pad: number) => {
+      const half = 2 * unit + pad;
+      g.rect(cx - half, cy - half, half * 2, half * 2);
+      for (const dir of links) {
+        if (dir.q !== 0) g.rect(dir.q > 0 ? cx : x, cy - half, hexSize / 2, half * 2);
+        else g.rect(cx - half, dir.r > 0 ? cy : y, half * 2, hexSize / 2);
+      }
+    };
+    street(unit * 0.75);
+    g.fill({ color: tint(PAVE_CURB) });
+    street(0);
+    g.fill({ color: tint(PAVE_STREET) });
   }
 
   private drawGlyphs(grid: AxialGrid<HexCell>, hexSize: number, range: HexRange): void {
