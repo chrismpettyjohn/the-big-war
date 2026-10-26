@@ -1,9 +1,8 @@
 import type { GameState } from '../../state/state.types';
 import type { EmpireId } from '../../empire/empire.types';
 import type { HexCell, Terrain } from '../../map/map.types';
+import { refillUnlimited } from '../../empire/empire.service';
 import type { Gatherer } from '../../building/building.types';
-import { hasUnlimitedGold } from '../../empire/empire.service';
-import { CHEAT_UNLIMITED_GOLD_AMOUNT } from '../../empire/empire.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
 import { area, distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
@@ -31,7 +30,7 @@ export function stepGathering(state: GameState, dt: number): void {
       const delivered = stepGatherer(state, gatherer, home, cell.owner, terrain, radius, dt);
       if (delivered <= 0) continue;
       empire.gold += resolveModifier(delivered * gather.goldPerLoad, empire.bonuses.goldIncome);
-      if (hasUnlimitedGold(empire)) empire.gold = CHEAT_UNLIMITED_GOLD_AMOUNT;
+      refillUnlimited(empire);
     }
   }
 }

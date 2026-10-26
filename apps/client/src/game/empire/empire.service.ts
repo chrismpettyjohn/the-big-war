@@ -2,10 +2,10 @@ import type { GameState } from '../state/state.types';
 import type { Empire, EmpireSeed } from './empire.types';
 import type { GameConfig } from '../config/config.types';
 import { emptyModifierTotals } from '../modifier/modifier.service';
-import { CHEAT_UNLIMITED_GOLD_AMOUNT, CHEAT_UNLIMITED_GOLD_NAME, NEUTRAL_OWNER } from './empire.constants';
+import { CHEAT_UNLIMITED_AMOUNT, CHEAT_UNLIMITED_NAME, NEUTRAL_OWNER } from './empire.constants';
 
 export function createEmpire(config: GameConfig, seed: EmpireSeed): Empire {
-  const unlimited = seed.isHuman && isUnlimitedGoldName(seed.name);
+  const unlimited = seed.isHuman && isUnlimitedName(seed.name);
   return {
     id: seed.id,
     name: seed.name,
@@ -13,8 +13,8 @@ export function createEmpire(config: GameConfig, seed: EmpireSeed): Empire {
     isHuman: seed.isHuman,
     neutralState: seed.neutralState,
     colorIndex: seed.id,
-    gold: unlimited ? CHEAT_UNLIMITED_GOLD_AMOUNT : config.start.gold,
-    science: config.start.science,
+    gold: unlimited ? CHEAT_UNLIMITED_AMOUNT : config.start.gold,
+    science: unlimited ? CHEAT_UNLIMITED_AMOUNT : config.start.science,
     civilians: config.start.civilians,
     goldBalance: 0,
     scienceBalance: 0,
@@ -41,10 +41,16 @@ export function refreshHexCounts(state: GameState): void {
   for (const empire of state.empires) empire.hexCount = counts[empire.id] ?? 0;
 }
 
-export function hasUnlimitedGold(empire: Empire): boolean {
-  return empire.isHuman && isUnlimitedGoldName(empire.name);
+export function hasUnlimitedResources(empire: Empire): boolean {
+  return empire.isHuman && isUnlimitedName(empire.name);
 }
 
-export function isUnlimitedGoldName(name: string): boolean {
-  return name.trim().toLowerCase() === CHEAT_UNLIMITED_GOLD_NAME;
+export function refillUnlimited(empire: Empire): void {
+  if (!hasUnlimitedResources(empire)) return;
+  empire.gold = CHEAT_UNLIMITED_AMOUNT;
+  empire.science = CHEAT_UNLIMITED_AMOUNT;
+}
+
+export function isUnlimitedName(name: string): boolean {
+  return name.trim().toLowerCase() === CHEAT_UNLIMITED_NAME;
 }

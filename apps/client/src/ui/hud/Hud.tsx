@@ -3,7 +3,8 @@ import type { HudProps } from './Hud.types';
 import { gameStore } from '../../game/store/store.service';
 import { OfferPrompts } from '../offer-prompts/OfferPrompts';
 import type { GameSpeed } from '../../game/config/config.types';
-import { createEffect, createSignal, For, onCleanup } from 'solid-js';
+import { hasUnlimitedResources } from '../../game/empire/empire.service';
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js';
 import { FaAtom, FaUsers, GiCoin, GiCrossedSwords } from '@the-big-war/frontend/ui/icons/icons';
 
 const SPEEDS: readonly GameSpeed[] = [1, 2, 4];
@@ -37,18 +38,24 @@ export const Hud = (props: HudProps) => {
     return store.state.empires[store.state.playerEmpire] ?? store.state.empires[0]!;
   };
 
+  const unlimited = () => hasUnlimitedResources(me());
+
   return (
     <header class="hud-top" aria-label="The Big War">
       <div class="street-tray kit-glass" role="group" aria-label="Resources">
         <div class="street-stat is-accent">
           <GiCoin class="hud-res-icon is-gold" />
           <span class="street-label">Gold</span>
-          <strong>{Math.floor(me().gold)}<sup class={rateClass(me().goldBalance)}>{rate(me().goldBalance)}</sup></strong>
+          <Show when={!unlimited()} fallback={<strong class="hud-infinite">∞</strong>}>
+            <strong>{Math.floor(me().gold)}<sup class={rateClass(me().goldBalance)}>{rate(me().goldBalance)}</sup></strong>
+          </Show>
         </div>
         <div class="street-stat is-info">
           <FaAtom class="hud-res-icon is-science" />
           <span class="street-label">Science</span>
-          <strong>{Math.floor(me().science)}<sup class={rateClass(me().scienceBalance)}>{rate(me().scienceBalance)}</sup></strong>
+          <Show when={!unlimited()} fallback={<strong class="hud-infinite">∞</strong>}>
+            <strong>{Math.floor(me().science)}<sup class={rateClass(me().scienceBalance)}>{rate(me().scienceBalance)}</sup></strong>
+          </Show>
         </div>
         <div class="rail-divider" />
         <div class="street-stat">

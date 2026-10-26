@@ -4,11 +4,11 @@ import { openAbout } from '../about/about';
 import { For, Show, createSignal } from 'solid-js';
 import { empireNames } from '../../game/names/names.service';
 import { FACTIONS } from '../../game/faction/faction.constants';
+import { isUnlimitedName } from '../../game/empire/empire.service';
 import type { FactionDef } from '../../game/faction/faction.types';
 import type { Modifier } from '../../game/modifier/modifier.types';
-import { isUnlimitedGoldName } from '../../game/empire/empire.service';
 import type { MenuScreenProps, PickTarget, SegmentProps } from './MenuScreen.types';
-import { CHEAT_UNLIMITED_GOLD_PERK, CHEAT_UNLIMITED_GOLD_TITLE } from '../../game/empire/empire.constants';
+import { CHEAT_UNLIMITED_PERK, CHEAT_UNLIMITED_TITLE } from '../../game/empire/empire.constants';
 import { DIFFICULTY_ORDER, MAP_SIZE_ORDER, MAX_EMPIRES, MIN_EMPIRES, NEUTRAL_STATES_ORDER, type Difficulty, type MapSize, type NeutralStates } from '../../session/flow';
 
 export type { MenuScreenProps, PickTarget, SegmentProps };
@@ -138,7 +138,7 @@ export const MenuScreen = (props: MenuScreenProps) => {
             <For each={slots()}>
               {(factionId, slot) => {
                 const faction = () => factionById(factionId);
-                const promised = () => slot() === 0 && isUnlimitedGoldName(props.playerName);
+                const promised = () => slot() === 0 && isUnlimitedName(props.playerName);
                 return (
                   <div
                     class={`setup-slot${promised() ? ' is-promised' : ''}`}
@@ -156,10 +156,10 @@ export const MenuScreen = (props: MenuScreenProps) => {
                         <span class="setup-card-name">
                           {slot() === 0 ? props.playerName.trim() || 'Zombo' : (botNames()[slot()] ?? `Bot ${slot()}`)}
                         </span>
-                        <span class="setup-card-who">{promised() ? CHEAT_UNLIMITED_GOLD_TITLE : faction().name}</span>
+                        <span class="setup-card-who">{promised() ? CHEAT_UNLIMITED_TITLE : faction().name}</span>
                         <Show
                           when={!promised()}
-                          fallback={<span class="setup-card-perk">{CHEAT_UNLIMITED_GOLD_PERK}</span>}
+                          fallback={<span class="setup-card-perk">{CHEAT_UNLIMITED_PERK}</span>}
                         >
                           <Show when={faction().bonuses[0]}>
                             {perk => <span class="setup-card-perk">{bonusLine(perk())}</span>}

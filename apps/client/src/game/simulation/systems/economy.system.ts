@@ -1,8 +1,7 @@
 import type { GameState } from '../../state/state.types';
 import type { EmpireId } from '../../empire/empire.types';
-import { hasUnlimitedGold } from '../../empire/empire.service';
+import { refillUnlimited } from '../../empire/empire.service';
 import type { OwnedBuilding } from '../../building/building.types';
-import { CHEAT_UNLIMITED_GOLD_AMOUNT } from '../../empire/empire.constants';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
 import { isProductionBuilding, ownedBuildings } from '../../building/building.service';
 
@@ -61,7 +60,7 @@ export function stepEconomy(state: GameState, dt: number): void {
     empire.science += scienceProduction * dt;
     empire.goldBalance = goldIncome - labGoldSpent;
     empire.scienceBalance = scienceProduction;
-    if (hasUnlimitedGold(empire)) empire.gold = CHEAT_UNLIMITED_GOLD_AMOUNT;
+    refillUnlimited(empire);
 
     const passive = econ.baseGrowthPerSecond;
     let farmGrowth = 0;
