@@ -87,6 +87,7 @@ export function generateTerrain(config: GameConfig, rng: Rng): HexGrid {
   }
 
   pruneLoneMountains(grid);
+  placeOre(grid, rng);
   return grid;
 }
 
@@ -94,5 +95,32 @@ export function pruneLoneMountains(grid: HexGrid): void {
   for (const cell of grid.cells) {
     if (cell.terrain !== 'mountain') continue;
     if (!neighbors(cell).some(hex => gridAt(grid, hex)?.terrain === 'mountain')) cell.terrain = 'plain';
+  }
+}
+
+function placeOre(grid: HexGrid, rng: Rng): void {
+  const foothills = grid.cells.filter(
+    cell => cell.terrain === 'plain' && neighbors(cell).some(hex => gridAt(grid, hex)?.terrain === 'mountain'),
+  );
+  if (foothills.length === 0) return;
+  const deposits: Axial[] = [];
+  for (let attempt = 0; attempt < foothills.length && deposits.length < MAP_SHAPE.oreDeposits; attempt++) {
+    const seed = foothills[nextInt(rng, foothills.length)]!;
+    if (seed.terrain !== 'plain') continue;
+    if (deposits.some(existing => distance(existing, seed) < MAP_SHAPE.oreSpacing)) continue;
+    deposits.push(seed);
+    const size = MAP_SHAPE.oreMinSize + nextInt(rng, MAP_SHAPE.oreMaxSize - MAP_SHAPE.oreMinSize + 1);
+    const vein: HexCell[] = [seed];
+    seed.terrain = 'ore';
+    while (vein.length < size) {
+      const from = vein[nextInt(rng, vein.length)]!;
+      const options = neighbors(from)
+        .map(hex => gridAt(grid, hex))
+        .filter((cell): cell is HexCell => cell !== undefined && (cell.terrain === 'plain' || cell.terrain === 'forest'));
+      if (options.length === 0) break;
+      const next = options[nextInt(rng, options.length)]!;
+      next.terrain = 'ore';
+      vein.push(next);
+    }
   }
 }

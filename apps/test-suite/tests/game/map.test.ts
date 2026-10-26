@@ -14,6 +14,15 @@ describe('map generation', () => {
     }
   });
 
+  test('ore is rare but present', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const state = createInitialState({ ...DEFAULT_GAME_CONFIG, map: { ...DEFAULT_GAME_CONFIG.map, seed } });
+      const ore = state.grid.cells.filter(cell => cell.terrain === 'ore').length;
+      expect(ore).toBeGreaterThan(0);
+      expect(ore / state.grid.cells.length).toBeLessThan(0.01);
+    }
+  });
+
   test('forests cover only a small share of the map', () => {
     const state = createInitialState({ ...DEFAULT_GAME_CONFIG, map: { ...DEFAULT_GAME_CONFIG.map, seed: 3 } });
     const forest = state.grid.cells.filter(cell => cell.terrain === 'forest').length;

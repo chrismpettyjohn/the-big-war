@@ -18,13 +18,14 @@ export function stepGathering(state: GameState, dt: number): void {
     const empire = state.empires[cell.owner];
     if (!empire || !empire.alive) continue;
     const home = { q: cell.q, r: cell.r };
+    const goldPerLoad = terrain === 'ore' ? gather.oreGoldPerLoad : gather.goldPerLoad;
     while (building.gatherers.length < gather.workersPerBuilding) {
       building.gatherers.push({ pos: home, target: null, phase: 'idle', progress: 0, duration: 0 });
     }
     for (const gatherer of building.gatherers) {
       const delivered = stepGatherer(state, gatherer, home, cell.owner, terrain, dt);
       if (delivered <= 0) continue;
-      empire.gold += resolveModifier(delivered * gather.goldPerLoad, empire.bonuses.goldIncome);
+      empire.gold += resolveModifier(delivered * goldPerLoad, empire.bonuses.goldIncome);
       refillUnlimited(empire);
     }
   }
@@ -94,7 +95,8 @@ function startLeg(gatherer: Gatherer, phase: Gatherer['phase'], duration: number
 
 function harvest(state: GameState, cell: HexCell): void {
   cell.harvested = (cell.harvested ?? 0) + 1;
-  if (cell.harvested < state.config.gather.loadsPerTile) return;
+  const loads = cell.terrain === 'ore' ? state.config.gather.oreLoadsPerTile : state.config.gather.loadsPerTile;
+  if (cell.harvested < loads) return;
   cell.terrain = 'plain';
   cell.harvested = 0;
 }

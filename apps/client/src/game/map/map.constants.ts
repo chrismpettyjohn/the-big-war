@@ -1,6 +1,6 @@
 import type { Terrain } from './map.types';
 
-export const TERRAINS: readonly Terrain[] = ['plain', 'forest', 'mountain'];
+export const TERRAINS: readonly Terrain[] = ['plain', 'forest', 'mountain', 'ore'];
 
 export const MAP_SHAPE = {
   forestPatches: 6,
@@ -12,6 +12,11 @@ export const MAP_SHAPE = {
   rangeTaper: 0.15,
   rangeEdgeInset: 3,
   rangeWidenChance: 0.05,
+
+  oreDeposits: 6,
+  oreSpacing: 12,
+  oreMinSize: 1,
+  oreMaxSize: 3,
 
   patchMinRadius: 2,
   patchMaxRadius: 5,

@@ -33,6 +33,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
       plain: 1.0,
       forest: 1.15,
       mountain: 1.35,
+      ore: 1.0,
     },
     multiFront: { perExtraFront: 0.1, maxBonus: 0.3 },
     counterattack: { attackMultiplier: 1.2, defenceMultiplier: 0.8 },
@@ -66,6 +67,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     workSeconds: 3,
     walkSecondsPerHex: 0.8,
     goldPerLoad: 1,
+    oreLoadsPerTile: 40,
+    oreGoldPerLoad: 3,
   },
   recruit: {
     civiliansPerSoldier: 1,

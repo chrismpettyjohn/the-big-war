@@ -28,7 +28,7 @@ const BUILDING_DESCRIPTIONS: Readonly<Record<BuildingKind, string>> = {
   city: 'The heart of your territory. Claims the hexes around it, defends them and lets you attack from nearby. Upgrading widens the territory it claims.',
   market: 'Earns a steady stream of gold. Needs civilians to work it.',
   lumberjack: 'Workers walk to the nearest forest in your territory and bring back wood for gold. The further the trees, the longer each trip.',
-  miner: 'Workers walk to the nearest mountain in your territory and bring back stone for gold. The further the mountain, the longer each trip.',
+  miner: 'Workers walk to the nearest ore deposit in your territory and haul back ore worth far more than wood. Ore is rare, so fight for it.',
   farm: 'Speeds up population growth. Each farm adds more, up to a cap.',
   lab: 'Produces science for research, plus a little gold.',
   barracks: 'Raises how many troops you can hold in reserve and lets you attack from nearby hexes.',
@@ -54,6 +54,7 @@ const TERRAIN_LABELS: Readonly<Record<Terrain, string>> = {
   plain: 'Plain',
   forest: 'Forest',
   mountain: 'Mountain',
+  ore: 'Ore',
 };
 
 export function terrainLabel(terrain: Terrain): string {

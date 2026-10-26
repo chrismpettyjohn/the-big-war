@@ -122,6 +122,9 @@ export interface GatherConfig {
   readonly walkSecondsPerHex: number;
 
   readonly goldPerLoad: number;
+
+  readonly oreLoadsPerTile: number;
+  readonly oreGoldPerLoad: number;
 }
 
 export interface SupportConfig {

@@ -175,6 +175,21 @@ describe('engine economy', () => {
     expect(state.empires[0]!.gold).toBeGreaterThan(0);
   });
 
+  test('miners ignore mountains and haul rich loads from ore', () => {
+    const mountain = makeState();
+    gridAt(mountain.grid, { q: 1, r: 2 })!.terrain = 'mountain';
+    const ore = makeState();
+    gridAt(ore.grid, { q: 1, r: 2 })!.terrain = 'ore';
+    for (const s of [mountain, ore]) {
+      place(s, { q: 1, r: 1 }, 'miner');
+      s.empires[0]!.gold = 0;
+      run(s, 8);
+    }
+    expect(mountain.empires[0]!.gold).toBe(0);
+    expect(gridAt(mountain.grid, { q: 1, r: 2 })!.terrain).toBe('mountain');
+    expect(ore.empires[0]!.gold).toBeGreaterThanOrEqual(ore.config.gather.oreGoldPerLoad);
+  });
+
   test('a forest tile turns to plain once its loads are used up', () => {
     const state = makeState();
     const tree: HexCell = gridAt(state.grid, { q: 1, r: 2 })!;

@@ -372,6 +372,16 @@ describe('PlaceBuilding', () => {
     expect(miner.ok).toBe(true);
   });
 
+  test('rejects building on mountains and ore deposits', () => {
+    for (const terrain of ['mountain', 'ore'] as const) {
+      const state = makeState();
+      gridAt(state.grid, { q: 3, r: 2 })!.terrain = terrain;
+      const result = dispatch(state, { type: 'PlaceBuilding', empire: 0, hex: { q: 3, r: 2 }, kind: 'miner' });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.reason).toBe('invalid_target');
+    }
+  });
+
   test('a lumberjack placed on forest clears it', () => {
     const withForest = makeState();
     gridAt(withForest.grid, { q: 3, r: 2 })!.terrain = 'forest';

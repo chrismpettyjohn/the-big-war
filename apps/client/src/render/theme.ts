@@ -56,12 +56,14 @@ export const TERRAIN_TINTS: TerrainColorMap = {
   plain: 0x000000,
   forest: 0x0f3a1c,
   mountain: 0x6e6a62,
+  ore: 0x4a3f2c,
 };
 
 export const TERRAIN_FILL_MIX: TerrainMixMap = {
   plain: 1.0,
   forest: 1.0,
   mountain: 1.0,
+  ore: 1.0,
 };
 
 export const HEX_SHADE_MIN = -0.06;

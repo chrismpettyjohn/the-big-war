@@ -197,6 +197,8 @@ export class TerrainLayer {
         const scale = hexSize * GLYPH_SIZE_RATIO;
         if (terrain === 'forest') {
           this.drawTrees(g, center, scale, q, r);
+        } else if (terrain === 'ore') {
+          this.drawOre(g, center, scale);
         } else {
           this.drawMountain(g, center, scale);
         }
@@ -231,6 +233,29 @@ export class TerrainLayer {
       g.rect(x - 1, y, 2, scale * 0.3);
     }
     g.fill({ color: 0x3c2a1c });
+  }
+
+  private drawOre(g: Graphics, center: Pixel, scale: number): void {
+    const rocks: readonly [number, number, number][] = [
+      [-0.5, 0.25, 0.55],
+      [0.45, 0.3, 0.5],
+      [0.0, -0.35, 0.6],
+    ];
+    for (const [dx, dy, size] of rocks) {
+      const x = center.x + dx * scale;
+      const y = center.y + dy * scale;
+      const half = size * scale;
+      g.poly([x - half, y + half * 0.6, x - half * 0.5, y - half * 0.6, x + half * 0.6, y - half * 0.5, x + half, y + half * 0.6]);
+    }
+    g.fill({ color: 0x3a3530 });
+    for (const [dx, dy, size] of rocks) {
+      const x = center.x + dx * scale;
+      const y = center.y + dy * scale;
+      const fleck = Math.max(1.5, size * scale * 0.35);
+      g.rect(x - fleck, y - fleck * 0.5, fleck, fleck);
+      g.rect(x + fleck * 0.4, y + fleck * 0.3, fleck * 0.8, fleck * 0.8);
+    }
+    g.fill({ color: 0xf2c94c });
   }
 
   private drawMountain(g: Graphics, center: Pixel, scale: number): void {

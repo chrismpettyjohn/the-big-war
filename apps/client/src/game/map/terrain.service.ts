@@ -19,6 +19,8 @@ export function terrainLabel(terrain: Terrain): string {
       return 'Forest';
     case 'mountain':
       return 'Mountain';
+    case 'ore':
+      return 'Ore';
     default:
       return 'Plain';
   }

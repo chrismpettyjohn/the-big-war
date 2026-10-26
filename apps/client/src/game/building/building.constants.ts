@@ -30,10 +30,9 @@ export const FLAT_COST_BUILDINGS: ReadonlySet<BuildingKind> = new Set<BuildingKi
 
 export const GATHERED_TERRAIN: Readonly<Partial<Record<BuildingKind, Terrain>>> = {
   lumberjack: 'forest',
-  miner: 'mountain',
+  miner: 'ore',
 };
 
 export const CLEARS_TERRAIN: Readonly<Partial<Record<BuildingKind, Terrain>>> = {
   lumberjack: 'forest',
-  miner: 'mountain',
 };
