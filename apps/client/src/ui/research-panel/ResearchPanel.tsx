@@ -115,7 +115,10 @@ export const ResearchPanel = (props: ResearchPanelProps) => {
       return next;
     });
 
-  const me = () => store.state.empires[store.state.playerEmpire]!;
+  const me = () => {
+    store.version();
+    return store.state.empires[store.state.playerEmpire]!;
+  };
   const research = () => me().research;
 
   const status = (node: ResearchNode): 'done' | 'active' | 'available' | 'locked' => {
@@ -197,7 +200,7 @@ export const ResearchPanel = (props: ResearchPanelProps) => {
                     const state = () => status(node);
                     const affordable = () => me().science >= node.cost;
                     const clickable = () =>
-                      state() === 'available' && affordable() && (!node.options || node.options.length === 0);
+                      state() === 'available' && affordable() && !research().active && (!node.options || node.options.length === 0);
                     return (
                       <div
                         class={`kit-col research-node is-${state()}${clickable() ? ' is-clickable' : ''}${state() === 'available' && !affordable() ? ' is-unaffordable' : ''}`}
