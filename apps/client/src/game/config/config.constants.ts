@@ -15,6 +15,11 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     empireCount: 4, 
   },
   upgrades: { maxLevel: 3, costMultiplier: 1.5 },
+  barracksTiers: [
+    { troop: 'Riflemen', upgradeCost: 0, requiresResearch: null, speed: 1, goldPerSoldier: 1, attackPower: 1 },
+    { troop: 'Grenadiers', upgradeCost: 25, requiresResearch: 'advanced_infantry', speed: 0.8, goldPerSoldier: 2, attackPower: 1.75 },
+    { troop: 'Machine Gunners', upgradeCost: 50, requiresResearch: 'automatic_weapons', speed: 0.6, goldPerSoldier: 5, attackPower: 3 },
+  ],
   demolish: { durationSeconds: 10, refund: 0 },
   cannon: {
     cost: 100,

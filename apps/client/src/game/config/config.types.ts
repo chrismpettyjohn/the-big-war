@@ -36,6 +36,20 @@ export interface UpgradeConfig {
   readonly costMultiplier: number;
 }
 
+export interface BarracksTierConfig {
+  readonly troop: string;
+
+  readonly upgradeCost: number;
+
+  readonly requiresResearch: string | null;
+
+  readonly speed: number;
+
+  readonly goldPerSoldier: number;
+
+  readonly attackPower: number;
+}
+
 export interface DemolishConfig {
 
   readonly durationSeconds: number;
@@ -183,6 +197,7 @@ export interface GameConfig {
   readonly start: StartConfig;
   readonly upgrades: UpgradeConfig;
   readonly demolish: DemolishConfig;
+  readonly barracksTiers: readonly BarracksTierConfig[];
   readonly cannon: CannonConfig;
   readonly battery: BatteryConfig;
   readonly trench: TrenchConfig;
