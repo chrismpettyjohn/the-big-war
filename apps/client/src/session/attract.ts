@@ -1,5 +1,5 @@
 import { configFromSettings } from './flow';
-import { setNeutralStateStart } from '../render/theme';
+import { assignNationColors } from '../render/nation-colors';
 import { FACTIONS } from '../game/faction/faction.constants';
 import { createGameStore } from '../game/store/store.service';
 import { createInitialState } from '../game/state/setup.service';
@@ -62,8 +62,8 @@ export function createAttractMode(options: AttractOptions): AttractMode {
   const next = (): void => {
     index = (index + 1) % sequences.length;
     const sequence = sequences[index]!;
-    setNeutralStateStart(sequence.settings.bots.length + 1);
     store.startMatch(configFromSettings(sequence.settings));
+    assignNationColors(store.state);
     store.setSpeed(sequence.speed);
     elapsed = 0;
     const map = mapExtent();

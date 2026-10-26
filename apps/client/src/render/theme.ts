@@ -110,21 +110,19 @@ export const VOID_COLOR = 0x060a16;
 export const WORLD_BORDER_COLOR = 0xd4a83a;
 export const WORLD_BORDER_WIDTH = 3;
 
-const NEUTRAL_STATE_COLORS: readonly number[] = [0x9a8f7e, 0x7d8590, 0xa39a8a, 0x6f7a72, 0x8c8077, 0x858a96];
+let nationColors: readonly number[] = [];
 
-let neutralStateStart = Number.POSITIVE_INFINITY;
-
-export function setNeutralStateStart(firstId: number): void {
-  neutralStateStart = firstId;
+export function setNationColors(colors: readonly number[]): void {
+  nationColors = colors;
 }
 
 export function ownerColor(owner: number): number {
   if (owner < 0) return NEUTRAL_COLOR;
-  if (owner >= neutralStateStart) {
-    return NEUTRAL_STATE_COLORS[(owner - neutralStateStart) % NEUTRAL_STATE_COLORS.length]!;
-  }
-  const color = FACTION_COLORS[owner % FACTION_COLORS.length];
-  return color ?? NEUTRAL_COLOR;
+  return nationColors[owner] ?? FACTION_COLORS[owner % FACTION_COLORS.length] ?? NEUTRAL_COLOR;
+}
+
+export function ownerCss(owner: number): string {
+  return `#${ownerColor(owner).toString(16).padStart(6, '0')}`;
 }
 
 export function mixColor(a: number, b: number, t: number): number {

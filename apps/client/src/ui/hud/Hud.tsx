@@ -1,5 +1,6 @@
 import './Hud.css';
 import type { HudProps } from './Hud.types';
+import { ownerCss } from '../../render/theme';
 import { gameStore } from '../../game/store/store.service';
 import { OfferPrompts } from '../offer-prompts/OfferPrompts';
 import type { GameSpeed } from '../../game/config/config.types';
@@ -73,7 +74,7 @@ export const Hud = (props: HudProps) => {
 
       <div class="street-tray kit-glass" role="group" aria-label="Game controls">
         <div class="street-stat hud-nation" title="Your nation">
-          <span class="hud-card-swatch" style={{ background: `var(--faction-${me().colorIndex})` }} />
+          <span class="hud-card-swatch" style={{ background: ownerCss(me().colorIndex) }} />
           <span class="hud-nation-name">{me().name}</span>
         </div>
         <div class="rail-divider" />

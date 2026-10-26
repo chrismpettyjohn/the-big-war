@@ -2,6 +2,7 @@
 
 import './HexPanel.css';
 import { createSignal, Show } from 'solid-js';
+import { ownerCss } from '../../render/theme';
 import { buildingLabel, terrainLabel } from '../text';
 import type { HexPanelProps } from './HexPanel.types';
 import { Bar } from '@the-big-war/frontend/ui/bar/Bar';
@@ -152,7 +153,7 @@ export const HexPanel = (props: HexPanelProps) => {
                 class="hud-card-swatch"
                 style={{
                   background:
-                    current().owner >= 0 ? `var(--faction-${current().owner})` : 'var(--street-border-hover)',
+                    current().owner >= 0 ? ownerCss(current().owner) : 'var(--street-border-hover)',
                 }}
               />
               <span class="hud-card-sub">

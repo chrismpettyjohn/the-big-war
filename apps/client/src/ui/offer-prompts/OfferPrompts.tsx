@@ -1,6 +1,7 @@
 import './OfferPrompts.css';
 import { For } from 'solid-js';
 import { factionIcon } from '../text';
+import { ownerCss } from '../../render/theme';
 import { gameStore } from '../../game/store/store.service';
 import type { OfferPromptsProps } from './OfferPrompts.types';
 import { FaCheck, FaTimes } from '@the-big-war/frontend/ui/icons/icons';
@@ -29,7 +30,7 @@ export const OfferPrompts = (props: OfferPromptsProps) => {
           const empire = () => live().empires[offer.from];
           const secondsLeft = () => Math.max(0, Math.ceil(offer.expiresAt - live().elapsed));
           return (
-            <div class="offer-prompt" style={{ '--tint': `var(--faction-${offer.from})` }}>
+            <div class="offer-prompt" style={{ '--tint': ownerCss(offer.from) }}>
               <span class="offer-prompt-flag">{factionIcon(empire()?.factionId ?? '')}</span>
               <span class="offer-prompt-text">
                 <strong>{empire()?.name}</strong> offers peace

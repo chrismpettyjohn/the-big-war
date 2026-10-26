@@ -3,6 +3,7 @@
 import './ArmyPanel.css';
 import { For, Show } from 'solid-js';
 
+import { ownerCss } from '../../render/theme';
 import type { ArmyPanelProps } from './ArmyPanel.types';
 import { gameStore } from '../../game/store/store.service';
 import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
@@ -135,7 +136,7 @@ export const ArmyPanel = (props: ArmyPanelProps) => {
                 <div class="hud-card-head">
                   <span
                     class="hud-card-swatch"
-                    style={{ background: theirs().empire === NEUTRAL_OWNER ? 'var(--street-muted)' : `var(--faction-${theirs().empire})` }}
+                    style={{ background: theirs().empire === NEUTRAL_OWNER ? 'var(--street-muted)' : ownerCss(theirs().empire) }}
                   />
                   <button type="button" class="army-front-name" title="Show on map" onClick={() => focus(front)}>
                     {frontName(front)}

@@ -12,10 +12,10 @@ import { EndScreen } from '../end-screen/EndScreen';
 import { WikiPanel } from '../wiki-panel/WikiPanel';
 import { BuildPanel } from '../build-panel/BuildPanel';
 import { MenuScreen } from '../menu-screen/MenuScreen';
-import { setNeutralStateStart } from '../../render/theme';
 import { gameStore } from '../../game/store/store.service';
 import type { NoticesProps, PanelId } from './Shell.types';
 import { DeploySlider } from '../deploy-slider/DeploySlider';
+import { assignNationColors } from '../../render/nation-colors';
 import { ResearchPanel } from '../research-panel/ResearchPanel';
 import { DiplomacyPanel } from '../diplomacy-panel/DiplomacyPanel';
 import { createWorld, type WorldRenderer } from '../../render/world';
@@ -67,8 +67,8 @@ export const Shell = () => {
 
   const startMatch = async () => {
     const settings = flow.settings();
-    setNeutralStateStart(settings.bots.length + 1);
     store.startMatch(configFromSettings(settings, flow.playerName().trim() || DEFAULT_PLAYER_NAME));
+    assignNationColors(store.state);
 
     store.dispatch({
       type: 'SelectFaction',
