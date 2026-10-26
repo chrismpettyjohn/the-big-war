@@ -1,7 +1,9 @@
 import { ENGINE_TUNING } from '../simulation.constants';
 import type { GameState } from '../../state/state.types';
 import type { EmpireId } from '../../empire/empire.types';
-import { countSupport } from '../../building/building.service';
+import { barracksTier, countSupport } from '../../building/building.service';
+import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
+import { area, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { isMannedMachineGun } from '../../trench/trench.service';
 import type { FrontModifiersResult, FrontTickContext } from '../simulation.types';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
@@ -60,13 +62,7 @@ function resolveFrontSide(
     state.config.support.cityAttackLevel,
   );
 
-  const barracks = countSupport(
-    state,
-    side.empire,
-    enemyHex,
-    state.config.support.barracksAttackRadius,
-    k => k === 'barracks',
-  );
+  const barracks = barracksPower(state, side.empire, enemyHex);
   const forts = countSupport(
     state,
     side.empire,
@@ -153,3 +149,14 @@ function multiFrontBonusFor(state: GameState, attacker: EmpireId, enemy: EmpireI
   );
 }
 
+
+function barracksPower(state: GameState, empireId: EmpireId, hex: Axial): number {
+  let power = 0;
+  for (const candidate of area(hex, state.config.support.barracksAttackRadius)) {
+    const cell = gridAt(state.grid, candidate);
+    const building = cell?.building;
+    if (!cell || cell.owner !== empireId || building?.kind !== 'barracks' || building.buildRemaining > 0) continue;
+    power += barracksTier(state, building).attackPower;
+  }
+  return power;
+}
