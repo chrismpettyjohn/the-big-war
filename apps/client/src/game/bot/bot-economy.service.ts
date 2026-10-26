@@ -8,6 +8,7 @@ import type { ResearchNode } from '../research/research.types';
 import { RESEARCH_NODES } from '../research/research.constants';
 import { meetsRequirements } from '../research/research.service';
 import { chance } from '@the-big-war/game-engine/rng/rng.service';
+import { ownedBuildings, upgradeError } from '../building/building.service';
 import { findCannonShot, findSite, unmannedBorderTrench } from './bot-queries.service';
 
 const ECONOMY_PLAN: readonly BuildingKind[] = ['market', 'farm', 'lumberjack', 'miner', 'lab', 'city'];
@@ -74,6 +75,13 @@ export function constructionCommands(bot: Bot, state: GameState, empire: Empire)
   ) {
     const site = findSite(state, bot.empire, 'barracks');
     if (site) commands.push({ type: 'PlaceBuilding', empire: bot.empire, hex: site, kind: 'barracks' });
+  }
+
+  const cheapestUpgrade = state.config.barracksTiers[1]?.upgradeCost ?? Infinity;
+  for (const { hex, building } of empire.gold >= cheapestUpgrade ? ownedBuildings(state, bot.empire) : []) {
+    if (building.kind !== 'barracks' || upgradeError(state, bot.empire, hex) !== null) continue;
+    commands.push({ type: 'UpgradeBuilding', empire: bot.empire, hex });
+    break;
   }
   return commands;
 }
