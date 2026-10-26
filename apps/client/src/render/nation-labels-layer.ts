@@ -28,7 +28,7 @@ export class NationLabelsLayer {
     for (const empire of state.empires) {
       const s = sums.get(empire.id);
       let label = this.labels.get(empire.id);
-      if (!s || s.n < MIN_HEXES || empire.neutralState) {
+      if (!s || s.n < MIN_HEXES) {
         if (label) label.visible = false;
         continue;
       }
