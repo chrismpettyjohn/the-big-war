@@ -33,7 +33,7 @@ const BUILDING_DESCRIPTIONS: Readonly<Record<BuildingKind, string>> = {
   lab: 'Produces science for research, plus a little gold.',
   barracks: 'Raises how many troops you can hold in reserve and lets you attack from nearby hexes.',
   fort: 'Troops within its radius fight 50% more effectively.',
-  cannon: 'Fires at distant hexes to damage defenders and clear forests and mountains. Needs a reload between shots. Unlocked through research.',
+  cannon: 'Fires at distant hexes to damage defenders and clear forests and blast passes through mountains. Needs a reload between shots. Unlocked through research.',
   trench: 'Dug into the ground and links up with neighbouring trenches. Click it to station up to 20 troops, who man the line when attacked and defend 35% better. You can also attack straight out of it. Enemy tanks within 2 hexes cancel the bonus.',
   machine_gun: 'Mounted in one of your trenches. While the trench is manned, troops holding the line within 2 hexes hit attackers 50% harder and defend 20% better. No effect while attacking. Unlocked through research.',
   battery: 'Shells the most crowded enemy front in range on its own, with no gold per shot. Unlocked through research.',

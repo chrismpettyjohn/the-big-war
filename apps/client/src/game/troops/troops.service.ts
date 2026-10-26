@@ -4,6 +4,7 @@ import type { EmpireId } from '../empire/empire.types';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
 import { garrisonedTroops } from '../trench/trench.service';
 import type { BuildingKind } from '../building/building.types';
+import { isPassable, passableAt } from '../map/terrain.service';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { distance, gridAt, gridInBounds, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
@@ -49,7 +50,7 @@ export function wildRegion(state: GameState, start: Axial, empire: EmpireId): nu
     const hex = queue.pop()!;
     const index = hex.r * grid.width + hex.q;
     const cell = gridAt(grid, hex);
-    if (!cell) continue;
+    if (!cell || !isPassable(cell.terrain)) continue;
     const wild = cell.owner === NEUTRAL_OWNER;
     if (!wild && cell.owner !== empire && index !== startIndex) continue;
     if (wild) region.push(index);
@@ -118,31 +119,6 @@ export function nearestOwnedHex(state: GameState, empire: EmpireId, target: Axia
   return best;
 }
 
-export function tileLine(from: Axial, to: Axial): Axial[] {
-  const dq = to.q - from.q;
-  const dr = to.r - from.r;
-  const stepQ = Math.sign(dq);
-  const stepR = Math.sign(dr);
-  const nq = Math.abs(dq);
-  const nr = Math.abs(dr);
-  const line: Axial[] = [{ q: from.q, r: from.r }];
-  let q = from.q;
-  let r = from.r;
-  let iq = 0;
-  let ir = 0;
-  while (iq < nq || ir < nr) {
-    if ((0.5 + iq) / nq < (0.5 + ir) / nr) {
-      q += stepQ;
-      iq += 1;
-    } else {
-      r += stepR;
-      ir += 1;
-    }
-    line.push({ q, r });
-  }
-  return line;
-}
-
 const STAGING_KINDS: ReadonlySet<BuildingKind> = new Set(['city', 'barracks', 'fort']);
 
 export function stagingHex(state: GameState, empire: EmpireId, target: Axial): Axial | null {
@@ -175,7 +151,7 @@ function ownedPath(state: GameState, empire: EmpireId, from: Axial, to: Axial): 
     }
     for (const next of neighbors(hex)) {
       if (!gridInBounds(grid, next.q, next.r) || previous.has(key(next))) continue;
-      if (gridAt(grid, next)?.owner !== empire) continue;
+      if (gridAt(grid, next)?.owner !== empire || !passableAt(state, next)) continue;
       previous.set(key(next), hex);
       queue.push(next);
     }
@@ -184,16 +160,34 @@ function ownedPath(state: GameState, empire: EmpireId, from: Axial, to: Axial): 
 }
 
 export function marchPath(state: GameState, empire: EmpireId, target: Axial, border: Axial | null = null): Axial[] | null {
-  const origin = border ?? nearestOwnedHex(state, empire, target);
-  if (!origin) return null;
-  const line = tileLine(origin, target);
-  let start = 0;
-  for (let i = 0; i < line.length; i++) {
-    if (gridAt(state.grid, line[i]!)?.owner === empire) start = i;
-  }
-  const outward = line.slice(start);
+  const outward = passablePath(state, empire, target, border);
+  if (!outward) return null;
   const staging = stagingHex(state, empire, target);
   const inward = staging ? ownedPath(state, empire, staging, outward[0]!) : null;
   const path = inward ? [...inward, ...outward.slice(1)] : outward;
   return path.length >= 2 ? path : null;
+}
+
+function passablePath(state: GameState, empire: EmpireId, target: Axial, border: Axial | null): Axial[] | null {
+  const { grid } = state;
+  if (!passableAt(state, target)) return null;
+  const key = (hex: Axial) => hex.r * grid.width + hex.q;
+  const towardTarget = new Map<number, Axial | null>([[key(target), null]]);
+  const queue: Axial[] = [target];
+  for (let head = 0; head < queue.length; head++) {
+    const hex = queue[head]!;
+    const reached = border ? hex.q === border.q && hex.r === border.r : gridAt(grid, hex)?.owner === empire;
+    if (reached) {
+      const path: Axial[] = [];
+      for (let at: Axial | null = hex; at; at = towardTarget.get(key(at))!) path.push({ q: at.q, r: at.r });
+      return path;
+    }
+    for (const next of neighbors(hex)) {
+      if (!gridInBounds(grid, next.q, next.r) || towardTarget.has(key(next))) continue;
+      if (!passableAt(state, next)) continue;
+      towardTarget.set(key(next), hex);
+      queue.push(next);
+    }
+  }
+  return null;
 }

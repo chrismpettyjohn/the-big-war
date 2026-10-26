@@ -2,6 +2,7 @@ import type { GameState } from './state.types';
 import type { HexGrid } from '../map/map.types';
 import { MAP_SHAPE } from '../map/map.constants';
 import { createBaseState } from './state.service';
+import { isPassable } from '../map/terrain.service';
 import { empireNames } from '../names/names.service';
 import type { Empire } from '../empire/empire.types';
 import type { GameConfig } from '../config/config.types';
@@ -14,9 +15,9 @@ import { createEmpire, refreshHexCounts } from '../empire/empire.service';
 import { createRng, nextInt } from '@the-big-war/game-engine/rng/rng.service';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { generateTerrain, pruneLoneMountains } from '../map/map-generator.service';
-import { distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { recomputeAllBonuses, recomputeEmpireBonuses } from '../research/research.service';
 import { NEUTRAL_PLOT, PLOT_AFTER, PLOT_BEFORE, START_CITY_LEVEL, START_PLOT } from './setup.constants';
+import { area, distance, gridAt, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 function startPlot(capital: Axial, size = START_PLOT): Axial[] {
   const before = Math.floor((size - 1) / 2);
@@ -36,7 +37,7 @@ function chooseCapitals(grid: HexGrid, rng: Rng, count: number, extra = 0): Axia
     for (let q = before; q < grid.width - after; q++) {
       const hex = { q, r };
       const cell = gridAt(grid, hex);
-      if (!cell) continue;
+      if (!cell || !isPassable(cell.terrain)) continue;
       candidates.push(hex);
     }
   }
@@ -123,10 +124,21 @@ export function createInitialState(config: GameConfig): GameState {
 }
 
 function claimTerritory(state: GameState, empireId: number, capital: Axial, size: number): void {
-  for (const hex of startPlot(capital, size)) {
+  for (const hex of area(capital, MAP_SHAPE.capitalClearing)) {
     const cell = gridAt(state.grid, hex);
-    if (!cell || cell.owner !== NEUTRAL_OWNER) continue;
+    if (cell?.terrain === 'mountain') cell.terrain = 'plain';
+  }
+  const plot = new Set(startPlot(capital, size).map(hex => `${hex.q},${hex.r}`));
+  const queue: Axial[] = [capital];
+  plot.delete(`${capital.q},${capital.r}`);
+  for (let head = 0; head < queue.length; head++) {
+    const cell = gridAt(state.grid, queue[head]!);
+    if (!cell || cell.owner !== NEUTRAL_OWNER || !isPassable(cell.terrain)) continue;
     cell.owner = empireId;
+    for (const next of neighbors(cell)) {
+      if (!plot.delete(`${next.q},${next.r}`)) continue;
+      queue.push(next);
+    }
   }
   if (gridAt(state.grid, capital)?.owner === empireId) placeStartBuilding(state, capital, 'city', START_CITY_LEVEL);
 }

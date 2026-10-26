@@ -14,6 +14,31 @@ describe('map generation', () => {
     }
   });
 
+  test('every passable tile is reachable, so walls never seal anyone in', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const state = createInitialState({ ...DEFAULT_GAME_CONFIG, map: { ...DEFAULT_GAME_CONFIG.map, seed } });
+      const passable = state.grid.cells.filter(cell => cell.terrain !== 'mountain');
+      const seen = new Set<string>([`${passable[0]!.q},${passable[0]!.r}`]);
+      const stack = [passable[0]!];
+      while (stack.length > 0) {
+        const cell = stack.pop()!;
+        for (const hex of neighbors(cell)) {
+          const next = gridAt(state.grid, hex);
+          if (!next || next.terrain === 'mountain' || seen.has(`${hex.q},${hex.r}`)) continue;
+          seen.add(`${hex.q},${hex.r}`);
+          stack.push(next);
+        }
+      }
+      expect(seen.size).toBe(passable.length);
+    }
+  });
+
+  test('mountain ridges are long enough to form walls', () => {
+    const state = createInitialState({ ...DEFAULT_GAME_CONFIG, map: { ...DEFAULT_GAME_CONFIG.map, seed: 3 } });
+    const mountains = state.grid.cells.filter(cell => cell.terrain === 'mountain').length;
+    expect(mountains / state.grid.cells.length).toBeGreaterThan(0.04);
+  });
+
   test('ore is rare but present', () => {
     for (let seed = 1; seed <= 10; seed++) {
       const state = createInitialState({ ...DEFAULT_GAME_CONFIG, map: { ...DEFAULT_GAME_CONFIG.map, seed } });

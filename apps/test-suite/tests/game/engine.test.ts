@@ -885,6 +885,17 @@ describe('engine territorial expansion', () => {
     expect(state.expeditions[0]!.squads.length).toBeGreaterThan(1);
   });
 
+  test('mountains wall off expansion: they are never claimed or crossed', () => {
+    const state = makeState();
+    openFrontier(state, 2);
+    for (const cell of state.grid.cells) if (cell.q === 2) cell.terrain = 'mountain';
+    launchExpedition(state, 20);
+    run(state, 30);
+    for (const cell of state.grid.cells) {
+      if (cell.q === 2 || cell.q === 3) expect(cell.owner).toBe(NEUTRAL_OWNER);
+    }
+  });
+
   test('neutral land is never claimed without an expedition', () => {
     const state = makeState();
     const empire = state.empires[0]!;

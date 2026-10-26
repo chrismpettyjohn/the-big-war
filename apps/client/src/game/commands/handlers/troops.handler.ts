@@ -1,3 +1,4 @@
+import { isPassable } from '../../map/terrain.service';
 import type { GameState } from '../../state/state.types';
 import { NEUTRAL_OWNER } from '../../empire/empire.constants';
 import { canAttack, declareWar } from '../../diplomacy/diplomacy.service';
@@ -17,7 +18,7 @@ export function handleSendTroops(state: GameState, command: SendTroopsCommand): 
 
   const from = gridAt(state.grid, command.hex);
   const to = gridAt(state.grid, command.target);
-  if (!from || !to) return fail(command.type, 'invalid_target');
+  if (!from || !to || !isPassable(to.terrain)) return fail(command.type, 'invalid_target');
   if (from.owner !== command.empire || to.owner === command.empire) return fail(command.type, 'invalid_target');
   if (distance(command.hex, command.target) !== 1) return marchColumn(state, command, troops);
   if (command.intent === 'attack' && stagingHex(state, command.empire, command.target)) {

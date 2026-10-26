@@ -1,9 +1,9 @@
 import { ENGINE_TUNING } from '../simulation.constants';
 import type { FrontierScan } from '../simulation.types';
 import type { EmpireId } from '../../empire/empire.types';
-import { terrainDefenceAt } from '../../map/terrain.service';
 import { NEUTRAL_OWNER } from '../../empire/empire.constants';
 import { returnToReserve } from '../../troops/troops.service';
+import { isPassable, terrainDefenceAt } from '../../map/terrain.service';
 import type { Expedition, GameState, Squad } from '../../state/state.types';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { DIRECTIONS } from '@the-big-war/game-engine/world-tile/world-tile.constants';
@@ -177,7 +177,8 @@ function scanFrontiers(state: GameState): Map<EmpireId, FrontierScan> {
       const q = cell.q + dir.q;
       const r = cell.r + dir.r;
       if (q < 0 || r < 0 || q >= width || r >= height) continue;
-      if (state.grid.cells[r * width + q]!.owner !== NEUTRAL_OWNER) continue;
+      const next = state.grid.cells[r * width + q]!;
+      if (next.owner !== NEUTRAL_OWNER || !isPassable(next.terrain)) continue;
       scan.candidates.push({ from: { q: cell.q, r: cell.r }, hex: { q, r } });
     }
   }

@@ -9,6 +9,15 @@ export function terrainAt(state: GameState, hex: Axial): Terrain {
   return gridAt(state.grid, hex)?.terrain ?? 'plain';
 }
 
+export function isPassable(terrain: Terrain): boolean {
+  return terrain !== 'mountain';
+}
+
+export function passableAt(state: GameState, hex: Axial): boolean {
+  const cell = gridAt(state.grid, hex);
+  return cell !== undefined && isPassable(cell.terrain);
+}
+
 export function terrainDefenceAt(state: GameState, hex: Axial): number {
   return state.config.combat.terrainDefence[terrainAt(state, hex)] ?? ENGINE_TUNING.defaultTerrainDefence;
 }

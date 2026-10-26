@@ -5,13 +5,24 @@ export const TERRAINS: readonly Terrain[] = ['plain', 'forest', 'mountain', 'ore
 export const MAP_SHAPE = {
   forestPatches: 6,
 
-  mountainRanges: 3,
+  mountainRanges: 2,
   rangeMinLength: 4,
   rangeMaxLength: 8,
   rangeBend: 0.4,
   rangeTaper: 0.15,
   rangeEdgeInset: 3,
   rangeWidenChance: 0.05,
+
+  wallRegions: 8,
+  wallRegionSpacing: 12,
+  wallThickness: 2.6,
+  wallWarp: 2.5,
+  wallWarpCell: 10,
+  wallKeepChance: 0.85,
+  passSpacing: 14,
+  passRadius: 1,
+
+  pocketMinSize: 12,
 
   oreDeposits: 6,
   oreSpacing: 12,
@@ -24,4 +35,5 @@ export const MAP_SHAPE = {
   forestVeinChance: 0.008,
 
   startClearance: 0,
+  capitalClearing: 2,
 } as const;
