@@ -130,9 +130,11 @@ export const Shell = () => {
           settings={flow.settings()}
           faction={flow.playerFaction()}
           playerName={flow.playerName()}
+          playerColorIndex={flow.playerColorIndex()}
           onChange={patch => flow.updateSettings(patch)}
           onNameChange={name => flow.setPlayerName(name)}
           onSelectFaction={factionId => flow.chooseFaction(factionId)}
+          onSelectColor={colorIndex => flow.setPlayerColorIndex(colorIndex)}
           onStart={() => void startMatch()}
         />
       </Show>

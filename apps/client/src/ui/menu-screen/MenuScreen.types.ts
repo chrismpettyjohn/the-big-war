@@ -4,9 +4,11 @@ export interface MenuScreenProps {
   readonly settings: MatchSettings;
   readonly faction: string;
   readonly playerName: string;
+  readonly playerColorIndex?: number;
   readonly onChange: (patch: Partial<MatchSettings>) => void;
   readonly onNameChange: (name: string) => void;
   readonly onSelectFaction: (factionId: string) => void;
+  readonly onSelectColor?: (colorIndex: number) => void;
   readonly onStart: () => void;
 }
 

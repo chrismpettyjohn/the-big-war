@@ -177,9 +177,14 @@
 }
 .setup-card:focus-visible,
 .setup-add:focus-visible,
-.setup-option:focus-visible {
+.setup-option:focus-visible,
+.setup-color-swatch:focus-visible {
   outline: 2px solid var(--street-select);
   outline-offset: 2px;
+}
+.setup-card-sprite {
+  width: 24px;
+  height: 24px;
 }
 .setup-card-flag {
   flex: none;
@@ -280,48 +285,138 @@
 .setup-picker {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: min(440px, 100%);
+  gap: 12px;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 32px);
+  background: #121830;
+  box-shadow: inset 0 0 0 2px #121830, inset 0 0 0 3px rgba(200, 162, 74, 0.35), 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 .setup-picker .setup-heading {
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
-.setup-picker-list {
+.setup-picker-body {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+.setup-color-column {
+  --swatch: 40px;
+  flex: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  width: calc(var(--swatch) + 8px);
+  padding: 4px;
+  contain: size;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  background: #0d1226;
+  scrollbar-width: none;
+}
+.setup-color-swatch {
+  appearance: none;
+  flex: none;
+  width: var(--swatch);
+  height: var(--swatch);
+  border: 3px solid transparent;
+  cursor: pointer;
+  scroll-snap-align: start;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transition: transform 80ms;
+}
+.setup-color-swatch:hover {
+  transform: scale(1.06);
+}
+.setup-color-swatch.is-selected {
+  border-color: var(--street-text);
+  box-shadow: 0 0 0 2px var(--street-accent);
+}
+.setup-picker-list {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 .setup-option {
+  --hue: #e0454f;
   appearance: none;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 10px 12px;
-  text-align: left;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px 10px;
+  text-align: center;
   font: inherit;
   color: inherit;
   text-shadow: inherit;
   cursor: pointer;
-  background: var(--street-surface);
-  border: 2px solid transparent;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--hue) 30%, #161c38) 0%, #161c38 75%);
+  border: 2px solid color-mix(in srgb, var(--hue) 45%, #161c38);
+  transition: transform 100ms, border-color 100ms, box-shadow 100ms;
 }
+.setup-option--ironclad { --hue: #e0454f; }
+.setup-option--league { --hue: #f2b632; }
+.setup-option--verdant { --hue: #4fbf73; }
+.setup-option--academy { --hue: #9b6bff; }
 .setup-option:hover {
-  background: var(--street-surface-hover);
-  border-color: var(--street-border);
+  transform: translateY(-2px);
+  border-color: var(--hue);
 }
 .setup-option.is-selected {
-  border-color: var(--street-accent);
+  border-color: var(--hue);
+  box-shadow: 0 0 0 2px #121830, 0 0 0 4px var(--hue);
+}
+.setup-option-badge {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hue) 22%, #0d1226);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--hue) 60%, transparent);
+}
+.setup-option-sprite {
+  width: 36px;
+  height: 36px;
+  image-rendering: pixelated;
 }
 .setup-option-name {
+  font-size: 15px;
   font-weight: 700;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--hue) 35%, #fff);
 }
-.setup-option-blurb {
-  font-size: 12px;
-  color: var(--street-muted);
+.setup-option .setup-bonuses {
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
 }
-.setup-picker-cancel {
-  flex: none;
+.setup-option .setup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  font-size: 11px;
+  color: #c9cfe6;
+  background: none;
+}
+.setup-chip-arrow {
+  font-size: 8px;
+}
+.setup-chip.is-buff .setup-chip-arrow {
+  color: #6fdc8c;
+}
+.setup-chip.is-debuff .setup-chip-arrow {
+  color: #ff7a7a;
+}
+@media (max-width: 480px) {
+  .setup-color-column {
+    --swatch: 36px;
+  }
+  .setup-picker-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .setup-rules {

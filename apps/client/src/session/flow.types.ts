@@ -26,14 +26,16 @@ export interface MatchFlow {
   readonly settings: Accessor<MatchSettings>;
   readonly playerFaction: Accessor<string>;
   readonly playerName: Accessor<string>;
+  readonly playerColorIndex: Accessor<number>;
   readonly lastResult: Accessor<MatchResult | null>;
 
   backToMenu(): void;
   updateSettings(patch: Partial<MatchSettings>): void;
   chooseFaction(factionId: string): void;
   setPlayerName(name: string): void;
-  
+  setPlayerColorIndex(colorIndex: number): void;
+
   enterMatch(): void;
-  
+
   showResult(winner: number | null, playerEmpire: number): void;
 }

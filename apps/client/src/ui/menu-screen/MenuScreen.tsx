@@ -1,5 +1,5 @@
 import './MenuScreen.css';
-import { factionIcon } from '../text';
+import { FactionSprite } from './FactionSprite';
 import { openAbout } from '../about/about';
 import { For, Show, createSignal } from 'solid-js';
 import { empireNames } from '../../game/names/names.service';
@@ -31,6 +31,8 @@ const MODIFIER_LABELS: Readonly<Record<string, string>> = {
   buildCost: 'build cost',
   growth: 'growth',
   scienceRate: 'science',
+  frontDefence: 'front defence',
+  reserveCap: 'reserve cap',
 };
 
 function bonusLine(modifier: Modifier): string {
@@ -50,7 +52,10 @@ const Bonuses = (props: { faction: FactionDef }) => (
   <span class="setup-bonuses">
     <For each={props.faction.bonuses}>
       {modifier => (
-        <span class={`setup-chip${isBuff(modifier) ? ' is-buff' : ' is-debuff'}`}>{bonusLine(modifier)}</span>
+        <span class={`setup-chip${isBuff(modifier) ? ' is-buff' : ' is-debuff'}`}>
+          <span class="setup-chip-arrow">{isBuff(modifier) ? '▲' : '▼'}</span>
+          {bonusLine(modifier)}
+        </span>
       )}
     </For>
   </span>
@@ -78,8 +83,11 @@ function Segment<T extends string | number>(props: SegmentProps<T>) {
   );
 }
 
+const COLOR_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+
 export const MenuScreen = (props: MenuScreenProps) => {
   const [picking, setPicking] = createSignal<PickTarget | null>(null);
+  const [playerColor, setPlayerColor] = createSignal(props.playerColorIndex ?? 0);
 
   const slots = () => [props.faction, ...props.settings.bots];
   const openSlots = () => Array.from({ length: MAX_EMPIRES - slots().length });
@@ -89,6 +97,11 @@ export const MenuScreen = (props: MenuScreenProps) => {
   const pickedFaction = () => {
     const target = picking();
     return typeof target === 'number' ? slots()[target] : undefined;
+  };
+
+  const pickColor = (color: number) => {
+    setPlayerColor(color);
+    props.onSelectColor?.(color);
   };
 
   const assign = (factionId: string) => {
@@ -139,33 +152,34 @@ export const MenuScreen = (props: MenuScreenProps) => {
               {(factionId, slot) => {
                 const faction = () => factionById(factionId);
                 const promised = () => slot() === 0 && isUnlimitedName(props.playerName);
+                const colorIndex = () => (slot() === 0 ? playerColor() : slot());
                 return (
                   <div
                     class={`setup-slot${promised() ? ' is-promised' : ''}`}
-                    style={{ '--tint': promised() ? 'var(--street-accent)' : `var(--faction-${slot()})` }}
+                    style={{ '--tint': promised() ? 'var(--street-accent)' : `var(--faction-${colorIndex()})` }}
                   >
                     <button type="button" class="setup-card" onClick={() => setPicking(slot())}>
-                      <span class="setup-card-flag">{promised() ? (
-                          <svg class="setup-card-cross" viewBox="0 0 20 28" aria-hidden="true">
-                            <path d="M7 1h6v7h6v6h-6v13H7V14H1V8h6z" />
-                          </svg>
-                        ) : (
-                          factionIcon(faction().id)
-                        )}</span>
-                      <span class="setup-card-text">
-                        <span class="setup-card-name">
-                          {slot() === 0 ? props.playerName.trim() || 'Zombo' : (botNames()[slot()] ?? `Bot ${slot()}`)}
-                        </span>
-                        <span class="setup-card-who">{promised() ? CHEAT_UNLIMITED_TITLE : faction().name}</span>
-                        <Show
-                          when={!promised()}
-                          fallback={<span class="setup-card-perk">{CHEAT_UNLIMITED_PERK}</span>}
-                        >
-                          <Show when={faction().bonuses[0]}>
-                            {perk => <span class="setup-card-perk">{bonusLine(perk())}</span>}
+                        <span class="setup-card-flag">{promised() ? (
+                            <svg class="setup-card-cross" viewBox="0 0 20 28" aria-hidden="true">
+                              <path d="M7 1h6v7h6v6h-6v13H7V14H1V8h6z" />
+                            </svg>
+                          ) : (
+                            <FactionSprite class="setup-card-sprite" factionId={faction().id} />
+                          )}</span>
+                        <span class="setup-card-text">
+                          <span class="setup-card-name">
+                            {slot() === 0 ? props.playerName.trim() || 'Zombo' : (botNames()[slot()] ?? `Bot ${slot()}`)}
+                          </span>
+                          <span class="setup-card-who">{promised() ? CHEAT_UNLIMITED_TITLE : faction().name}</span>
+                          <Show
+                            when={!promised()}
+                            fallback={<span class="setup-card-perk">{CHEAT_UNLIMITED_PERK}</span>}
+                          >
+                            <Show when={faction().bonuses[0]}>
+                              {perk => <span class="setup-card-perk">{bonusLine(perk())}</span>}
+                            </Show>
                           </Show>
-                        </Show>
-                      </span>
+                        </span>
                     </button>
                     <Show when={slot() > 0 && canRemove()}>
                       <button
@@ -227,26 +241,47 @@ export const MenuScreen = (props: MenuScreenProps) => {
 
       <Show when={picking() !== null}>
         <div class="setup-picker-backdrop" onClick={() => setPicking(null)}>
-          <div class="setup-frame setup-picker" role="dialog" aria-label="Choose a faction" onClick={e => e.stopPropagation()}>
-            <h2 class="setup-heading">Choose a faction</h2>
-            <div class="setup-picker-list">
-              <For each={FACTIONS}>
-                {faction => (
-                  <button
-                    type="button"
-                    class={`setup-option${pickedFaction() === faction.id ? ' is-selected' : ''}`}
-                    onClick={() => assign(faction.id)}
-                  >
-                    <span class="setup-option-name">{faction.name}</span>
-                    <span class="setup-option-blurb">{faction.blurb}</span>
-                    <Bonuses faction={faction} />
-                  </button>
-                )}
-              </For>
+          <div
+            class="setup-frame setup-picker"
+            role="dialog"
+            aria-label="Customize empire"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 class="setup-heading">Choose your banner</h2>
+            <div class="setup-picker-body">
+              <Show when={picking() === 0}>
+                <div class="setup-color-column" role="radiogroup" aria-label="Color">
+                  <For each={COLOR_OPTIONS}>
+                    {color => (
+                      <button
+                        type="button"
+                        role="radio"
+                        class={`setup-color-swatch${playerColor() === color ? ' is-selected' : ''}`}
+                        style={{ background: `var(--faction-${color})` }}
+                        aria-label={`Color ${color + 1}`}
+                        aria-checked={playerColor() === color}
+                        onClick={() => pickColor(color)}
+                      />
+                    )}
+                  </For>
+                </div>
+              </Show>
+              <div class="setup-picker-list">
+                <For each={FACTIONS}>
+                  {faction => (
+                    <button
+                      type="button"
+                      class={`setup-option setup-option--${faction.id}${pickedFaction() === faction.id ? ' is-selected' : ''}`}
+                      onClick={() => assign(faction.id)}
+                    >
+                      <span class="setup-option-badge"><FactionSprite class="setup-option-sprite" factionId={faction.id} /></span>
+                      <span class="setup-option-name">{faction.name}</span>
+                      <Bonuses faction={faction} />
+                    </button>
+                  )}
+                </For>
+              </div>
             </div>
-            <button type="button" class="setup-seg setup-picker-cancel" onClick={() => setPicking(null)}>
-              Cancel
-            </button>
           </div>
         </div>
       </Show>

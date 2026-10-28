@@ -83,11 +83,33 @@ export function clampEmpires(count: number): number {
   return Math.min(MAX_EMPIRES, Math.max(MIN_EMPIRES, Math.round(count)));
 }
 
+const PLAYER_COLOR_KEY = 'the-big-war:player-color';
+
+function loadPlayerColorIndex(): number {
+  try {
+    const raw = globalThis.localStorage?.getItem(PLAYER_COLOR_KEY);
+    if (raw === null || raw === undefined) return 0;
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isNaN(parsed)) return 0;
+    return ((parsed % 8) + 8) % 8;
+  } catch {
+    return 0;
+  }
+}
+
+function savePlayerColorIndex(colorIndex: number): void {
+  try {
+    globalThis.localStorage?.setItem(PLAYER_COLOR_KEY, String(colorIndex));
+  } catch {
+  }
+}
+
 export function createMatchFlow(random: () => number = Math.random): MatchFlow {
   const [screen, setScreen] = createSignal<Screen>('menu');
   const [settings, setSettings] = createSignal<MatchSettings>(defaultSettings(Math.floor(random() * 1_000_000)));
   const [playerFaction, setPlayerFaction] = createSignal(FACTIONS[0]!.id);
   const [playerName, setPlayerNameSignal] = createSignal(loadPlayerName());
+  const [playerColorIndex, setPlayerColorIndexSignal] = createSignal(loadPlayerColorIndex());
   const [lastResult, setLastResult] = createSignal<MatchResult | null>(null);
 
   return {
@@ -95,6 +117,7 @@ export function createMatchFlow(random: () => number = Math.random): MatchFlow {
     settings,
     playerFaction,
     playerName,
+    playerColorIndex,
     lastResult,
     backToMenu: () => setScreen('menu'),
     updateSettings: patch => setSettings(current => ({ ...current, ...patch })),
@@ -104,6 +127,11 @@ export function createMatchFlow(random: () => number = Math.random): MatchFlow {
     setPlayerName: name => {
       setPlayerNameSignal(name);
       savePlayerName(name);
+    },
+    setPlayerColorIndex: (colorIndex: number) => {
+      const clamped = ((colorIndex % 8) + 8) % 8;
+      setPlayerColorIndexSignal(clamped);
+      savePlayerColorIndex(clamped);
     },
     enterMatch: () => setScreen('match'),
     showResult: (winner, playerEmpire) => {
