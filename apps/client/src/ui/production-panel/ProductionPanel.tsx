@@ -1,13 +1,12 @@
 import './ProductionPanel.css';
 import { For, Show } from 'solid-js';
 import { buildingLabel } from '../text';
+import { gameStore } from '../../game/store/store.service';
 import type { UnitKind } from '../../game/unit/unit.types';
 import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
-import { gameStore, live } from '../../game/store/store.service';
+import { populationCap } from '../../game/unit/unit.service';
 import type { ProductionPanelProps } from './ProductionPanel.types';
 import { UNIT_KINDS, UNIT_STATS } from '../../game/unit/unit.constants';
-import { populationCap, populationOf } from '../../game/unit/unit.service';
-import { gridAt, gridIndex } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export type { ProductionPanelProps };
 
@@ -15,23 +14,17 @@ export const ProductionPanel = (props: ProductionPanelProps) => {
   const store = gameStore();
   const player = () => store.state.playerEmpire;
   const hex = () => props.controllers.selectedHex();
-  const building = live(() => {
-    const selected = hex();
-    return selected ? (gridAt(store.state.grid, selected)?.building ?? null) : null;
-  });
+  const building = () => store.live.cellAt(hex())?.building ?? null;
   const kinds = () => {
     const current = building();
     return current ? UNIT_KINDS.filter(kind => UNIT_STATS[kind].producer === current.kind) : [];
   };
-  const line = live(() => {
-    const selected = hex();
+  const line = () => {
     const current = building();
-    if (!selected || !current) return null;
-    const at = gridIndex(store.state.grid, selected.q, selected.r);
-    return store.state.production.find(item => item.at === at && item.building === current.id) ?? null;
-  });
-  const gold = live(() => store.state.empires[player()]?.gold ?? 0);
-  const population = live(() => `${populationOf(store.state, player())} / ${populationCap(store.state, player())}`);
+    return current ? store.live.productionFor(current.id) : null;
+  };
+  const gold = () => store.state.empires[player()]?.gold ?? 0;
+  const population = () => `${store.live.population(player())} / ${populationCap(store.state, player())}`;
   const progress = () => {
     const current = line();
     const kind = current?.queue[0];

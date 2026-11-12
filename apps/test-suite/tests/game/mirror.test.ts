@@ -77,9 +77,9 @@ describe('sim mirror', () => {
     const bad = await store.dispatch({ type: 'DeclareWar', empire: 99, target: 0 });
     expect(bad.ok).toBe(false);
 
-    const previous = store.state;
+    const previous = store.raw;
     await store.startMatch({ ...config, map: { ...config.map, seed: 7 } });
-    expect(store.state).not.toBe(previous);
+    expect(store.raw).not.toBe(previous);
     expect(view(store.state)).toEqual(view(host.state));
   });
 });

@@ -3,8 +3,8 @@ import { buildingLabel } from '../text';
 import { buildingGlyph } from './building-glyph';
 import type { HotbarProps } from './Hotbar.types';
 import { createSignal, For, Show } from 'solid-js';
+import { gameStore } from '../../game/store/store.service';
 import { classes } from '@the-big-war/frontend/ui/format/format';
-import { gameStore, live } from '../../game/store/store.service';
 import { FaInfoCircle } from '@the-big-war/frontend/ui/icons/icons';
 import type { BuildingKind } from '../../game/building/building.types';
 import { BUILDING_KINDS } from '../../game/building/building.constants';
@@ -16,7 +16,7 @@ const DRAG_THRESHOLD = 6;
 
 export const Hotbar = (props: HotbarProps) => {
   const store = gameStore();
-  const me = live(() => store.state.empires[store.state.playerEmpire]!);
+  const me = () => store.state.empires[store.state.playerEmpire]!;
 
   const cost = (kind: BuildingKind): number => buildingCost(store.state, store.state.playerEmpire, kind);
 

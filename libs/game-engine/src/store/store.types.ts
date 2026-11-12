@@ -1,4 +1,3 @@
-import type { Accessor } from 'solid-js';
 import type { Agent } from '../agent/agent.types';
 import type { CommandLike, Dispatcher } from '../commands/command.types';
 import type { MatchStatus, SimulationState, Stepper } from '../simulation/simulation.types';
@@ -24,8 +23,6 @@ export interface StoreEngine<S extends SimulationState, C extends CommandLike, R
 export interface GameStore<S extends SimulationState, C extends CommandLike, R, Config> {
   readonly state: S;
 
-  readonly version: Accessor<number>;
-
   dispatch(command: C): R;
 
   step(dtSeconds: number): void;
@@ -37,11 +34,11 @@ export interface GameStore<S extends SimulationState, C extends CommandLike, R, 
   returnToMenu(): void;
 
   setPaused(paused: boolean): void;
-  readonly paused: Accessor<boolean>;
+  readonly paused: () => boolean;
 
   setSpeed(speed: S['speed']): void;
 
-  readonly status: Accessor<MatchStatus>;
+  readonly status: () => MatchStatus;
 
-  readonly winner: Accessor<S['winner']>;
+  readonly winner: () => S['winner'];
 }

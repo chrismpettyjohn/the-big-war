@@ -105,17 +105,6 @@ describe('engine + store', () => {
     expect(store.state.elapsed).toBe(before);
   });
 
-  test('version signal bumps on dispatch and step', () => {
-    const store = createGameStore();
-    store.startMatch();
-    const v0 = store.version();
-    store.dispatch({ type: 'SetGameSpeed', speed: 2 });
-    expect(store.version()).toBeGreaterThan(v0);
-    const v1 = store.version();
-    store.step(1 / 60);
-    expect(store.version()).toBeGreaterThan(v1);
-  });
-
   test('returnToMenu yields a menu-phase state', () => {
     const store = createGameStore();
     store.startMatch();

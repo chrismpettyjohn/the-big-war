@@ -1,8 +1,8 @@
 import './ResearchPanel.css';
 import { createSignal, For, Show } from 'solid-js';
+import { gameStore } from '../../game/store/store.service';
 import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
 import type { ResearchPanelProps } from './ResearchPanel.types';
-import { gameStore, live } from '../../game/store/store.service';
 import { RESEARCH_NODES } from '../../game/research/research.constants';
 import { signed, signedPercent } from '@the-big-war/frontend/ui/format/format';
 import type { Modifier, ModifierKey } from '../../game/modifier/modifier.types';
@@ -76,7 +76,7 @@ export const ResearchPanel = (props: ResearchPanelProps) => {
       return next;
     });
 
-  const me = live(() => store.state.empires[store.state.playerEmpire]!);
+  const me = () => store.state.empires[store.state.playerEmpire]!;
   const research = () => me().research;
 
   const status = (node: ResearchNode) => researchStatus(research(), node);

@@ -1,24 +1,24 @@
 import './DiplomacyPanel.css';
 import { For, Show } from 'solid-js';
+import { gameStore } from '../../game/store/store.service';
 import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
 import type { Empire } from '../../game/empire/empire.types';
 import type { DiplomacyPanelProps } from './DiplomacyPanel.types';
-import { gameStore, live as tracked } from '../../game/store/store.service';
 import { diplomacyWaitSeconds, getRelation, pendingOffer } from '../../game/diplomacy/diplomacy.service';
 
 export type { DiplomacyPanelProps };
 
 export const DiplomacyPanel = (props: DiplomacyPanelProps) => {
   const store = gameStore();
-  const live = tracked(() => store.state);
-  const player = () => live().playerEmpire;
-  const others = () => live().empires.filter(empire => empire.id !== player() && empire.alive);
+  const state = () => store.state;
+  const player = () => state().playerEmpire;
+  const others = () => state().empires.filter(empire => empire.id !== player() && empire.alive);
 
-  const atWar = (empire: Empire) => getRelation(live(), player(), empire.id).status === 'war';
+  const atWar = (empire: Empire) => getRelation(state(), player(), empire.id).status === 'war';
 
-  const offersPeace = (empire: Empire) => pendingOffer(live(), empire.id, player()) !== null;
+  const offersPeace = (empire: Empire) => pendingOffer(state(), empire.id, player()) !== null;
 
-  const waitSeconds = (empire: Empire): number => diplomacyWaitSeconds(live(), player(), empire.id);
+  const waitSeconds = (empire: Empire): number => diplomacyWaitSeconds(state(), player(), empire.id);
 
   const toggle = (empire: Empire) => {
     if (offersPeace(empire)) {

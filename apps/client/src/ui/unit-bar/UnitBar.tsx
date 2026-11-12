@@ -1,26 +1,27 @@
 import './UnitBar.css';
-import { For, Show } from 'solid-js';
+import { createMemo, For, Show } from 'solid-js';
 import type { UnitBarProps } from './UnitBar.types';
+import { gameStore } from '../../game/store/store.service';
 import type { UnitKind } from '../../game/unit/unit.types';
-import { gameStore, live } from '../../game/store/store.service';
+import { populationCap } from '../../game/unit/unit.service';
 import { UNIT_KINDS, UNIT_STATS } from '../../game/unit/unit.constants';
-import { populationCap, populationOf } from '../../game/unit/unit.service';
 
 export type { UnitBarProps };
 
 export const UnitBar = (props: UnitBarProps) => {
   const store = gameStore();
   const units = () => props.controllers.units;
-  const counts = live(() => {
+  const player = () => store.state.playerEmpire;
+  const counts = createMemo(() => {
     const selected = units().selected();
     const tally = new Map<UnitKind, number>();
-    for (const unit of store.state.units) {
+    for (const unit of store.live.roster()) {
       if (selected.has(unit.id)) tally.set(unit.kind, (tally.get(unit.kind) ?? 0) + 1);
     }
     return UNIT_KINDS.filter(kind => tally.has(kind)).map(kind => ({ kind, count: tally.get(kind)! }));
   });
-  const population = live(() => `${populationOf(store.state, store.state.playerEmpire)}/${populationCap(store.state, store.state.playerEmpire)}`);
-  const ownUnits = live(() => store.state.units.some(unit => unit.empire === store.state.playerEmpire));
+  const population = () => `${store.live.population(player())}/${populationCap(store.state, player())}`;
+  const ownUnits = () => Object.values(store.live.unitCounts(player())).some(count => count > 0);
 
   return (
     <Show when={ownUnits() || counts().length > 0}>

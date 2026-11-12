@@ -27,7 +27,7 @@ export function whenSettled(reply: CommandReply, then: (result: CommandResult) =
 let singleton: ClientStore | null = null;
 
 export function gameStore(): ClientStore {
-  if (!singleton) singleton = createGameStore();
+  if (!singleton) throw new Error('gameStore() was read before setGameStore() installed the match mirror');
   return singleton;
 }
 
@@ -35,11 +35,4 @@ export function setGameStore(store: ClientStore | null): ClientStore | null {
   const previous = singleton;
   singleton = store;
   return previous;
-}
-
-export function live<T>(read: () => T): () => T {
-  return () => {
-    gameStore().version();
-    return read();
-  };
 }

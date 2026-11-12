@@ -62,7 +62,7 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
   const localToHex = (at: Pixel): Axial | null => {
     const rect = host.getBoundingClientRect();
     const hex = world.screenToHex(at.x + rect.left, at.y + rect.top);
-    if (!gridInBounds(store.state.grid, hex.q, hex.r)) return null;
+    if (!gridInBounds(store.raw.grid, hex.q, hex.r)) return null;
     return hex;
   };
 
@@ -85,7 +85,7 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
     screenToHex: localToHex,
     clientToHex: at => {
       const hex = world.screenToHex(at.x, at.y);
-      return gridInBounds(store.state.grid, hex.q, hex.r) ? hex : null;
+      return gridInBounds(store.raw.grid, hex.q, hex.r) ? hex : null;
     },
     screenToWorld: localToWorld,
     view: () => ({
@@ -107,8 +107,8 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
   };
 
   const empireCentroid = (empire: number): Pixel | null => {
-    const grid = store.state.grid;
-    const hexSize = store.state.config.map.hexSize;
+    const grid = store.raw.grid;
+    const hexSize = store.raw.config.map.hexSize;
     let sumX = 0;
     let sumY = 0;
     let count = 0;
@@ -123,12 +123,12 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
   };
 
   const zoomToCity = () => {
-    const point = empireCentroid(store.state.playerEmpire);
+    const point = empireCentroid(store.raw.playerEmpire);
     if (!point) {
       runtime.fillScreenFromLeft();
       return;
     }
-    const { grid, config } = store.state;
+    const { grid, config } = store.raw;
     const mapWidth = grid.width * config.map.hexSize;
     const mapHeight = grid.height * config.map.hexSize;
     world.camera.set({ scale: CITY_TILE_PX / config.map.hexSize });
@@ -144,7 +144,7 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
   const pickSpawn = (at: Pixel) => {
     const target = localToHex(at);
     if (!target) return;
-    controllers.run({ type: 'ChooseSpawn', empire: store.state.playerEmpire, target }, () => {
+    controllers.run({ type: 'ChooseSpawn', empire: store.raw.playerEmpire, target }, () => {
       world.spawnFx('captureFlash', target, undefined);
       runtime.confirmSpawn();
     });
@@ -152,14 +152,14 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
 
   const spawnPlots = (): SpawnPlot[] => {
     const plots: SpawnPlot[] = [];
-    store.state.spawnSites.forEach((hex, empire) => {
-      if (hex) plots.push({ hex, color: ownerColor(empire), own: empire === store.state.playerEmpire });
+    store.raw.spawnSites.forEach((hex, empire) => {
+      if (hex) plots.push({ hex, color: ownerColor(empire), own: empire === store.raw.playerEmpire });
     });
     return plots;
   };
 
   const showWholeMap = () => {
-    const { grid, config } = store.state;
+    const { grid, config } = store.raw;
     const mapWidth = grid.width * config.map.hexSize;
     const mapHeight = grid.height * config.map.hexSize;
     const scale = Math.min(world.size.width / mapWidth, world.size.height / mapHeight);
@@ -263,11 +263,10 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
   };
 
   const loop = createFrameLoop(dt => {
-    store.step(dt);
     scrollCamera(dt);
     controllers.units.prune();
     world.setUnitsView({
-      player: store.state.playerEmpire,
+      player: store.raw.playerEmpire,
       selected: controllers.units.selected(),
       box: controllers.units.box(),
     });
@@ -291,15 +290,15 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
           ? {
               hex: hover,
               kind: tool.building,
-              valid: placementError(store.state, store.state.playerEmpire, hover, tool.building) === null,
+              valid: placementError(store.raw, store.raw.playerEmpire, hover, tool.building) === null,
             }
           : null,
       spawnPlots: choosingSpawn() ? spawnPlots() : [],
       cannonFrom: tool.kind === 'cannon' ? tool.from : null,
-      cannonRange: store.state.config.cannon.range,
+      cannonRange: store.raw.config.cannon.range,
       cannonTarget: tool.kind === 'cannon' ? controllers.hoverHex() : null,
     });
-    world.render(store.state);
+    world.render(store.raw);
 
     if (!endedNotified && store.status() === 'ended') {
       endedNotified = true;
@@ -326,7 +325,7 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
     start(): void {
       detach = attachInput({ element: host, viewport: () => ({ x: world.size.width, y: world.size.height }), onIntent: handleIntent });
       endedNotified = false;
-      world.render(store.state);
+      world.render(store.raw);
       loop.start();
     },
     stop(): void {
@@ -347,8 +346,8 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
       }
     },
     fillScreenFromLeft(): void {
-      const grid = store.state.grid;
-      const hexSize = store.state.config.map.hexSize;
+      const grid = store.raw.grid;
+      const hexSize = store.raw.config.map.hexSize;
       const mapWidth = grid.width * hexSize;
       const mapHeight = grid.height * hexSize;
       const viewWidth = world.size.width > 10 ? world.size.width : (typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -360,7 +359,7 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
       let minR = Infinity;
       let maxR = -Infinity;
       for (const cell of grid.cells) {
-        if (cell.owner !== store.state.playerEmpire) continue;
+        if (cell.owner !== store.raw.playerEmpire) continue;
         minQ = Math.min(minQ, cell.q);
         maxQ = Math.max(maxQ, cell.q);
         minR = Math.min(minR, cell.r);
@@ -385,7 +384,7 @@ export function createMatchRuntime(options: MatchRuntimeOptions): MatchRuntime {
       rememberHomeView();
     },
     centreOnHex(hex: Axial): void {
-      centreOnWorld(axialToPixel(hex, store.state.config.map.hexSize));
+      centreOnWorld(axialToPixel(hex, store.raw.config.map.hexSize));
       syncCameraMoved();
     },
   };

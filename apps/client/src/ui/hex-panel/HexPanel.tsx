@@ -4,14 +4,12 @@ import { ownerCss } from '../../render/theme';
 import { buildingLabel, terrainLabel } from '../text';
 import type { HexPanelProps } from './HexPanel.types';
 import { Bar } from '@the-big-war/frontend/ui/bar/Bar';
-import { populationOf } from '../../game/unit/unit.service';
+import { gameStore } from '../../game/store/store.service';
 import { Panel } from '@the-big-war/frontend/ui/panel/Panel';
-import { gameStore, live } from '../../game/store/store.service';
 import { hasUnlock } from '../../game/research/research.service';
 import { trenchOccupants } from '../../game/trench/trench.service';
 import { buildingState, ownNeighbourCount } from './HexPanel.utility';
 import { boatsFrom, portBoatLimit } from '../../game/ship/ship.service';
-import { gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { portUpgradeCost, upgradeError } from '../../game/building/building.service';
 
 export type { HexPanelProps };
@@ -21,10 +19,7 @@ export const HexPanel = (props: HexPanelProps) => {
   const [confirmDemolish, setConfirmDemolish] = createSignal(false);
 
   const hex = () => props.controllers.selectedHex();
-  const cell = live(() => {
-    const selected = hex();
-    return selected ? (gridAt(store.state.grid, selected) ?? null) : null;
-  });
+  const cell = () => store.live.cellAt(hex());
   const player = () => store.state.playerEmpire;
   const isOwn = () => cell()?.owner === player();
   const isForeign = () => {
@@ -42,21 +37,20 @@ export const HexPanel = (props: HexPanelProps) => {
     return !!current && current.kind === 'cannon' && isOwn() && current.cooldown <= 0;
   };
 
-  const liveBuilding = live(() => building());
-  const upgradeBlocker = live(() => {
+  const upgradeBlocker = () => {
     const selected = hex();
     return selected ? upgradeError(store.state, player(), selected) : null;
-  });
+  };
   const upgrade = () => {
     const selected = hex();
     if (!selected) return;
     props.controllers.run({ type: 'UpgradeBuilding', empire: player(), hex: selected });
   };
 
-  const ownPort = live(() => {
+  const ownPort = () => {
     const current = building();
     return current?.kind === 'port' && isOwn() && current.buildRemaining <= 0 ? current : null;
-  });
+  };
   const buildShip = () => {
     const selected = hex();
     if (!selected) return;
@@ -81,14 +75,14 @@ export const HexPanel = (props: HexPanelProps) => {
     const current = building();
     return current && current.kind === 'trench' && isOwn() && current.buildRemaining <= 0 ? current : null;
   };
-  const stationed = live(() => {
+  const stationed = () => {
     const current = cell();
     return current && trench() ? trenchOccupants(store.state, current).length : 0;
-  });
-  const foreignArmy = live(() => {
+  };
+  const foreignArmy = () => {
     const current = cell();
-    return current && current.owner >= 0 ? populationOf(store.state, current.owner) : 0;
-  });
+    return current && current.owner >= 0 ? store.live.population(current.owner) : 0;
+  };
 
   const ownNeighbours = () => {
     const selected = hex();
@@ -123,7 +117,7 @@ export const HexPanel = (props: HexPanelProps) => {
                 <div class="kit-col">
                   <div class="kit-row">
                     <strong class="hud-card-name">{buildingLabel(entry().kind)}</strong>
-                    <span class="street-drawer-panel-kind">{buildingState(liveBuilding() ?? entry())}</span>
+                    <span class="street-drawer-panel-kind">{buildingState(building() ?? entry())}</span>
                   </div>
                   <Show when={isOwn()}>
                     <div class="kit-row">

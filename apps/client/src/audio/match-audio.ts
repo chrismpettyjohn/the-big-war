@@ -64,7 +64,7 @@ export function diffSounds(previous: MatchSnapshot, next: MatchSnapshot): readon
 }
 
 export function createMatchAudio(store: ClientStore) {
-  let previous = snapshotMatch(store.state);
+  let previous = snapshotMatch(store.raw);
   let sampleIn = SAMPLE_SECONDS;
   let warHold = 0;
 
@@ -78,7 +78,7 @@ export function createMatchAudio(store: ClientStore) {
       sampleIn -= dt;
       if (sampleIn > 0) return;
       sampleIn = SAMPLE_SECONDS;
-      const next = snapshotMatch(store.state);
+      const next = snapshotMatch(store.raw);
       for (const sound of diffSounds(previous, next)) audio.play(sound);
       previous = next;
     },

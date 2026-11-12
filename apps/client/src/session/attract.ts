@@ -44,7 +44,7 @@ export function createAttractMode(options: AttractOptions): AttractMode {
   let active = false;
 
   const mapExtent = () => {
-    const { grid, config } = store.state;
+    const { grid, config } = store.raw;
     return { width: grid.width * config.map.hexSize, height: grid.height * config.map.hexSize };
   };
 
@@ -59,7 +59,7 @@ export function createAttractMode(options: AttractOptions): AttractMode {
       store.setPaused(true);
       return;
     }
-    assignNationColors(store.state);
+    assignNationColors(store.raw);
     store.setSpeed(sequence.speed);
     elapsed = 0;
     const map = mapExtent();
@@ -86,7 +86,7 @@ export function createAttractMode(options: AttractOptions): AttractMode {
     elapsed += dt;
     if (!loading && (elapsed >= sequences[index]!.seconds || store.status() === 'ended')) void next();
     drift();
-    world.render(store.state);
+    world.render(store.raw);
   });
 
   return {

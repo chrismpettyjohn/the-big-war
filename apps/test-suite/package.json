@@ -9,6 +9,7 @@
   "dependencies": {
     "@the-big-war/frontend": "workspace:*",
     "@the-big-war/game-engine": "workspace:*",
-    "@the-big-war/client": "workspace:*"
+    "@the-big-war/client": "workspace:*",
+    "solid-js": "^1.9.18"
   }
 }

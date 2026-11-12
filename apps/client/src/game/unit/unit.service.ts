@@ -82,6 +82,21 @@ export function populationOf(state: GameState, empire: EmpireId): number {
   return total;
 }
 
+export function populationByEmpire(state: GameState): Map<EmpireId, number> {
+  const totals = new Map<EmpireId, number>();
+  const add = (empire: EmpireId, kind: UnitKind): void => {
+    totals.set(empire, (totals.get(empire) ?? 0) + unitStats(kind).population);
+  };
+  for (const unit of state.units) add(unit.empire, unit.kind);
+  for (const ship of state.ships) {
+    for (const unit of ship.cargo) add(ship.empire, unit.kind);
+  }
+  for (const line of state.production) {
+    for (const kind of line.queue) add(line.empire, kind);
+  }
+  return totals;
+}
+
 export function populationCap(state: GameState, empire: EmpireId): number {
   let producers = 0;
   for (const cell of buildingCellsOf(state, empire)) {

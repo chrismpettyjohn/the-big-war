@@ -30,6 +30,7 @@
         "@the-big-war/client": "workspace:*",
         "@the-big-war/frontend": "workspace:*",
         "@the-big-war/game-engine": "workspace:*",
+        "solid-js": "^1.9.18",
       },
     },
     "libs/frontend": {
@@ -43,9 +44,6 @@
     "libs/game-engine": {
       "name": "@the-big-war/game-engine",
       "version": "0.1.0",
-      "dependencies": {
-        "solid-js": "^1.9.18",
-      },
     },
     "libs/linter": {
       "name": "@the-big-war/linter",

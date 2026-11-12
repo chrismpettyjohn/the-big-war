@@ -15,10 +15,10 @@ import { BuildPanel } from '../build-panel/BuildPanel';
 import { MenuScreen } from '../menu-screen/MenuScreen';
 import { CameraReset } from '../camera-reset/CameraReset';
 import { SmallScreen } from '../small-screen/SmallScreen';
+import { gameStore } from '../../game/store/store.service';
 import type { NoticesProps, PanelId } from './Shell.types';
 import { assignNationColors } from '../../render/nation-colors';
 import { ResearchPanel } from '../research-panel/ResearchPanel';
-import { gameStore, live } from '../../game/store/store.service';
 import { DiplomacyPanel } from '../diplomacy-panel/DiplomacyPanel';
 import { createWorld, type WorldRenderer } from '../../render/world';
 import { ProductionPanel } from '../production-panel/ProductionPanel';
@@ -28,7 +28,6 @@ import { pendingOffersTo } from '../../game/diplomacy/diplomacy.service';
 import { useEvent } from '@the-big-war/frontend/ui/hooks/event/Event.hook';
 import { createAttractMode, type AttractMode } from '../../session/attract';
 import { createMatchRuntime, type MatchRuntime } from '../../session/runtime';
-import { gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack } from 'solid-js';
 import { DEFAULT_PLAYER_NAME, configFromSettings, createMatchFlow } from '../../session/flow';
 import { FaBook, FaFlag, FaHammer, FaAtom, FaSignOutAlt, FaMusic, FaVolumeUp } from '@the-big-war/frontend/ui/icons/icons';
@@ -103,7 +102,7 @@ export const Shell = () => {
     const settings = flow.settings();
     const config = configFromSettings(settings, flow.playerName().trim() || DEFAULT_PLAYER_NAME);
     await store.startMatch({ ...config, start: { ...config.start, pickSpawns: true } });
-    assignNationColors(store.state);
+    assignNationColors(store.raw);
 
     store.dispatch({
       type: 'SelectFaction',
@@ -149,20 +148,20 @@ export const Shell = () => {
   };
   const closePanel = (id: Exclude<PanelId, null>) => () => setPanel(current => (current === id ? null : current));
 
-  const pendingOfferCount = live(() => pendingOffersTo(store.state, store.state.playerEmpire).length);
+  const pendingOfferCount = () => pendingOffersTo(store.state, store.state.playerEmpire).length;
 
-  const ownPortSelected = live(() => {
-    const hex = runtime()?.controllers.selectedHex();
-    const cell = hex ? gridAt(store.state.grid, hex) : null;
+  const selectedCell = () => store.live.cellAt(runtime()?.controllers.selectedHex() ?? null);
+
+  const ownPortSelected = () => {
+    const cell = selectedCell();
     return cell?.owner === store.state.playerEmpire && cell.building?.kind === 'port';
-  });
+  };
 
-  const ownProducerSelected = live(() => {
-    const hex = runtime()?.controllers.selectedHex();
-    const cell = hex ? gridAt(store.state.grid, hex) : null;
+  const ownProducerSelected = () => {
+    const cell = selectedCell();
     const kind = cell?.building?.kind;
     return cell?.owner === store.state.playerEmpire && (kind === 'barracks' || kind === 'factory');
-  });
+  };
   const showingMatch = () => flow.screen() === 'match' || flow.screen() === 'end';
 
   return (

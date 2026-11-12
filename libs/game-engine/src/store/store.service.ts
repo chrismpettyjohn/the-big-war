@@ -1,4 +1,3 @@
-import { createSignal } from 'solid-js';
 import type { Agent } from '../agent/agent.types';
 import type { GameStore, StoreEngine } from './store.types';
 import type { CommandLike } from '../commands/command.types';
@@ -13,13 +12,8 @@ export function createGameStore<S extends SimulationState, C extends CommandLike
   if (engine.startInMenu ?? true) bootState.status = 'menu';
 
   let current = bootState;
-  const [version, setVersion] = createSignal(0);
-  const [paused, setPausedSignal] = createSignal(false);
-
+  let paused = false;
   let accumulator = 0;
-  const bump = (): void => {
-    setVersion(v => v + 1);
-  };
 
   let agents: readonly Agent<S, C>[] = [];
   const load = (state: S, status?: MatchStatus): void => {
@@ -38,7 +32,7 @@ export function createGameStore<S extends SimulationState, C extends CommandLike
   };
 
   const advance = (dtSeconds: number): void => {
-    if (current.status !== 'playing' || paused()) return;
+    if (current.status !== 'playing' || paused) return;
     accumulator += Math.max(0, dtSeconds) * current.speed;
 
     accumulator = Math.min(accumulator, MAX_GAME_SECONDS_PER_STEP);
@@ -59,38 +53,29 @@ export function createGameStore<S extends SimulationState, C extends CommandLike
     get state() {
       return current;
     },
-    version,
     dispatch(command: C): R {
-      const result = engine.dispatch(current, command);
-      if (result.ok) bump();
-      return result;
+      return engine.dispatch(current, command);
     },
     step(dtSeconds: number): void {
       advance(dtSeconds);
-      bump();
     },
     reset(next: S): void {
       load(next);
-      bump();
     },
     startMatch(nextConfig?: Config): void {
       load(engine.createMatch(nextConfig ?? engine.config), 'playing');
-      setPausedSignal(false);
-      bump();
+      paused = false;
     },
     returnToMenu(): void {
       load(engine.createMatch(engine.config), 'menu');
-      setPausedSignal(false);
-      bump();
+      paused = false;
     },
     setPaused(next: boolean): void {
-      setPausedSignal(next);
-      bump();
+      paused = next;
     },
-    paused,
+    paused: () => paused,
     setSpeed(speed: S['speed']): void {
       current.speed = speed;
-      bump();
     },
     status: () => current.status,
     winner: () => current.winner,

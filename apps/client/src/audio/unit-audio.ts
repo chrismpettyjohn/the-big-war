@@ -178,7 +178,7 @@ export function createUnitAudio(store: ClientStore): UnitAudio {
 
   const playEvents = (target: SfxTarget | null, listener: Listener) => {
     let played = 0;
-    for (const event of store.state.unitEvents) {
+    for (const event of store.raw.unitEvents) {
       if (event.id <= lastEvent) continue;
       lastEvent = event.id;
       if (!target || listener.paused || played >= MAX_SHOTS_PER_FRAME) continue;
@@ -197,7 +197,7 @@ export function createUnitAudio(store: ClientStore): UnitAudio {
     }
     const cx = (listener.min.x + listener.max.x) / 2;
     const cy = (listener.min.y + listener.max.y) / 2;
-    const near = store.state.units
+    const near = store.raw.units
       .filter((unit): unit is Unit => ENGINES[unit.kind] !== undefined)
       .map(unit => ({ unit, gap: Math.hypot(unit.x - cx, unit.y - cy) }))
       .sort((a, b) => a.gap - b.gap)

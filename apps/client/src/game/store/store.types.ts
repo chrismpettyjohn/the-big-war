@@ -1,4 +1,5 @@
 import type { GameState } from '../state/state.types';
+import type { LiveQueries } from '../live/live.types';
 import type { GameConfig } from '../config/config.types';
 import type { Command, CommandResult } from '../commands/commands.types';
 import type { Stepper } from '@the-big-war/game-engine/simulation/simulation.types';
@@ -12,9 +13,9 @@ export type CommandReply = CommandResult | Promise<CommandResult>;
 
 export interface ClientStore {
   readonly state: GameState;
-  readonly version: EngineGameStore<GameState, Command, CommandResult, GameConfig>['version'];
+  readonly raw: GameState;
+  readonly live: LiveQueries;
   dispatch(command: Command): CommandReply;
-  step(dtSeconds: number): void;
   startMatch(config?: GameConfig): void | Promise<void>;
   returnToMenu(): void;
   setPaused(paused: boolean): void;
