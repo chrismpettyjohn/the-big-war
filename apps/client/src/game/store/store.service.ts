@@ -1,7 +1,10 @@
 import { createBotAgents } from '../bot/bot.service';
+import { startSimLoop } from '../sim/sim-loop.service';
+import { createWorkerStore } from '../sim/worker-store';
 import { dispatch } from '../commands/commands.service';
 import { step } from '../simulation/simulation.service';
 import { createInitialState } from '../state/setup.service';
+import { createInProcessSim } from '../sim/sim-host.service';
 import type { CommandResult } from '../commands/commands.types';
 import { DEFAULT_GAME_CONFIG } from '../config/config.constants';
 import type { ClientStore, CommandReply, GameStore, StoreOptions } from './store.types';
@@ -26,8 +29,15 @@ export function whenSettled(reply: CommandReply, then: (result: CommandResult) =
 
 let singleton: ClientStore | null = null;
 
+function createDefaultStore(): ClientStore {
+  if (typeof Worker !== 'undefined' && typeof document !== 'undefined') return createWorkerStore();
+  const sim = createInProcessSim();
+  startSimLoop(sim.host);
+  return sim.store;
+}
+
 export function gameStore(): ClientStore {
-  if (!singleton) throw new Error('gameStore() was read before setGameStore() installed the match mirror');
+  if (!singleton) singleton = createDefaultStore();
   return singleton;
 }
 
