@@ -122,6 +122,7 @@ export interface FrameChanges {
   readonly buildings: Set<number>;
   readonly production: Set<number>;
   units: boolean;
+  readonly unitIds: Set<number>;
   unitRoster: boolean;
   ships: boolean;
   walkers: boolean;

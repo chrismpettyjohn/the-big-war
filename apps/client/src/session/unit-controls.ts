@@ -34,7 +34,7 @@ export function createUnitControls(deps: UnitControlDeps): UnitControls {
   const unitAt = (world: Pixel, mine: boolean): Unit | null => {
     let best: Unit | null = null;
     let reach = PICK_PX / Math.max(deps.view().scale, 0.6);
-    for (const unit of store.state.units) {
+    for (const unit of store.raw.units) {
       if ((unit.empire === player()) !== mine) continue;
       const gap = Math.hypot(unit.x - world.x, unit.y - world.y) - unitStats(unit.kind).size + 5;
       if (gap < reach) {
@@ -82,7 +82,7 @@ export function createUnitControls(deps: UnitControlDeps): UnitControls {
       if (!mine) return false;
       const now = performance.now();
       if (lastClick.id === mine.id && now - lastClick.at < DOUBLE_CLICK_MS) {
-        const same = store.state.units.filter(unit => unit.empire === player() && unit.kind === mine.kind && inView(unit));
+        const same = store.raw.units.filter(unit => unit.empire === player() && unit.kind === mine.kind && inView(unit));
         setSelected(new Set([...selected(), ...same.map(unit => unit.id)]));
       } else if (shift) {
         const next = new Set(selected());
@@ -109,7 +109,7 @@ export function createUnitControls(deps: UnitControlDeps): UnitControls {
       const maxX = Math.max(current.x0, world.x);
       const minY = Math.min(current.y0, world.y);
       const maxY = Math.max(current.y0, world.y);
-      const picked = store.state.units.filter(
+      const picked = store.raw.units.filter(
         unit => unit.empire === player() && unit.x >= minX && unit.x <= maxX && unit.y >= minY && unit.y <= maxY,
       );
       setSelected(new Set([...(shift ? selected() : []), ...picked.map(unit => unit.id)]));
@@ -152,7 +152,7 @@ export function createUnitControls(deps: UnitControlDeps): UnitControls {
       deps.ping({ x: units.reduce((sum, unit) => sum + unit.x, 0) / units.length, y: units.reduce((sum, unit) => sum + unit.y, 0) / units.length }, ARRANGE_COLOR);
     },
     selectKind(kind: UnitKind, add: boolean) {
-      const picked = store.state.units.filter(unit => unit.empire === player() && unit.kind === kind).map(unit => unit.id);
+      const picked = store.raw.units.filter(unit => unit.empire === player() && unit.kind === kind).map(unit => unit.id);
       setSelected(new Set([...(add ? selected() : []), ...picked]));
     },
     selectAll(ids) {

@@ -188,3 +188,22 @@ describe('live unit lookup', () => {
     expect(sim.store.live.unit(second!.id)).toBe(sim.store.raw.units.find(unit => unit.id === second!.id)!);
   });
 });
+
+describe('live unit stores', () => {
+  test('a memo holding a unit still sees it move', async () => {
+    const sim = createInProcessSim();
+    await sim.store.startMatch(CONFIG);
+    sim.host.handle({ type: 'paused', value: true });
+    const home = sim.host.state.grid.cells.find(cell => cell.owner === 0)!;
+    const [soldier] = spawnUnits(sim.host.state, 0, home, 1);
+    sim.host.handle({ type: 'paused', value: true });
+    let x = -1;
+    createRoot(() => {
+      const unit = createMemo(() => sim.store.live.unit(soldier!.id));
+      createEffect(() => (x = unit()?.x ?? -1));
+    });
+    sim.host.state.units.find(unit => unit.id === soldier!.id)!.x += 40;
+    sim.host.handle({ type: 'paused', value: true });
+    expect(x).toBe(sim.host.state.units.find(unit => unit.id === soldier!.id)!.x);
+  });
+});

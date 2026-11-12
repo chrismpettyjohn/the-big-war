@@ -47,6 +47,7 @@ export function emptyChanges(): FrameChanges {
     buildings: new Set(),
     production: new Set(),
     units: false,
+    unitIds: new Set(),
     unitRoster: false,
     ships: false,
     walkers: false,

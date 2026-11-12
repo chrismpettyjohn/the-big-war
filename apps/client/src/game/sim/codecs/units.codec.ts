@@ -120,17 +120,22 @@ export function mirrorRoster(state: ArmySlice): Map<UnitId, Unit> {
 
 export function applyUnits(state: ArmySlice, patch: UnitsPatch, changes: FrameChanges): void {
   const roster = mirrorRoster(state);
-  for (const id of patch.removed) roster.delete(id);
+  for (const id of patch.removed) {
+    roster.delete(id);
+    changes.unitIds.add(id);
+  }
   const { rows } = patch;
   for (let at = 0; at < rows.length; at += UNIT_STRIDE) {
     const id = rows[at]!;
     const unit = roster.get(id);
     if (unit) readPose(unit, rows, at);
     else roster.set(id, createFromRow(rows, at));
+    changes.unitIds.add(id);
   }
   for (const [id, boarding] of patch.boarding) {
     const unit = roster.get(id);
     if (unit) unit.boarding = boarding;
+    changes.unitIds.add(id);
   }
   if (patch.order) {
     const next: Unit[] = [];

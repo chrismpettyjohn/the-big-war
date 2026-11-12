@@ -9,8 +9,8 @@ import { createStore, reconcile } from 'solid-js/store';
 import { mirrorRoster } from '../sim/codecs/units.codec';
 import { createKeyedStores } from './keyed-store.service';
 import { populationByEmpire } from '../unit/unit.service';
-import type { ProductionQueue } from '../unit/unit.types';
 import { createTriggerCache } from './trigger-cache.service';
+import type { ProductionQueue, Unit } from '../unit/unit.types';
 import type { FrameChanges, MatchFields } from '../sim/sim.types';
 import type { LiveSlice, LiveState, UnitCounts } from './live.types';
 import { gridInBounds, gridIndex } from '@the-big-war/game-engine/world-tile/world-tile.service';
@@ -56,6 +56,7 @@ export function createLiveState(initial: GameState): LiveState {
   let raw = initial;
   const slices = createTriggerCache<LiveSlice>();
   const tiles = createKeyedStores<number, HexCell>(at => raw.grid.cells[at] ?? null);
+  const units = createKeyedStores<number, Unit>(id => mirrorRoster(raw).get(id) ?? null);
   const lines = createKeyedStores<number, ProductionQueue>(building => raw.production.find(line => line.building === building) ?? null);
   const [match, setMatch] = createStore<MatchFields>(matchFields(raw));
   const [empires, setEmpires] = createStore<Empire[]>(clone(raw.empires));
@@ -192,8 +193,7 @@ export function createLiveState(initial: GameState): LiveState {
       return lines.get(building);
     },
     unit(id) {
-      slices.track('units');
-      return mirrorRoster(raw).get(id) ?? null;
+      return units.get(id);
     },
     roster() {
       slices.track('roster');
@@ -216,6 +216,7 @@ export function createLiveState(initial: GameState): LiveState {
           slices.dirtyAll();
           tiles.dirtyAll();
           lines.dirtyAll();
+          units.dirtyAll();
         }),
       );
     },
@@ -238,6 +239,7 @@ export function createLiveState(initial: GameState): LiveState {
             for (const building of changes.production) lines.dirty(building);
           }
           if (changes.units) slices.dirty('units');
+          for (const id of changes.unitIds) units.dirty(id);
           if (changes.unitRoster) slices.dirty('roster');
           if (changes.ships) slices.dirty('ships');
           if (changes.walkers) slices.dirty('walkers');
