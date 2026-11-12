@@ -28,3 +28,7 @@ declare module 'bun:test' {
 
   export function expect<T>(actual: T): Matchers<T>;
 }
+
+declare module 'bun:jsc' {
+  export function serialize(value: unknown): ArrayBuffer;
+}
