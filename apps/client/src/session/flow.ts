@@ -76,7 +76,7 @@ export function rivalFactions(count: number): string[] {
 }
 
 export function defaultSettings(seed = Math.floor(Math.random() * 1_000_000)): MatchSettings {
-  return { bots: rivalFactions(3), mapSize: PRESET_MAP_SIZES.continents, preset: 'continents', difficulty: 'easy', neutralStates: 'few', seed };
+  return { bots: rivalFactions(3), mapSize: PRESET_MAP_SIZES.atoll_ring, preset: 'atoll_ring', difficulty: 'easy', neutralStates: 'few', seed };
 }
 
 export function configFromSettings(settings: MatchSettings, playerName = ''): GameConfig {
