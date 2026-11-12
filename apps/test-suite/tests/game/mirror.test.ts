@@ -26,7 +26,7 @@ function view(state: GameState): unknown {
     walkers: state.walkers.map(({ path: _path, ...walker }) => walker),
     cells: state.grid.cells,
     empires: state.empires,
-    units: state.units.map(({ cooldown: _cooldown, coaxCooldown: _coax, captureAt: _captureAt, capture: _capture, ...unit }) => unit),
+    units: state.units,
     ships: state.ships,
     relations: state.relations,
     offerCooldowns: state.offerCooldowns,

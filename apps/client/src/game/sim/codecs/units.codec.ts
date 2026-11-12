@@ -26,6 +26,10 @@ function writeUnit(out: Float64Array, at: number, unit: Unit): void {
   out[at + 16] = unit.moving ? 1 : 0;
   out[at + 17] = unit.setup;
   out[at + 18] = unit.suppression;
+  out[at + 19] = unit.cooldown;
+  out[at + 20] = unit.coaxCooldown;
+  out[at + 21] = unit.captureAt;
+  out[at + 22] = unit.capture;
 }
 
 function readPose(unit: Unit, rows: Float64Array, at: number): void {
@@ -45,6 +49,10 @@ function readPose(unit: Unit, rows: Float64Array, at: number): void {
   unit.moving = rows[at + 16]! === 1;
   unit.setup = rows[at + 17]!;
   unit.suppression = rows[at + 18]!;
+  unit.cooldown = rows[at + 19]!;
+  unit.coaxCooldown = rows[at + 20]!;
+  unit.captureAt = rows[at + 21]!;
+  unit.capture = rows[at + 22]!;
 }
 
 function createFromRow(rows: Float64Array, at: number): Unit {
@@ -52,10 +60,6 @@ function createFromRow(rows: Float64Array, at: number): Unit {
     id: rows[at]!,
     kind: UNIT_KINDS[rows[at + 1]!]!,
     empire: rows[at + 2]!,
-    cooldown: 0,
-    coaxCooldown: 0,
-    captureAt: -1,
-    capture: 0,
     boarding: null,
   } as Unit;
   readPose(unit, rows, at);

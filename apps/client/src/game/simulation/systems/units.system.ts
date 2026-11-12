@@ -270,14 +270,14 @@ function stepUnit(world: UnitWorld, unit: Unit, dt: number): void {
 
   separate(world, unit, stats);
 
-  unit.cooldown -= dt;
+  unit.cooldown = Math.max(0, unit.cooldown - dt);
   if (target && unit.cooldown <= 0 && unit.setup <= 0) {
     unit.face = Math.atan2(target.y - unit.y, target.x - unit.x);
     fire(world, unit, stats.weapon, target, moving);
     unit.cooldown = stats.weapon.cooldown * jitter(state);
   }
   if (stats.coax) {
-    unit.coaxCooldown -= dt;
+    unit.coaxCooldown = Math.max(0, unit.coaxCooldown - dt);
     const close = unit.coaxCooldown <= 0 ? pickTarget(world, unit, stats.coax.range, false, true) : null;
     if (close) {
       fire(world, unit, stats.coax, close, moving);
