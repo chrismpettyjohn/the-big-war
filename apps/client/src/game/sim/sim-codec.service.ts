@@ -1,136 +1,101 @@
 import type { Ship } from '../ship/ship.types';
+import { addRoad } from '../map/world-index.service';
 import { UNIT_TUNING } from '../unit/unit.constants';
 import type { GameState } from '../state/state.types';
+import { orNaN, orNull } from './codecs/codec.utility';
 import { rebuildShipHash } from '../ship/ship.service';
 import { createBaseState } from '../state/state.service';
 import type { GameConfig } from '../config/config.types';
+import type { HexCell, HexGrid } from '../map/map.types';
+import type { Walker } from '../building/building.types';
+import type { ProductionQueue } from '../unit/unit.types';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
-import type { Biome, HexCell, HexGrid, Terrain } from '../map/map.types';
-import type { FrameMessage, ShipView, SnapshotMessage, WalkerView } from './sim.types';
-import { addRoad, drainChangedTiles, markTile, setBuilding, setOwner } from '../map/world-index.service';
-import type { Building, BuildingKind, Gatherer, GathererPhase, Walker } from '../building/building.types';
+import { BIOMES, TERRAINS } from './codecs/codec.constants';
+import { applyMatch, encodeMatch } from './codecs/match.codec';
+import { applyUnits, encodeUnits } from './codecs/units.codec';
+import { applyEmpires, encodeEmpires } from './codecs/empires.codec';
+import { applyDiplomacy, encodeDiplomacy } from './codecs/diplomacy.codec';
+import { applyKeyed, createKeyedShadow, diffKeyed } from './codecs/keyed.codec';
+import { applyBuildings, applyTiles, encodeBuildings, encodeTiles } from './codecs/world.codec';
+import type { FrameChanges, FrameMessage, ShipView, SimShadow, SnapshotMessage, WalkerView } from './sim.types';
 
-const TERRAINS: readonly Terrain[] = ['plain', 'forest', 'mountain', 'ore', 'water'];
-const BIOMES: readonly Biome[] = ['temperate', 'steppe', 'desert', 'tundra', 'taiga', 'jungle', 'swamp', 'volcanic'];
-const PHASES: readonly GathererPhase[] = ['idle', 'outbound', 'working', 'returning'];
-const KINDS: readonly BuildingKind[] = [
-  'city',
-  'market',
-  'lumberjack',
-  'miner',
-  'farm',
-  'lab',
-  'port',
-  'fishery',
-  'barracks',
-  'cannon',
-  'trench',
-  'battery',
-  'factory',
-];
-
-const TILE_STRIDE = 5;
-const BUILDING_STRIDE = 11;
-const GATHERER_STRIDE = 7;
-
-const orNaN = (value: number | null | undefined): number => value ?? Number.NaN;
-const orNull = (value: number): number | null => (Number.isNaN(value) ? null : value);
-
-export type ShipPaths = WeakMap<Ship, number[]>;
-
-function encodeTiles(state: GameState): Float64Array<ArrayBuffer> {
-  const tiles = new Float64Array(state.index.changedTiles.length * TILE_STRIDE);
-  let cursor = 0;
-  drainChangedTiles(state.index, at => {
-    const cell = state.grid.cells[at]!;
-    tiles[cursor++] = at;
-    tiles[cursor++] = cell.owner;
-    tiles[cursor++] = TERRAINS.indexOf(cell.terrain);
-    tiles[cursor++] = orNaN(cell.harvested);
-    tiles[cursor++] = cell.road ? 1 : 0;
-  });
-  return tiles;
+export function createShadow(): SimShadow {
+  return {
+    fields: {},
+    economy: new Map(),
+    profiles: new Map(),
+    diplomacy: '',
+    buildings: new Map(),
+    production: createKeyedShadow(),
+    units: new Map(),
+    boarding: new Map(),
+    unitOrder: [],
+    ships: createKeyedShadow(),
+    shipPaths: new Map(),
+    walkers: createKeyedShadow(),
+  };
 }
 
-function encodeBuildings(state: GameState): Pick<FrameMessage, 'buildings' | 'gatherers'> {
-  const places = state.index.buildings;
-  const buildings = new Float64Array(places.length * BUILDING_STRIDE);
-  let gathererCount = 0;
-  for (const at of places) gathererCount += state.grid.cells[at]!.building!.gatherers.length;
-  const gatherers = new Float64Array(gathererCount * GATHERER_STRIDE);
-  let row = 0;
-  let next = 0;
-  for (const at of places) {
-    const building = state.grid.cells[at]!.building!;
-    buildings[row++] = at;
-    buildings[row++] = building.id;
-    buildings[row++] = KINDS.indexOf(building.kind);
-    buildings[row++] = building.level;
-    buildings[row++] = building.cooldown;
-    buildings[row++] = building.growth;
-    buildings[row++] = orNaN(building.demolishAt);
-    buildings[row++] = building.buildRemaining;
-    buildings[row++] = building.shipBuild;
-    buildings[row++] = building.shellDamage;
-    buildings[row++] = building.gatherers.length;
-    for (const gatherer of building.gatherers) {
-      gatherers[next++] = gatherer.pos.q;
-      gatherers[next++] = gatherer.pos.r;
-      gatherers[next++] = orNaN(gatherer.target?.q);
-      gatherers[next++] = orNaN(gatherer.target?.r);
-      gatherers[next++] = PHASES.indexOf(gatherer.phase);
-      gatherers[next++] = gatherer.progress;
-      gatherers[next++] = gatherer.duration;
-    }
-  }
-  return { buildings, gatherers };
+export function emptyChanges(): FrameChanges {
+  return {
+    snapshot: false,
+    fields: new Set(),
+    paused: false,
+    empires: new Set(),
+    diplomacy: false,
+    tiles: new Set(),
+    buildings: new Set(),
+    production: new Set(),
+    units: false,
+    unitRoster: false,
+    ships: false,
+    walkers: false,
+    unitEvents: false,
+  };
 }
 
-function shipView(ship: Ship, paths: ShipPaths): ShipView {
-  const { path, ...view } = ship;
-  if (paths.get(ship) === path) return view;
-  paths.set(ship, path);
-  return { ...view, path };
+function shipView({ path: _path, ...view }: Ship): ShipView {
+  return view;
 }
 
 function walkerView({ path: _path, ...view }: Walker): WalkerView {
   return view;
 }
 
-export function encodeFrame(state: GameState, paused: boolean, paths: ShipPaths): FrameMessage {
+function encodeShips(state: GameState, shadow: SimShadow): FrameMessage['ships'] {
+  const pathChanged = (ship: Ship): boolean => shadow.shipPaths.get(ship.id) !== ship.path;
+  const patch = diffKeyed(state.ships, shadow.ships, ship => ship.id, shipView, pathChanged);
+  if (!patch) return null;
+  const upserts = patch.upserts.map(view => {
+    const ship = state.ships.find(item => item.id === view.id)!;
+    if (!pathChanged(ship)) return view;
+    shadow.shipPaths.set(ship.id, ship.path);
+    return { ...view, path: ship.path };
+  });
+  for (const id of patch.removed) shadow.shipPaths.delete(id);
+  return { ...patch, upserts };
+}
+
+export function encodeFrame(state: GameState, paused: boolean, shadow: SimShadow, match: number, seq: number): FrameMessage {
   return {
     type: 'frame',
-    status: state.status,
-    playerEmpire: state.playerEmpire,
+    match,
+    seq,
     paused,
-    speed: state.speed,
-    tick: state.tick,
-    elapsed: state.elapsed,
-    winner: state.winner,
-    endReason: state.endReason,
-    tradeClock: state.tradeClock,
-    landHexCount: state.landHexCount,
-    spawnSites: state.spawnSites,
-    agentAccumulator: state.agentAccumulator,
-    nextShipId: state.nextShipId,
-    nextBuildingId: state.nextBuildingId,
-    nextUnitId: state.nextUnitId,
-    nextUnitEventId: state.nextUnitEventId,
-    units: state.units,
-    production: state.production,
-    unitEvents: state.unitEvents.splice(0),
+    fields: encodeMatch(state, shadow),
+    empires: encodeEmpires(state, shadow),
+    diplomacy: encodeDiplomacy(state, shadow),
     tiles: encodeTiles(state),
-    ...encodeBuildings(state),
-    empires: state.empires,
-    walkers: state.walkers.map(walkerView),
-    ships: state.ships.map(ship => shipView(ship, paths)),
-    relations: state.relations,
-    offerCooldowns: state.offerCooldowns,
-    pendingOffers: state.pendingOffers,
+    buildings: encodeBuildings(state, shadow),
+    production: diffKeyed(state.production, shadow.production, line => line.building, line => line),
+    units: encodeUnits(state, shadow),
+    ships: encodeShips(state, shadow),
+    walkers: diffKeyed(state.walkers, shadow.walkers, walker => walker.site, walkerView),
+    unitEvents: state.unitEvents.splice(0),
   };
 }
 
-export function encodeSnapshot(state: GameState, paused: boolean, paths: ShipPaths, seq: number, match: number): SnapshotMessage {
+export function encodeSnapshot(state: GameState, paused: boolean, shadow: SimShadow, seq: number, match: number): SnapshotMessage {
   const { cells, width, height } = state.grid;
   const owners = new Int32Array(cells.length);
   const terrains = new Uint8Array(cells.length);
@@ -160,12 +125,17 @@ export function encodeSnapshot(state: GameState, paused: boolean, paths: ShipPat
     waterBody: state.map.waterBody.slice() as Int32Array<ArrayBuffer>,
     landSizes: state.map.landSizes,
     waterSizes: state.map.waterSizes,
-    frame: encodeFrame(state, paused, paths),
+    frame: encodeFrame(state, paused, shadow, match, 0),
   };
 }
 
 export function frameTransfer(frame: FrameMessage): Transferable[] {
-  return [frame.tiles.buffer, frame.buildings.buffer, frame.gatherers.buffer];
+  const buffers: ArrayBuffer[] = [frame.tiles.buffer];
+  if (frame.empires) buffers.push(frame.empires.economy.buffer);
+  if (frame.buildings) buffers.push(frame.buildings.rows.buffer, frame.buildings.gatherers.buffer);
+  if (frame.units) buffers.push(frame.units.rows.buffer);
+  if (frame.units?.order) buffers.push(frame.units.order.buffer);
+  return buffers;
 }
 
 export function snapshotTransfer(snapshot: SnapshotMessage): Transferable[] {
@@ -181,123 +151,50 @@ export function snapshotTransfer(snapshot: SnapshotMessage): Transferable[] {
   ];
 }
 
-function applyTiles(state: GameState, tiles: Float64Array): void {
-  for (let row = 0; row < tiles.length; row += TILE_STRIDE) {
-    const cell = state.grid.cells[tiles[row]!]!;
-    setOwner(state, cell, tiles[row + 1]!);
-    cell.terrain = TERRAINS[tiles[row + 2]!]!;
-    const harvested = orNull(tiles[row + 3]!);
-    if (harvested === null) delete cell.harvested;
-    else cell.harvested = harvested;
-    if (tiles[row + 4]! === 1) addRoad(state, cell);
-    markTile(state, cell);
+export function applyFrame(state: GameState, frame: FrameMessage, changes: FrameChanges = emptyChanges()): FrameChanges {
+  if (frame.fields) applyMatch(state, frame.fields, changes);
+  if (frame.empires) applyEmpires(state, frame.empires, changes);
+  if (frame.diplomacy) applyDiplomacy(state, frame.diplomacy, changes);
+  applyTiles(state, frame.tiles, changes);
+  if (frame.buildings) applyBuildings(state, frame.buildings, changes);
+  if (frame.production) {
+    state.production = applyKeyed<ProductionQueue, ProductionQueue>(
+      state.production,
+      frame.production,
+      line => line.building,
+      line => ({ ...line, queue: [...line.queue] }),
+      (line, view) => Object.assign(line, view, { queue: [...view.queue] }),
+      changes.production,
+    );
   }
-}
-
-function readGatherers(gatherers: Float64Array, start: number, count: number): Gatherer[] {
-  const list: Gatherer[] = [];
-  for (let item = 0; item < count; item++) {
-    const at = start + item * GATHERER_STRIDE;
-    const targetQ = orNull(gatherers[at + 2]!);
-    list.push({
-      pos: { q: gatherers[at]!, r: gatherers[at + 1]! },
-      target: targetQ === null ? null : { q: targetQ, r: gatherers[at + 3]! },
-      phase: PHASES[gatherers[at + 4]!]!,
-      progress: gatherers[at + 5]!,
-      duration: gatherers[at + 6]!,
-    });
+  if (frame.units) applyUnits(state, frame.units, changes);
+  if (frame.ships) {
+    state.ships = applyKeyed<Ship, ShipView>(
+      state.ships,
+      frame.ships,
+      ship => ship.id,
+      view => ({ ...view, path: view.path ?? [] }),
+      (ship, view) => Object.assign(ship, view),
+    );
+    rebuildShipHash(state);
+    changes.ships = true;
   }
-  return list;
-}
-
-function emptyBuilding(id: number, kind: BuildingKind): Building {
-  return {
-    id,
-    kind,
-    level: 0,
-    cooldown: 0,
-    growth: 0,
-    demolishAt: null,
-    buildRemaining: 0,
-    gatherers: [],
-    shipBuild: 0,
-    shellDamage: 0,
-  };
-}
-
-function applyBuildings(state: GameState, buildings: Float64Array, gatherers: Float64Array): void {
-  const present = new Set<number>();
-  let nextGatherer = 0;
-  for (let row = 0; row < buildings.length; row += BUILDING_STRIDE) {
-    const at = buildings[row]!;
-    const cell: HexCell = state.grid.cells[at]!;
-    const id = buildings[row + 1]!;
-    present.add(at);
-    let building = cell.building;
-    if (building?.id !== id) {
-      building = emptyBuilding(id, KINDS[buildings[row + 2]!]!);
-      setBuilding(state, cell, building);
-    }
-    building.level = buildings[row + 3]!;
-    building.cooldown = buildings[row + 4]!;
-    building.growth = buildings[row + 5]!;
-    building.demolishAt = orNull(buildings[row + 6]!);
-    building.buildRemaining = buildings[row + 7]!;
-    building.shipBuild = buildings[row + 8]!;
-    building.shellDamage = buildings[row + 9]!;
-    const count = buildings[row + 10]!;
-    building.gatherers = readGatherers(gatherers, nextGatherer, count);
-    nextGatherer += count * GATHERER_STRIDE;
+  if (frame.walkers) {
+    state.walkers = applyKeyed<Walker, WalkerView>(
+      state.walkers,
+      frame.walkers,
+      walker => walker.site,
+      view => ({ ...view, path: [] }),
+      (walker, view) => Object.assign(walker, view),
+    );
+    changes.walkers = true;
   }
-  for (const at of [...state.index.buildings]) {
-    if (!present.has(at)) setBuilding(state, state.grid.cells[at]!, null);
+  if (frame.unitEvents.length > 0) {
+    state.unitEvents.push(...frame.unitEvents);
+    if (state.unitEvents.length > UNIT_TUNING.maxEvents) state.unitEvents.splice(0, state.unitEvents.length - UNIT_TUNING.maxEvents);
+    changes.unitEvents = true;
   }
-}
-
-function reconcile<Live extends { readonly id: number }, View extends { readonly id: number }>(
-  current: readonly Live[],
-  views: readonly View[],
-  create: (view: View) => Live,
-): Live[] {
-  const known = new Map(current.map(item => [item.id, item]));
-  return views.map(view => {
-    const existing = known.get(view.id);
-    return existing ? Object.assign(existing, view) : create(view);
-  });
-}
-
-export function applyFrame(state: GameState, frame: FrameMessage): void {
-  state.status = frame.status;
-  state.playerEmpire = frame.playerEmpire;
-  state.speed = frame.speed;
-  state.tick = frame.tick;
-  state.elapsed = frame.elapsed;
-  state.winner = frame.winner;
-  state.endReason = frame.endReason;
-  state.tradeClock = frame.tradeClock;
-  state.landHexCount = frame.landHexCount;
-  state.spawnSites = frame.spawnSites;
-  state.agentAccumulator = frame.agentAccumulator;
-  state.nextShipId = frame.nextShipId;
-  state.nextBuildingId = frame.nextBuildingId;
-  state.nextUnitId = frame.nextUnitId;
-  state.nextUnitEventId = frame.nextUnitEventId;
-  state.units = frame.units.map(unit => ({ ...unit }));
-  state.production = frame.production.map(line => ({ ...line, queue: [...line.queue] }));
-  state.unitEvents.push(...frame.unitEvents);
-  if (state.unitEvents.length > UNIT_TUNING.maxEvents) state.unitEvents.splice(0, state.unitEvents.length - UNIT_TUNING.maxEvents);
-  applyTiles(state, frame.tiles);
-  applyBuildings(state, frame.buildings, frame.gatherers);
-  frame.empires.forEach((empire, at) => {
-    if (state.empires[at] === undefined) state.empires[at] = empire;
-    else Object.assign(state.empires[at], empire);
-  });
-  state.walkers = frame.walkers.map(view => ({ ...view, path: [] }));
-  state.ships = reconcile(state.ships, frame.ships, view => ({ ...view, path: view.path ?? [] }));
-  rebuildShipHash(state);
-  state.relations = frame.relations;
-  state.offerCooldowns = frame.offerCooldowns;
-  state.pendingOffers = [...frame.pendingOffers];
+  return changes;
 }
 
 export function emptyMirror(config: GameConfig): GameState {
@@ -308,7 +205,7 @@ export function emptyMirror(config: GameConfig): GameState {
   return state;
 }
 
-export function applySnapshot(snapshot: SnapshotMessage): GameState {
+export function applySnapshot(snapshot: SnapshotMessage, changes: FrameChanges = emptyChanges()): GameState {
   const { width, height, owners, terrains, biomes, harvested, roads } = snapshot;
   const cells: HexCell[] = [];
   for (let at = 0; at < owners.length; at++) {
@@ -333,6 +230,7 @@ export function applySnapshot(snapshot: SnapshotMessage): GameState {
   roads.forEach((road, at) => {
     if (road === 1) addRoad(state, state.grid.cells[at]!);
   });
-  applyFrame(state, snapshot.frame);
+  applyFrame(state, snapshot.frame, changes);
+  changes.snapshot = true;
   return state;
 }

@@ -10,6 +10,8 @@ export function createMirrorStore(link: SimLink, demo = false): MirrorStore {
   let current = emptyMirror(DEFAULT_GAME_CONFIG);
   let nextSeq = 1;
   let match = 0;
+  let lastSeq = 0;
+  let resyncing = false;
   const [version, setVersion] = createSignal(0);
   const [paused, setPausedSignal] = createSignal(false);
   const waiting = new Map<number, (value: never) => void>();
@@ -32,11 +34,20 @@ export function createMirrorStore(link: SimLink, demo = false): MirrorStore {
       case 'snapshot':
         current = applySnapshot(reply);
         match = reply.match;
+        lastSeq = reply.frame.seq;
+        resyncing = false;
         setPausedSignal(reply.frame.paused);
         setVersion(value => value + 1);
         settle(reply.seq);
         return;
       case 'frame':
+        if (reply.match !== match || resyncing) return;
+        if (reply.seq !== lastSeq + 1) {
+          resyncing = true;
+          void request<void>(seq => link.post({ type: 'resync', seq }));
+          return;
+        }
+        lastSeq = reply.seq;
         applyFrame(current, reply);
         setPausedSignal(reply.paused);
         setVersion(value => value + 1);

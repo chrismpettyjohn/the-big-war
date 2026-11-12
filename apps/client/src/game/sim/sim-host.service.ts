@@ -8,7 +8,7 @@ import { drainChangedTiles } from '../map/world-index.service';
 import { fail } from '@the-big-war/game-engine/commands/command.service';
 import type { Stepper } from '@the-big-war/game-engine/simulation/simulation.types';
 import type { InProcessSim, PostReply, SimHost, SimReply, SimRequest } from './sim.types';
-import { encodeFrame, encodeSnapshot, frameTransfer, snapshotTransfer, type ShipPaths } from './sim-codec.service';
+import { createShadow, encodeFrame, encodeSnapshot, frameTransfer, snapshotTransfer } from './sim-codec.service';
 
 const PERF_SAMPLES = 4096;
 
@@ -21,7 +21,8 @@ export function createSimHost(post: PostReply): SimHost {
   let demo = false;
   let suspended = false;
   let dirty = false;
-  let paths: ShipPaths = new WeakMap();
+  let shadow = createShadow();
+  let seq = 0;
   let lastTick = -1;
   let matchLoaded = false;
   let match = 0;
@@ -44,11 +45,12 @@ export function createSimHost(post: PostReply): SimHost {
 
   const store = createGameStore({ createMatch, step: timedStep });
 
-  const sendSnapshot = (seq: number): void => {
-    paths = new WeakMap();
+  const sendSnapshot = (replySeq: number): void => {
+    shadow = createShadow();
+    seq = 0;
     matchLoaded = true;
     drainChangedTiles(store.state.index, () => {});
-    const snapshot = encodeSnapshot(store.state, store.paused(), paths, seq, match);
+    const snapshot = encodeSnapshot(store.state, store.paused(), shadow, replySeq, match);
     post(snapshot, snapshotTransfer(snapshot));
     lastTick = store.state.tick;
     dirty = false;
@@ -57,7 +59,8 @@ export function createSimHost(post: PostReply): SimHost {
   const publish = (): void => {
     if (!matchLoaded || (!dirty && store.state.tick === lastTick)) return;
     const started = performance.now();
-    const frame = encodeFrame(store.state, store.paused(), paths);
+    seq += 1;
+    const frame = encodeFrame(store.state, store.paused(), shadow, match, seq);
     post(frame, frameTransfer(frame));
     lastTick = store.state.tick;
     dirty = false;
@@ -75,6 +78,9 @@ export function createSimHost(post: PostReply): SimHost {
       case 'menu':
         match += 1;
         store.returnToMenu();
+        sendSnapshot(request.seq);
+        return;
+      case 'resync':
         sendSnapshot(request.seq);
         return;
       case 'command': {
