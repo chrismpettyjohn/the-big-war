@@ -1,8 +1,10 @@
 import { tileScale } from '../map/terrain.service';
 import { populationOf } from '../unit/unit.service';
-import type { GameState } from '../state/state.types';
 import type { EmpireId } from '../empire/empire.types';
-import type { AttackCheck, DiplomaticRelation, DiplomaticStatus, OfferCooldown, PendingOffer } from './diplomacy.types';
+import type { GameState, MatchSlice } from '../state/state.types';
+import type { AttackCheck, DiplomacySlice, DiplomaticRelation, DiplomaticStatus, OfferCooldown, PendingOffer } from './diplomacy.types';
+
+type TimedDiplomacy = DiplomacySlice & Pick<MatchSlice, 'elapsed'>;
 
 const AT_PEACE: DiplomaticRelation = { status: 'peace', treatyUntil: null };
 
@@ -10,7 +12,7 @@ export function relationKey(a: EmpireId, b: EmpireId): string {
   return a < b ? `${a}:${b}` : `${b}:${a}`;
 }
 
-export function getRelation(state: GameState, a: EmpireId, b: EmpireId): DiplomaticRelation {
+export function getRelation(state: DiplomacySlice, a: EmpireId, b: EmpireId): DiplomaticRelation {
   if (a === b) return AT_PEACE;
   return state.relations?.[relationKey(a, b)] ?? AT_PEACE;
 }
@@ -29,12 +31,12 @@ export function setRelation(
   state.relations[relationKey(a, b)] = { status, treatyUntil };
 }
 
-export function treatySecondsLeft(state: GameState, a: EmpireId, b: EmpireId): number {
+export function treatySecondsLeft(state: TimedDiplomacy, a: EmpireId, b: EmpireId): number {
   const { treatyUntil } = getRelation(state, a, b);
   return treatyUntil === null ? 0 : Math.max(0, treatyUntil - state.elapsed);
 }
 
-export function diplomacyWaitSeconds(state: GameState, player: EmpireId, target: EmpireId): number {
+export function diplomacyWaitSeconds(state: TimedDiplomacy, player: EmpireId, target: EmpireId): number {
   if (getRelation(state, player, target).status !== 'war') {
     return Math.ceil(treatySecondsLeft(state, player, target));
   }
@@ -93,7 +95,7 @@ export function offerKey(from: EmpireId, to: EmpireId): string {
   return `${from}>${to}`;
 }
 
-export function offerCooldown(state: GameState, from: EmpireId, to: EmpireId): OfferCooldown | null {
+export function offerCooldown(state: TimedDiplomacy, from: EmpireId, to: EmpireId): OfferCooldown | null {
   const cooldown = state.offerCooldowns?.[offerKey(from, to)];
   if (!cooldown || state.elapsed >= cooldown.until) return null;
   return cooldown;
@@ -111,11 +113,11 @@ export function decidesOwnOffers(state: GameState, empireId: EmpireId): boolean 
   return state.empires[empireId]?.isHuman === true;
 }
 
-export function pendingOffer(state: GameState, from: EmpireId, to: EmpireId): PendingOffer | null {
+export function pendingOffer(state: DiplomacySlice, from: EmpireId, to: EmpireId): PendingOffer | null {
   return state.pendingOffers?.find(offer => offer.from === from && offer.to === to) ?? null;
 }
 
-export function pendingOffersTo(state: GameState, to: EmpireId): PendingOffer[] {
+export function pendingOffersTo(state: DiplomacySlice, to: EmpireId): PendingOffer[] {
   return state.pendingOffers?.filter(offer => offer.to === to) ?? [];
 }
 

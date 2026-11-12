@@ -1,11 +1,10 @@
 import { orNaN, orNull, sameRow } from './codec.utility';
-import type { GameState } from '../../state/state.types';
 import { UNIT_MODES, UNIT_STRIDE } from './codec.constants';
 import { FORMATIONS, UNIT_KINDS } from '../../unit/unit.constants';
-import type { Boarding, Unit, UnitId } from '../../unit/unit.types';
 import type { FrameChanges, SimShadow, UnitsPatch } from '../sim.types';
+import type { ArmySlice, Boarding, Unit, UnitId } from '../../unit/unit.types';
 
-const rosters = new WeakMap<GameState, Map<UnitId, Unit>>();
+const rosters = new WeakMap<ArmySlice, Map<UnitId, Unit>>();
 
 function writeUnit(out: Float64Array, at: number, unit: Unit): void {
   out[at] = unit.id;
@@ -63,7 +62,7 @@ function createFromRow(rows: Float64Array, at: number): Unit {
   return unit;
 }
 
-export function encodeUnits(state: GameState, shadow: SimShadow): UnitsPatch | null {
+export function encodeUnits(state: ArmySlice, shadow: SimShadow): UnitsPatch | null {
   const units = state.units;
   const scratch = new Float64Array(units.length * UNIT_STRIDE);
   const boarding: [UnitId, Boarding | null][] = [];
@@ -106,7 +105,7 @@ export function encodeUnits(state: GameState, shadow: SimShadow): UnitsPatch | n
   return { rows: scratch.slice(0, cursor), removed, boarding, order };
 }
 
-export function applyUnits(state: GameState, patch: UnitsPatch, changes: FrameChanges): void {
+export function applyUnits(state: ArmySlice, patch: UnitsPatch, changes: FrameChanges): void {
   let roster = rosters.get(state);
   if (!roster) {
     roster = new Map(state.units.map(unit => [unit.id, unit]));

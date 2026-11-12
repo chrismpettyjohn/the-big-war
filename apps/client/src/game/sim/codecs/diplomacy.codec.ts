@@ -1,7 +1,7 @@
-import type { GameState } from '../../state/state.types';
+import type { DiplomacySlice } from '../../diplomacy/diplomacy.types';
 import type { DiplomacyPatch, FrameChanges, SimShadow } from '../sim.types';
 
-export function encodeDiplomacy(state: GameState, shadow: SimShadow): DiplomacyPatch | null {
+export function encodeDiplomacy(state: DiplomacySlice, shadow: SimShadow): DiplomacyPatch | null {
   const patch: DiplomacyPatch = {
     relations: state.relations,
     offerCooldowns: state.offerCooldowns,
@@ -13,7 +13,7 @@ export function encodeDiplomacy(state: GameState, shadow: SimShadow): DiplomacyP
   return patch;
 }
 
-export function applyDiplomacy(state: GameState, patch: DiplomacyPatch, changes: FrameChanges): void {
+export function applyDiplomacy(state: DiplomacySlice, patch: DiplomacyPatch, changes: FrameChanges): void {
   state.relations = patch.relations;
   state.offerCooldowns = patch.offerCooldowns;
   state.pendingOffers = [...patch.pendingOffers];

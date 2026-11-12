@@ -1,7 +1,6 @@
 import { sameRow } from './codec.utility';
-import type { Empire } from '../../empire/empire.types';
-import type { GameState } from '../../state/state.types';
 import { ECONOMY_FIELDS, ECONOMY_STRIDE } from './codec.constants';
+import type { Empire, EmpiresSlice } from '../../empire/empire.types';
 import type { EmpiresPatch, FrameChanges, SimShadow } from '../sim.types';
 
 function profilePrint(empire: Empire): string {
@@ -9,7 +8,7 @@ function profilePrint(empire: Empire): string {
   return JSON.stringify(profile);
 }
 
-export function encodeEmpires(state: GameState, shadow: SimShadow): EmpiresPatch | null {
+export function encodeEmpires(state: EmpiresSlice, shadow: SimShadow): EmpiresPatch | null {
   const rows = new Float64Array(state.empires.length * ECONOMY_STRIDE);
   const profiles: [number, Empire][] = [];
   let cursor = 0;
@@ -32,7 +31,7 @@ export function encodeEmpires(state: GameState, shadow: SimShadow): EmpiresPatch
   return { economy: rows.slice(0, cursor), profiles };
 }
 
-export function applyEmpires(state: GameState, patch: EmpiresPatch, changes: FrameChanges): void {
+export function applyEmpires(state: EmpiresSlice, patch: EmpiresPatch, changes: FrameChanges): void {
   for (const [at, empire] of patch.profiles) {
     const existing = state.empires[at];
     if (existing) Object.assign(existing, empire);

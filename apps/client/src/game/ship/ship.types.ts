@@ -51,3 +51,10 @@ export interface LandingPlan {
   readonly coast: CoastTile;
   readonly route: number[];
 }
+
+export interface FleetSlice {
+  ships: Ship[];
+  nextShipId: ShipId;
+  shipHash: Map<number, Ship[]>;
+  tradeClock: number;
+}

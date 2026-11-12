@@ -1,3 +1,4 @@
+import type { WorldIndex } from './world-index.types';
 import type { EmpireId } from '../empire/empire.types';
 import type { Building } from '../building/building.types';
 import type { AxialGrid } from '@the-big-war/game-engine/world-tile/world-tile.types';
@@ -40,3 +41,10 @@ export interface HexCell {
 }
 
 export type HexGrid = AxialGrid<HexCell>;
+
+export interface WorldSlice {
+  grid: HexGrid;
+  map: WorldLabels;
+  readonly index: WorldIndex;
+  landHexCount: number;
+}

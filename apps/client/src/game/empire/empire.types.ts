@@ -54,3 +54,7 @@ export interface EmpireSeed {
   readonly isHuman: boolean;
   readonly neutralState: boolean;
 }
+
+export interface EmpiresSlice {
+  empires: Empire[];
+}

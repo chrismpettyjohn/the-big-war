@@ -1,5 +1,8 @@
-import type { GameState } from '../../state/state.types';
+import type { WorldSlice } from '../../map/map.types';
+import type { MatchSlice } from '../../state/state.types';
 import type { FrameChanges, MatchFields, MatchPatch, SimShadow } from '../sim.types';
+
+type MatchSource = MatchSlice & Pick<WorldSlice, 'landHexCount'>;
 
 const MATCH_FIELDS: readonly (keyof MatchFields)[] = [
   'status',
@@ -15,7 +18,7 @@ const MATCH_FIELDS: readonly (keyof MatchFields)[] = [
 
 const print = (value: unknown): string => (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value));
 
-export function encodeMatch(state: GameState, shadow: SimShadow): MatchPatch | null {
+export function encodeMatch(state: MatchSource, shadow: SimShadow): MatchPatch | null {
   let patch: Record<string, unknown> | null = null;
   for (const field of MATCH_FIELDS) {
     const value = state[field];
@@ -28,7 +31,7 @@ export function encodeMatch(state: GameState, shadow: SimShadow): MatchPatch | n
   return patch as MatchPatch | null;
 }
 
-export function applyMatch(state: GameState, patch: MatchPatch, changes: FrameChanges): void {
+export function applyMatch(state: MatchSource, patch: MatchPatch, changes: FrameChanges): void {
   Object.assign(state, patch);
   for (const field of Object.keys(patch) as (keyof MatchFields)[]) changes.fields.add(field);
 }

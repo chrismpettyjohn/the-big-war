@@ -1,5 +1,6 @@
 import { atWar } from '../ship/ship.service';
 import type { HexCell } from '../map/map.types';
+import type { FleetSlice } from '../ship/ship.types';
 import type { GameState } from '../state/state.types';
 import type { EmpireId } from '../empire/empire.types';
 import { buildingCellsOf } from '../map/world-index.service';
@@ -7,7 +8,9 @@ import { nextFloat } from '@the-big-war/game-engine/rng/rng.service';
 import { FORMATION_RANK, UNIT_STATS, UNIT_TUNING } from './unit.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
-import type { Formation, Unit, UnitEvent, UnitId, UnitKind, UnitMode, UnitOrder, UnitStats } from './unit.types';
+import type { ArmySlice, Formation, Unit, UnitEvent, UnitId, UnitKind, UnitMode, UnitOrder, UnitStats } from './unit.types';
+
+type PopulationSources = Pick<ArmySlice, 'units' | 'production'> & Pick<FleetSlice, 'ships'>;
 
 export function unitStats(kind: UnitKind): UnitStats {
   return UNIT_STATS[kind];
@@ -68,7 +71,7 @@ export function isCover(cell: HexCell | undefined): boolean {
   return !!cell && (cell.terrain === 'forest' || cell.terrain === 'mountain' || (cell.building?.kind === 'trench' && cell.building.buildRemaining <= 0));
 }
 
-export function populationOf(state: GameState, empire: EmpireId): number {
+export function populationOf(state: PopulationSources, empire: EmpireId): number {
   let total = 0;
   for (const unit of state.units) if (unit.empire === empire) total += unitStats(unit.kind).population;
   for (const ship of state.ships) {
@@ -82,7 +85,7 @@ export function populationOf(state: GameState, empire: EmpireId): number {
   return total;
 }
 
-export function populationByEmpire(state: GameState): Map<EmpireId, number> {
+export function populationByEmpire(state: PopulationSources): Map<EmpireId, number> {
   const totals = new Map<EmpireId, number>();
   const add = (empire: EmpireId, kind: UnitKind): void => {
     totals.set(empire, (totals.get(empire) ?? 0) + unitStats(kind).population);

@@ -119,3 +119,11 @@ export type UnitOrder =
   | { readonly kind: 'attack'; readonly target: UnitId }
   | { readonly kind: 'hold' }
   | { readonly kind: 'arrange'; readonly formation: Formation };
+
+export interface ArmySlice {
+  units: Unit[];
+  nextUnitId: UnitId;
+  production: ProductionQueue[];
+  unitEvents: UnitEvent[];
+  nextUnitEventId: number;
+}

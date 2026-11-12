@@ -69,3 +69,8 @@ export interface OwnedBuilding {
   readonly cell: HexCell;
   readonly building: Building;
 }
+
+export interface ConstructionSlice {
+  walkers: Walker[];
+  nextBuildingId: BuildingId;
+}

@@ -24,3 +24,9 @@ export interface AttackCheck {
   allowed: boolean;
   reason?: CommandError;
 }
+
+export interface DiplomacySlice {
+  relations: Record<string, DiplomaticRelation>;
+  offerCooldowns: Record<string, OfferCooldown>;
+  pendingOffers: PendingOffer[];
+}
