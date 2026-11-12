@@ -173,7 +173,9 @@ describe('sim wire', () => {
     const { host, store, frames } = wiredSim();
     await store.startMatch(ARMY_CONFIG);
     store.setPaused(true);
-    host.publish();
+    raiseArmies(host.state, 500);
+    store.setSpeed(1);
+    expect(store.state.units.length).toBe(host.state.units.length);
     const before = frames().length;
     store.setSpeed(1);
     const idle = frames().slice(before).find(reply => reply.type === 'frame');
