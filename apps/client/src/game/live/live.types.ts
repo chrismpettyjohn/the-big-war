@@ -3,8 +3,8 @@ import type { FrameChanges } from '../sim/sim.types';
 import type { GameState } from '../state/state.types';
 import type { EmpireId } from '../empire/empire.types';
 import type { BuildingId } from '../building/building.types';
-import type { ProductionQueue, Unit, UnitKind } from '../unit/unit.types';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
+import type { ProductionQueue, Unit, UnitId, UnitKind } from '../unit/unit.types';
 
 export interface TriggerCache<K> {
   track(key: K): void;
@@ -27,6 +27,7 @@ export interface LiveQueries {
   cellAt(hex: Axial | null): HexCell | null;
   productionFor(building: BuildingId): ProductionQueue | null;
   roster(): readonly Unit[];
+  unit(id: UnitId): Unit | null;
   population(empire: EmpireId): number;
   unitCounts(empire: EmpireId): UnitCounts;
 }

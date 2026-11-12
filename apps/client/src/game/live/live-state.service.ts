@@ -6,6 +6,7 @@ import type { GameState } from '../state/state.types';
 import type { DiplomacyPatch } from '../sim/sim.types';
 import { batch, createSignal, untrack } from 'solid-js';
 import { createStore, reconcile } from 'solid-js/store';
+import { mirrorRoster } from '../sim/codecs/units.codec';
 import { createKeyedStores } from './keyed-store.service';
 import { populationByEmpire } from '../unit/unit.service';
 import type { ProductionQueue } from '../unit/unit.types';
@@ -189,6 +190,10 @@ export function createLiveState(initial: GameState): LiveState {
     },
     productionFor(building) {
       return lines.get(building);
+    },
+    unit(id) {
+      slices.track('units');
+      return mirrorRoster(raw).get(id) ?? null;
     },
     roster() {
       slices.track('roster');

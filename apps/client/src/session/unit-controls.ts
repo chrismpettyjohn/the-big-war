@@ -23,8 +23,12 @@ export function createUnitControls(deps: UnitControlDeps): UnitControls {
 
   const player = () => store.state.playerEmpire;
   const selectedUnits = (): Unit[] => {
-    const ids = selected();
-    return store.state.units.filter(unit => ids.has(unit.id));
+    const units: Unit[] = [];
+    for (const id of selected()) {
+      const unit = store.live.unit(id);
+      if (unit) units.push(unit);
+    }
+    return units;
   };
 
   const unitAt = (world: Pixel, mine: boolean): Unit | null => {
@@ -127,7 +131,7 @@ export function createUnitControls(deps: UnitControlDeps): UnitControls {
       const current = menu();
       setMenu(null);
       if (!current) return;
-      const foe = current.foe === null ? undefined : store.state.units.find(unit => unit.id === current.foe);
+      const foe = current.foe === null ? undefined : (store.live.unit(current.foe) ?? undefined);
       if (foe) attackUnit(foe);
       else moveTo(current.world, 'amove');
     },
@@ -174,7 +178,8 @@ export function createUnitControls(deps: UnitControlDeps): UnitControls {
     prune() {
       const ids = selected();
       if (ids.size === 0) return;
-      const alive = new Set(store.state.units.filter(unit => ids.has(unit.id)).map(unit => unit.id));
+      const alive = new Set<UnitId>();
+      for (const id of ids) if (store.live.unit(id)) alive.add(id);
       if (alive.size !== ids.size) setSelected(alive);
     },
   };

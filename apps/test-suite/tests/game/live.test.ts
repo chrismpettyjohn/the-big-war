@@ -172,3 +172,19 @@ describe('keyed stores', () => {
     expect(reads).toBe(after);
   });
 });
+
+describe('live unit lookup', () => {
+  test('units resolve by id through the mirror roster as they spawn and die', async () => {
+    const sim = createInProcessSim();
+    await sim.store.startMatch(CONFIG);
+    sim.host.handle({ type: 'paused', value: true });
+    const home = sim.host.state.grid.cells.find(cell => cell.owner === 0)!;
+    const [first, second] = spawnUnits(sim.host.state, 0, home, 2);
+    sim.host.handle({ type: 'paused', value: true });
+    expect(sim.store.live.unit(first!.id)?.id).toBe(first!.id);
+    sim.host.state.units = sim.host.state.units.filter(unit => unit.id !== first!.id);
+    sim.host.handle({ type: 'paused', value: true });
+    expect(sim.store.live.unit(first!.id)).toBeNull();
+    expect(sim.store.live.unit(second!.id)).toBe(sim.store.raw.units.find(unit => unit.id === second!.id)!);
+  });
+});

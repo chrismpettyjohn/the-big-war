@@ -105,12 +105,17 @@ export function encodeUnits(state: ArmySlice, shadow: SimShadow): UnitsPatch | n
   return { rows: scratch.slice(0, cursor), removed, boarding, order };
 }
 
-export function applyUnits(state: ArmySlice, patch: UnitsPatch, changes: FrameChanges): void {
+export function mirrorRoster(state: ArmySlice): Map<UnitId, Unit> {
   let roster = rosters.get(state);
   if (!roster) {
     roster = new Map(state.units.map(unit => [unit.id, unit]));
     rosters.set(state, roster);
   }
+  return roster;
+}
+
+export function applyUnits(state: ArmySlice, patch: UnitsPatch, changes: FrameChanges): void {
+  const roster = mirrorRoster(state);
   for (const id of patch.removed) roster.delete(id);
   const { rows } = patch;
   for (let at = 0; at < rows.length; at += UNIT_STRIDE) {
