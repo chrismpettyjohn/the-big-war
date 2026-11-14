@@ -12,9 +12,11 @@ interface Route {
   readonly goal: number;
   readonly points: readonly Point[];
   next: number;
+  steps: number;
 }
 
 const ROUTE_REACH = 0.35;
+const RECHECK_STEPS = 15;
 const DIRECTIONS: readonly (readonly [number, number])[] = [
   [1, 0],
   [-1, 0],
@@ -42,10 +44,23 @@ export function routeStep(state: GameState, unit: Unit, goalX: number, goalY: nu
   const goal = tileAt(state, goalX, goalY);
   if (goal < 0) return { x: goalX, y: goalY };
   let route = routes.get(unit);
-  if (!route || route.goal !== goal) {
-    route = { goal, points: plan(state, unit, goal, goalX, goalY), next: 0 };
-    routes.set(unit, route);
+  if (!route || route.goal !== goal) route = replan(state, unit, goal, goalX, goalY);
+  route.steps += 1;
+  let point = nextPoint(state, unit, route, goalX, goalY);
+  if (route.steps % RECHECK_STEPS === 0 && !clearWalk(state, unit.x, unit.y, point.x, point.y)) {
+    route = replan(state, unit, goal, goalX, goalY);
+    point = nextPoint(state, unit, route, goalX, goalY);
   }
+  return point;
+}
+
+function replan(state: GameState, unit: Unit, goal: number, goalX: number, goalY: number): Route {
+  const route = { goal, points: plan(state, unit, goal, goalX, goalY), next: 0, steps: 0 };
+  routes.set(unit, route);
+  return route;
+}
+
+function nextPoint(state: GameState, unit: Unit, route: Route, goalX: number, goalY: number): Point {
   const reach = state.config.map.hexSize * ROUTE_REACH;
   while (route.next < route.points.length) {
     const point = route.points[route.next]!;
