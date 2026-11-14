@@ -149,6 +149,29 @@ describe('transports', () => {
     if (!result.ok) expect(result.reason).toBe('port_busy');
   });
 
+  test('a selection spread over two islands embarks only the units cut off by sea', () => {
+    const state = seaState();
+    const dock = port(state, WEST_COAST, 5);
+    const size = state.config.map.hexSize;
+    const west = spawnUnits(state, 0, { q: 2, r: 5 }, 2);
+    const east = spawnUnits(state, 0, { q: 25, r: 5 }, 2);
+    const result = dispatch(state, {
+      type: 'OrderUnits',
+      empire: 0,
+      units: [...west, ...east].map(unit => unit.id),
+      order: { kind: 'move', mode: 'amove', x: 26.5 * size, y: 5.5 * size, formation: 'wedge' },
+    });
+    expect(result.ok).toBe(true);
+    for (const unit of west) {
+      expect(unit.boarding?.port).toEqual({ q: dock.q, r: dock.r });
+      expect(unit.tx).toBe((dock.q + 0.5) * size);
+    }
+    for (const unit of east) {
+      expect(unit.boarding).toBeNull();
+      expect(Math.hypot(unit.tx - 26.5 * size, unit.ty - 5.5 * size)).toBeLessThan(size * 2);
+    }
+  });
+
 });
 
 describe('units at sea', () => {

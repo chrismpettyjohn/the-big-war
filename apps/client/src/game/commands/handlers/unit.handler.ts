@@ -65,17 +65,44 @@ export const handleOrderUnits = withLiveEmpire<OrderUnitsCommand>((state, comman
     declareWar(state, command.empire, enemy);
   }
   for (const unit of units) unit.boarding = null;
-  const voyage = command.order.kind === 'move' ? overseas(state, units, command.order) : null;
-  if (voyage) {
-    const plan = planLanding(state, command.empire, voyage.focus, voyage.owner, voyage.landmass);
-    if (typeof plan === 'string') return fail(command.type, plan);
-    embark(state, units, plan.port, voyage.focus);
+  const order = command.order;
+  if (order.kind !== 'move') {
+    applyOrder(state, units, order);
     return ok(command.type);
   }
-  const rest = command.order.kind === 'move' ? stationInTrench(state, command.empire, units, command.order) : units;
-  if (rest.length > 0) applyOrder(state, rest, command.order);
+  const walkers: Unit[] = [];
+  let embarked = false;
+  let refusal: ReturnType<typeof planLanding> & string = 'no_port';
+  for (const party of byLandmass(state, units)) {
+    const voyage = overseas(state, party, order);
+    if (!voyage) {
+      walkers.push(...party);
+      continue;
+    }
+    const plan = planLanding(state, command.empire, voyage.focus, voyage.owner, voyage.landmass);
+    if (typeof plan === 'string') {
+      refusal = plan;
+      continue;
+    }
+    embark(state, party, plan.port, voyage.focus);
+    embarked = true;
+  }
+  if (walkers.length === 0 && !embarked) return fail(command.type, refusal);
+  const rest = stationInTrench(state, command.empire, walkers, order);
+  if (rest.length > 0) applyOrder(state, rest, order);
   return ok(command.type);
 });
+
+function byLandmass(state: GameState, units: readonly Unit[]): Unit[][] {
+  const parties = new Map<number | null, Unit[]>();
+  for (const unit of units) {
+    const mass = landmassAt(state, unit.x, unit.y);
+    const party = parties.get(mass);
+    if (party) party.push(unit);
+    else parties.set(mass, [unit]);
+  }
+  return [...parties.values()];
+}
 
 function stationInTrench(state: GameState, empire: EmpireId, units: readonly Unit[], order: { readonly x: number; readonly y: number }): readonly Unit[] {
   const cell = cellAtPixel(state, order.x, order.y);
@@ -122,7 +149,15 @@ function embark(state: GameState, units: readonly Unit[], port: Axial, focus: Ax
   const group = Math.min(...units.map(unit => unit.id));
   for (const unit of units) unit.boarding = { group, port, focus };
   const size = state.config.map.hexSize;
-  orderGroup(units, (port.q + 0.5) * size, (port.r + 0.5) * size, 'amove', 'column');
+  const x = (port.q + 0.5) * size;
+  const y = (port.r + 0.5) * size;
+  orderGroup(units, x, y, 'amove', 'column');
+  for (const unit of units) {
+    unit.tx = x;
+    unit.ty = y;
+    unit.gx = x;
+    unit.gy = y;
+  }
 }
 
 function orderTarget(state: GameState, order: UnitOrder): EmpireId | null {

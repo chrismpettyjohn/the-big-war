@@ -4,6 +4,7 @@ import { isFinishedPort, launchTransport, planLanding } from '../../ship/ship.se
 import { gridAt, gridIndex } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 const BOARD_RADIUS_HEXES = 2.5;
+const BOARD_CROWD = 10;
 
 export function stepBoarding(state: GameState): void {
   const groups = new Map<number, Unit[]>();
@@ -25,7 +26,7 @@ function boardGroup(state: GameState, units: readonly Unit[]): void {
     return;
   }
   const size = state.config.map.hexSize;
-  const reach = size * BOARD_RADIUS_HEXES;
+  const reach = size * BOARD_RADIUS_HEXES * Math.max(1, Math.sqrt(units.length / BOARD_CROWD));
   const px = (port.q + 0.5) * size;
   const py = (port.r + 0.5) * size;
   if (units.some(unit => Math.hypot(unit.x - px, unit.y - py) > reach)) return;
