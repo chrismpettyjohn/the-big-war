@@ -11,8 +11,11 @@ import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
 import { distance, gridAt } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
+type ResourceCache = Map<string, readonly HexCell[]>;
+
 export function stepGathering(state: GameState, dt: number): void {
   const gather = state.config.gather;
+  const resources: ResourceCache = new Map();
   for (const cell of allBuildingCells(state)) {
     const building = cell.building;
     if (!building || building.buildRemaining > 0) continue;
@@ -26,7 +29,7 @@ export function stepGathering(state: GameState, dt: number): void {
       building.gatherers.push({ pos: home, target: null, phase: 'idle', progress: 0, duration: 0 });
     }
     for (const gatherer of building.gatherers) {
-      const delivered = stepGatherer(state, gatherer, home, cell.owner, terrain, dt);
+      const delivered = stepGatherer(state, resources, gatherer, home, cell.owner, terrain, dt);
       if (delivered <= 0) continue;
       empire.gold += resolveModifier(delivered * goldPerLoad, empire.bonuses.goldIncome);
       refillUnlimited(empire);
@@ -36,6 +39,7 @@ export function stepGathering(state: GameState, dt: number): void {
 
 function stepGatherer(
   state: GameState,
+  resources: ResourceCache,
   gatherer: Gatherer,
   home: Axial,
   owner: EmpireId,
@@ -44,7 +48,7 @@ function stepGatherer(
 ): number {
   const gather = state.config.gather;
   if (gatherer.phase === 'idle') {
-    const target = nearestResource(state, home, owner, terrain);
+    const target = nearestResource(resourcesOf(state, resources, owner, terrain), home, terrain);
     if (!target) {
       gatherer.pos = home;
       return 0;
@@ -105,10 +109,20 @@ function harvest(state: GameState, cell: HexCell): void {
   cell.harvested = 0;
 }
 
-function nearestResource(state: GameState, home: Axial, owner: EmpireId, terrain: Terrain): Axial | null {
+function resourcesOf(state: GameState, resources: ResourceCache, owner: EmpireId, terrain: Terrain): readonly HexCell[] {
+  const key = `${owner}:${terrain}`;
+  let cells = resources.get(key);
+  if (!cells) {
+    cells = ownedCells(state, owner).filter(cell => cell.terrain === terrain && !cell.building);
+    resources.set(key, cells);
+  }
+  return cells;
+}
+
+function nearestResource(cells: readonly HexCell[], home: Axial, terrain: Terrain): Axial | null {
   let best: Axial | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
-  for (const cell of ownedCells(state, owner)) {
+  for (const cell of cells) {
     if (cell.terrain !== terrain || cell.building) continue;
     const d = distance(home, cell);
     if (d < bestDistance) {
