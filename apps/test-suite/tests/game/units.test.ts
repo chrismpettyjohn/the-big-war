@@ -153,4 +153,15 @@ describe('unit orders', () => {
     run(state, 15);
     expect(unit.x).toBeLessThan(6 * SIZE);
   });
+
+  test('units walk around a lake to reach the far shore', () => {
+    const state = fieldState();
+    for (const cell of state.grid.cells) if (cell.q === 8 && cell.r < HEIGHT - 2) cell.terrain = 'water';
+    for (const cell of state.grid.cells) if (cell.q >= 5 && cell.q <= 11 && cell.r === 4) cell.terrain = 'mountain';
+    const unit = spawn(state, 'infantry', 0, 3, 2);
+    const goal = { x: 13.5 * SIZE, y: 2.5 * SIZE };
+    dispatch(state, { type: 'OrderUnits', empire: 0, units: [unit.id], order: { kind: 'move', mode: 'amove', ...goal, formation: 'wedge' } });
+    run(state, 120);
+    expect(Math.hypot(unit.x - goal.x, unit.y - goal.y)).toBeLessThan(SIZE / 2);
+  });
 });

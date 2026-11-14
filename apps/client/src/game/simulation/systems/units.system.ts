@@ -4,6 +4,7 @@ import { isClaimable } from '../../map/terrain.service';
 import { UNIT_TUNING } from '../../unit/unit.constants';
 import { setOwner } from '../../map/world-index.service';
 import type { GameState } from '../../state/state.types';
+import { routeStep } from '../../unit/unit-route.service';
 import { NEUTRAL_OWNER } from '../../empire/empire.constants';
 import { nextFloat } from '@the-big-war/game-engine/rng/rng.service';
 import { gridIndex } from '@the-big-war/game-engine/world-tile/world-tile.service';
@@ -253,9 +254,13 @@ function stepUnit(world: UnitWorld, unit: Unit, dt: number): void {
   const moving = gap > UNIT_TUNING.arriveDistance && !(chased && target);
   if (moving) {
     const pinned = unit.suppression > UNIT_TUNING.suppressedAt ? UNIT_TUNING.suppressedSpeed : 1;
-    const travel = Math.min(stats.speed * pinned * dt, gap);
-    move(state, unit, (dx / gap) * travel, (dy / gap) * travel);
-    unit.face = Math.atan2(dy, dx);
+    const step = routeStep(state, unit, goalX, goalY);
+    const sx = step.x - unit.x;
+    const sy = step.y - unit.y;
+    const leg = Math.hypot(sx, sy) || 1;
+    const travel = Math.min(stats.speed * pinned * dt, leg);
+    move(state, unit, (sx / leg) * travel, (sy / leg) * travel);
+    unit.face = Math.atan2(sy, sx);
     unit.hull = unit.face;
     unit.setup = stats.setupSeconds;
     unit.moving = true;

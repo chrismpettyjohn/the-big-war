@@ -5,6 +5,7 @@ import { finishedPorts } from '../ship/ship.service';
 import { isClaimable } from '../map/terrain.service';
 import type { Empire } from '../empire/empire.types';
 import type { GameState } from '../state/state.types';
+import { clearWalk } from '../unit/unit-route.service';
 import type { Unit, UnitKind } from '../unit/unit.types';
 import type { Command } from '../commands/commands.types';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
@@ -386,14 +387,4 @@ function nearbyCell(state: GameState, unit: Unit, accept: (cell: HexCell) => boo
     }
   }
   return null;
-}
-
-function clearWalk(state: GameState, x0: number, y0: number, x1: number, y1: number): boolean {
-  const stride = state.config.map.hexSize / 2;
-  const steps = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / stride);
-  for (let at = 1; at < steps; at++) {
-    const t = at / steps;
-    if (!isWalkable(cellAtPixel(state, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t))) return false;
-  }
-  return true;
 }
