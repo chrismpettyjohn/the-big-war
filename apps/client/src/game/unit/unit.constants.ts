@@ -165,5 +165,6 @@ export const UNIT_TUNING = {
   maxQueue: 5,
   basePopulation: 10,
   populationPerProducer: 10,
+  populationPerCityLevel: 10,
   maxEvents: 400,
 } as const;

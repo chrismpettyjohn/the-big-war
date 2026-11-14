@@ -101,13 +101,14 @@ export function populationByEmpire(state: PopulationSources): Map<EmpireId, numb
 }
 
 export function populationCap(state: GameState, empire: EmpireId): number {
-  let producers = 0;
+  let cap = UNIT_TUNING.basePopulation;
   for (const cell of buildingCellsOf(state, empire)) {
     const building = cell.building;
     if (!building || building.buildRemaining > 0) continue;
-    if (building.kind === 'barracks' || building.kind === 'factory') producers += 1;
+    if (building.kind === 'barracks' || building.kind === 'factory') cap += UNIT_TUNING.populationPerProducer;
+    if (building.kind === 'city') cap += UNIT_TUNING.populationPerCityLevel * building.level;
   }
-  return UNIT_TUNING.basePopulation + producers * UNIT_TUNING.populationPerProducer;
+  return cap;
 }
 
 export function formationSlot(formation: Formation, index: number): readonly [number, number] {

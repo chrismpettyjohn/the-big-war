@@ -2,7 +2,6 @@ import { testEmpire } from '../support/fixture';
 import { describe, expect, test } from 'bun:test';
 import type { HexCell } from '@the-big-war/client/game/map/map.types';
 import type { UnitKind } from '@the-big-war/client/game/unit/unit.types';
-import { UNIT_STATS } from '@the-big-war/client/game/unit/unit.constants';
 import type { GameState } from '@the-big-war/client/game/state/state.types';
 import { dispatch } from '@the-big-war/client/game/commands/commands.service';
 import { createBaseState } from '@the-big-war/client/game/state/state.service';
@@ -11,6 +10,7 @@ import { declareWar } from '@the-big-war/client/game/diplomacy/diplomacy.service
 import { createBuilding } from '@the-big-war/client/game/building/building.service';
 import { stepUnits } from '@the-big-war/client/game/simulation/systems/units.system';
 import { DEFAULT_GAME_CONFIG } from '@the-big-war/client/game/config/config.constants';
+import { UNIT_STATS, UNIT_TUNING } from '@the-big-war/client/game/unit/unit.constants';
 import { setBuilding, setOwner } from '@the-big-war/client/game/map/world-index.service';
 import { gridAt, makeGrid } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { createUnit, formationSlot, orderGroup, populationCap, weaponDamage } from '@the-big-war/client/game/unit/unit.service';
@@ -85,6 +85,14 @@ describe('unit production', () => {
       refused = !result.ok;
     }
     expect(refused).toBe(true);
+  });
+
+  test('cities raise the unit limit by their level', () => {
+    const state = fieldState();
+    const base = populationCap(state, 0);
+    const city = createBuilding(state, 'city', 2, 0);
+    setBuilding(state, gridAt(state.grid, { q: 3, r: 3 })!, city);
+    expect(populationCap(state, 0)).toBe(base + 2 * UNIT_TUNING.populationPerCityLevel);
   });
 });
 

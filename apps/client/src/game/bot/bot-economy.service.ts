@@ -92,7 +92,6 @@ function scoredPicks(bot: Bot, state: GameState, empire: Empire, placed: Readonl
   const growthWeight = BOT_TUNING.growthScore * (spare < civilianTarget ? 1 : 0.2);
   const farmRoom = count('farm') * econ.farmGrowthPerFarm < econ.farmGrowthMax;
   if (farmRoom) picks.push({ kind: 'farm', score: (econ.farmGrowthPerFarm * growthWeight) / cost('farm') });
-  picks.push({ kind: 'city', score: (econ.cityGrowthPerCity * growthWeight) / cost('city') });
   if (income >= BOT_TUNING.labIncome * (1 + count('lab'))) picks.push({ kind: 'lab', score: BOT_TUNING.labScore / (1 + count('lab')) });
 
   const producers = producerCount + count('factory');
@@ -100,6 +99,8 @@ function scoredPicks(bot: Bot, state: GameState, empire: Empire, placed: Readonl
   const popFull = populationCap(state, bot.empire) - populationOf(state, bot.empire) <= 0;
   const saturated = !popFull && bot.armyBudget >= BOT_TUNING.armyBudgetBase && producersBusy(state, bot.empire);
   const roomForProducer = producerCount < bot.skill.maxProducers;
+  const cityScore = (econ.cityGrowthPerCity * growthWeight) / cost('city');
+  picks.push({ kind: 'city', score: popFull && !roomForProducer ? Math.max(cityScore, BOT_TUNING.popFullScore) : cityScore });
   if (roomForProducer && producers > 0 && (popFull || saturated || armyIncome > producers * BOT_TUNING.barracksGoldPerSecond)) {
     const score = saturated ? BOT_TUNING.saturatedScore : popFull ? BOT_TUNING.popFullScore : 0.03 * bot.personality.aggression + 0.01;
     picks.push({ kind: 'barracks', score });
