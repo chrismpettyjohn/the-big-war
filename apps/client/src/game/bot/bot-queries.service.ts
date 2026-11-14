@@ -39,7 +39,17 @@ export function findSite(state: GameState, empireId: EmpireId, kind: BuildingKin
   if (kind === 'trench') return borderTrenchSite(state, empireId);
   const gathered = GATHERED_TERRAIN[kind];
   if (gathered) return gathererSite(state, empireId, gathered);
-  if (kind === 'port') return firstSite(state, empireId, cell => isPassable(cell.terrain) && isPortSite(state.grid, state.map, cell));
+  if (kind === 'port') {
+    const stranded = strandedLandmass(state, empireId);
+    return firstSite(
+      state,
+      empireId,
+      cell =>
+        isPassable(cell.terrain) &&
+        isPortSite(state.grid, state.map, cell) &&
+        (stranded === null || state.map.landmass[gridIndex(state.grid, cell.q, cell.r)] === stranded),
+    );
+  }
   if (kind === 'fishery') return firstSite(state, empireId, cell => isFreeSite(cell) && isCoastal(state, cell));
   const keepCoast = !hasPort(state, empireId);
   return firstSite(state, empireId, cell => isFreeSite(cell) && !(keepCoast && isPortSite(state.grid, state.map, cell)));
@@ -162,9 +172,34 @@ function sharesLandWithRival(state: GameState, empireId: EmpireId): boolean {
   return false;
 }
 
+export function strandedLandmass(state: GameState, empireId: EmpireId): number | null {
+  if (!hasPort(state, empireId)) return null;
+  const ported = new Set(
+    buildingCellsOf(state, empireId)
+      .filter(cell => cell.building?.kind === 'port')
+      .map(cell => state.map.landmass[gridIndex(state.grid, cell.q, cell.r)]!),
+  );
+  const owned = landmassesOf(state, empireId);
+  for (const unit of state.units) {
+    if (unit.empire !== empireId) continue;
+    const cell = cellAtPixel(state, unit.x, unit.y);
+    if (!cell) continue;
+    const mass = state.map.landmass[gridIndex(state.grid, cell.q, cell.r)]!;
+    if (mass >= 0 && !ported.has(mass) && owned.has(mass) && hasOwnPortSite(state, empireId, mass)) return mass;
+  }
+  return null;
+}
+
+function hasOwnPortSite(state: GameState, empireId: EmpireId, mass: number): boolean {
+  return ownedCells(state, empireId).some(
+    cell => isPassable(cell.terrain) && isPortSite(state.grid, state.map, cell) && state.map.landmass[gridIndex(state.grid, cell.q, cell.r)] === mass,
+  );
+}
+
 export function wantsPort(state: GameState, empireId: EmpireId): boolean {
   const empire = state.empires[empireId];
-  if (!empire || empire.neutralState || hasPort(state, empireId)) return false;
+  if (!empire || empire.neutralState) return false;
+  if (hasPort(state, empireId)) return strandedLandmass(state, empireId) !== null;
   if (empire.gold >= state.config.buildings.port.cost * BOT_TUNING.navyGoldMultiple) return true;
   return !sharesLandWithRival(state, empireId) || hostileEdges(state, empireId).length === 0;
 }
