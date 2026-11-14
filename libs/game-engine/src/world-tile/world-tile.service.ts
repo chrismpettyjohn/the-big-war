@@ -58,9 +58,16 @@ export function ring(center: Axial, radius: number): Axial[] {
 }
 
 export function area(center: Axial, radius: number): Axial[] {
-  const results: Axial[] = [{ q: center.q, r: center.r }];
-  for (let k = 1; k <= radius; k++) results.push(...ring(center, k));
-  return results;
+  if (radius <= 0) return [{ q: center.q, r: center.r }];
+  const rings: Axial[][] = Array.from({ length: radius + 1 }, () => []);
+  for (let r = -radius; r <= radius; r++) {
+    for (let q = -radius; q <= radius; q++) {
+      const hex = { q: center.q + q, r: center.r + r };
+      const gap = distance(center, hex);
+      if (gap <= radius) rings[gap]!.push(hex);
+    }
+  }
+  return rings.flat();
 }
 
 export function gridInBounds<T>(grid: AxialGrid<T>, q: number, r: number): boolean {
