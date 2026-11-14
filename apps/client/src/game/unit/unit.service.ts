@@ -216,8 +216,9 @@ export function shellUnits(state: GameState, shooter: EmpireId, at: Axial, radiu
   let hits = 0;
   for (const unit of state.units) {
     if (unit.hp <= 0 || !hostileUnits(state, shooter, unit.empire)) continue;
-    const hex = { q: Math.floor(unit.x / size), r: Math.floor(unit.y / size) };
-    if (distance(hex, at) > radius) continue;
+    const q = Math.floor(unit.x / size);
+    const r = Math.floor(unit.y / size);
+    if (Math.abs(q - at.q) > radius || Math.abs(r - at.r) > radius || distance({ q, r }, at) > radius) continue;
     unit.hp -= weaponDamage(unitStats(unit.kind), 0, damage);
     hits += 1;
   }
