@@ -27,20 +27,39 @@ interface UnitWorld {
   readonly state: GameState;
   readonly byId: ReadonlyMap<number, Unit>;
   readonly buckets: Map<number, Unit[]>;
+  readonly presence: Map<number, number>;
   readonly relations: Map<number, boolean>;
+  readonly foes: Map<number, number>;
 }
+
+const MASKED_EMPIRES = 30;
+
+const empireBit = (empire: number): number => (empire >= 0 && empire < MASKED_EMPIRES ? 1 << empire : 1 << MASKED_EMPIRES);
 
 const bucketKey = (bx: number, by: number): number => bx * 4096 + by;
 
 function indexUnits(state: GameState): UnitWorld {
   const buckets = new Map<number, Unit[]>();
+  const presence = new Map<number, number>();
   for (const unit of state.units) {
     const key = bucketKey(Math.floor(unit.x / BUCKET_PX), Math.floor(unit.y / BUCKET_PX));
     const bucket = buckets.get(key);
     if (bucket) bucket.push(unit);
     else buckets.set(key, [unit]);
+    presence.set(key, (presence.get(key) ?? 0) | empireBit(unit.empire));
   }
-  return { state, byId: new Map(state.units.map(unit => [unit.id, unit])), buckets, relations: new Map() };
+  return { state, byId: new Map(state.units.map(unit => [unit.id, unit])), buckets, presence, relations: new Map(), foes: new Map() };
+}
+
+function foesOf(world: UnitWorld, empire: number): number {
+  let mask = world.foes.get(empire);
+  if (mask !== undefined) return mask;
+  mask = 1 << MASKED_EMPIRES;
+  for (const other of world.state.empires) {
+    if (other.id < MASKED_EMPIRES && hostile(world, empire, other.id)) mask |= 1 << other.id;
+  }
+  world.foes.set(empire, mask);
+  return mask;
 }
 
 function hostile(world: UnitWorld, a: number, b: number): boolean {
@@ -54,14 +73,16 @@ function hostile(world: UnitWorld, a: number, b: number): boolean {
   return known;
 }
 
-function near(world: UnitWorld, x: number, y: number, radius: number, visit: (unit: Unit) => void): void {
+function near(world: UnitWorld, x: number, y: number, radius: number, visit: (unit: Unit) => void, among = -1): void {
   const minX = Math.floor((x - radius) / BUCKET_PX);
   const maxX = Math.floor((x + radius) / BUCKET_PX);
   const minY = Math.floor((y - radius) / BUCKET_PX);
   const maxY = Math.floor((y + radius) / BUCKET_PX);
   for (let bx = minX; bx <= maxX; bx++) {
     for (let by = minY; by <= maxY; by++) {
-      const bucket = world.buckets.get(bucketKey(bx, by));
+      const key = bucketKey(bx, by);
+      if (among !== -1 && ((world.presence.get(key) ?? 0) & among) === 0) continue;
+      const bucket = world.buckets.get(key);
       if (bucket) for (const unit of bucket) visit(unit);
     }
   }
@@ -142,7 +163,7 @@ function pickTarget(world: UnitWorld, unit: Unit, range: number, preferVehicles:
       vehicleDistance = gap;
       vehicle = other;
     }
-  });
+  }, foesOf(world, unit.empire));
   return preferVehicles && vehicle ? vehicle : best;
 }
 
@@ -230,7 +251,7 @@ function stepUnit(world: UnitWorld, unit: Unit, dt: number): void {
           chased = other;
           unit.target = other.id;
         }
-      });
+      }, foesOf(world, unit.empire));
     }
   }
 
@@ -304,11 +325,13 @@ function move(state: GameState, unit: Unit, dx: number, dy: number): void {
 
 function separate(world: UnitWorld, unit: Unit, stats: UnitStats): void {
   const { state } = world;
+  const reach = stats.size + MAX_UNIT_SIZE - 1;
   near(world, unit.x, unit.y, stats.size + MAX_UNIT_SIZE, other => {
     if (other === unit) return;
-    const otherSize = unitStats(other.kind).size;
     const ox = unit.x - other.x;
     const oy = unit.y - other.y;
+    if (ox * ox + oy * oy >= reach * reach) return;
+    const otherSize = unitStats(other.kind).size;
     const gap = Math.hypot(ox, oy);
     const need = stats.size + otherSize - 1;
     if (gap >= need || gap <= 0) return;
@@ -354,7 +377,7 @@ function contested(world: UnitWorld, unit: Unit): boolean {
   near(world, unit.x, unit.y, UNIT_TUNING.captureClearRadius, other => {
     if (found || other.empire === unit.empire || !hostile(world, unit.empire, other.empire)) return;
     found = distance(unit, other) < UNIT_TUNING.captureClearRadius;
-  });
+  }, foesOf(world, unit.empire));
   return found;
 }
 
