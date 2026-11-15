@@ -6,6 +6,7 @@ import { createUnitAudio } from '../audio/unit-audio';
 import { createMatchAudio } from '../audio/match-audio';
 import { panBy } from '@the-big-war/frontend/session/camera';
 import type { SpawnPlot } from '../render/overlay-layer.types';
+import { clamp } from '@the-big-war/game-engine/math/math.service';
 import { placementError } from '../game/building/building.service';
 import type { MatchRuntime, MatchRuntimeOptions } from './runtime.types';
 import { createFrameLoop } from '@the-big-war/frontend/session/frame-loop';
@@ -18,7 +19,7 @@ export type * from './runtime.types';
 
 const clampAxis = (value: number, mapExtent: number, viewExtent: number): number => {
   const overflow = mapExtent - viewExtent;
-  return overflow < 0 ? overflow / 2 : Math.min(overflow, Math.max(0, value));
+  return overflow < 0 ? overflow / 2 : clamp(value, 0, overflow);
 };
 
 const HOME_TILE_PX = 12;

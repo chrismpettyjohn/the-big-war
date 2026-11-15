@@ -41,7 +41,7 @@ export const BOT_TUNING = {
   boardingTimeout: 45,
   beachCooldown: 90,
   invasionSize: 8,
-  invasionMax: 10,
+  invasionMax: 40,
   singlesPerCycle: 12,
   localSearchRadius: 8,
   ringSearchRadius: 14,

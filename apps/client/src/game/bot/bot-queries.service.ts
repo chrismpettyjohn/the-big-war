@@ -13,11 +13,11 @@ import type { Bot, CannonShot, HostileEdge } from './bot.types';
 import { cellAtPixel, hostileUnits } from '../unit/unit.service';
 import { GATHERED_TERRAIN } from '../building/building.constants';
 import { isProductionBuilding } from '../building/building.service';
-import { clamp01 } from '@the-big-war/game-engine/math/math.service';
 import { isPortSite, portWaterBody } from '../map/port-site.service';
 import { canAttack, getRelation } from '../diplomacy/diplomacy.service';
 import { buildingCellsOf, ownedCells } from '../map/world-index.service';
 import { isClaimable, isPassable, isWater } from '../map/terrain.service';
+import { clamp, clamp01 } from '@the-big-war/game-engine/math/math.service';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
 import { atWar, boatsFrom, finishedPorts, hasPort, isBlockaded, isCoastal, portBoatLimit } from '../ship/ship.service';
 import { area, distance, gridAt, gridCoord, gridIndex, neighbors } from '@the-big-war/game-engine/world-tile/world-tile.service';
@@ -296,7 +296,7 @@ export function incomeEstimate(state: GameState, empire: Empire): number {
 }
 
 export function armyShare(bot: Bot, state: GameState, empire: Empire): number {
-  const boom = Math.min(1, Math.max(BOT_TUNING.boomFloor, incomeEstimate(state, empire) / BOT_TUNING.boomIncome));
+  const boom = clamp(incomeEstimate(state, empire) / BOT_TUNING.boomIncome, BOT_TUNING.boomFloor, 1);
   return bot.skill.armyShare * boom;
 }
 

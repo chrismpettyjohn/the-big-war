@@ -1,10 +1,8 @@
 import { previewPixels } from './map-preview-pixels';
 import type { MatchSettings } from '../../session/flow';
+import { workerScope } from '@the-big-war/frontend/session/worker-scope';
 
-const scope = globalThis as unknown as {
-  postMessage(message: unknown, transfer: Transferable[]): void;
-  onmessage: ((event: MessageEvent<{ key: string; settings: MatchSettings }>) => void) | null;
-};
+const scope = workerScope<{ key: string; settings: MatchSettings }>();
 
 scope.onmessage = ({ data }) => {
   const preview = previewPixels(data.settings);

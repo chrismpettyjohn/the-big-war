@@ -6,6 +6,7 @@ import { setOwner } from '../../map/world-index.service';
 import type { GameState } from '../../state/state.types';
 import { routeStep } from '../../unit/unit-route.service';
 import { NEUTRAL_OWNER } from '../../empire/empire.constants';
+import { clamp } from '@the-big-war/game-engine/math/math.service';
 import { nextFloat } from '@the-big-war/game-engine/rng/rng.service';
 import { gridIndex } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
@@ -340,8 +341,8 @@ function separate(world: UnitWorld, unit: Unit, stats: UnitStats): void {
   });
   const width = state.grid.width * state.config.map.hexSize;
   const height = state.grid.height * state.config.map.hexSize;
-  unit.x = Math.min(width - 5, Math.max(5, unit.x));
-  unit.y = Math.min(height - 5, Math.max(5, unit.y));
+  unit.x = clamp(unit.x, 5, width - 5);
+  unit.y = clamp(unit.y, 5, height - 5);
 }
 
 function removeDead(state: GameState): void {

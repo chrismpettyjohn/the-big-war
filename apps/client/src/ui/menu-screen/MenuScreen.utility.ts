@@ -3,6 +3,7 @@ import type { MenuDeck } from './MenuScreen.types';
 import type { MapPreset } from '../../game/map/map.types';
 import { FACTIONS } from '../../game/faction/faction.constants';
 import { MAP_PRESET_ORDER } from '../../game/map/map.constants';
+import { factionById } from '../../game/faction/faction.service';
 import type { FactionDef } from '../../game/faction/faction.types';
 import type { Modifier } from '../../game/modifier/modifier.types';
 import { signed, signedPercent } from '@the-big-war/frontend/ui/format/format';
@@ -75,8 +76,8 @@ export function worldTrait(preset: MapPreset): string {
   return WORLD_TRAITS[preset];
 }
 
-export function factionById(id: string): FactionDef {
-  return FACTIONS.find(faction => faction.id === id) ?? FACTIONS[0]!;
+export function menuFaction(id: string): FactionDef {
+  return factionById(id) ?? FACTIONS[0]!;
 }
 
 export function bonusLine(modifier: Modifier): string {

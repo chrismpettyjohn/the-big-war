@@ -45,6 +45,10 @@ export function hexCorners(center: Pixel, size: number): Pixel[] {
   ];
 }
 
+export function cornerPoints(center: Pixel, size: number): number[] {
+  return hexCorners(center, size).flatMap(corner => [corner.x, corner.y]);
+}
+
 export function ring(center: Axial, radius: number): Axial[] {
   if (radius <= 0) return [{ q: center.q, r: center.r }];
   const results: Axial[] = [];

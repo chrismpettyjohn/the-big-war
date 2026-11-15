@@ -3,6 +3,7 @@ import { isPassable, isWater } from './terrain.service';
 import type { GameConfig } from '../config/config.types';
 import { NEUTRAL_OWNER } from '../empire/empire.constants';
 import type { Rng } from '@the-big-war/game-engine/rng/rng.types';
+import { clamp01 } from '@the-big-war/game-engine/math/math.service';
 import { FOREST_SHARE, MAP_SHAPE, ORE_RICHNESS } from './map.constants';
 import type { Biome, HexCell, HexGrid, WorldLabels } from './map.types';
 import { flood, labelWorld, neighbourIndices } from './world-labels.service';
@@ -175,7 +176,7 @@ function classify(temperature: number, moisture: number, lowland: boolean): Biom
 }
 
 function stretch(value: number): number {
-  return Math.max(0, Math.min(1, (value - 0.5) * 2.4 + 0.5));
+  return clamp01((value - 0.5) * 2.4 + 0.5);
 }
 
 function assignClimate(

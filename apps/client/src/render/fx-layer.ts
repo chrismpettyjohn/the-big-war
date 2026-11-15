@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { ACCENT_COLOR, DANGER_COLOR } from './theme';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
-import { axialToPixel } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import { axialToPixel, cornerPoints } from '@the-big-war/game-engine/world-tile/world-tile.service';
 
 export type FxKind = 'cannonPuff' | 'captureFlash' | 'eliminationFade';
 
@@ -97,14 +97,14 @@ export class FxLayer {
       }
       case 'captureFlash': {
         const radius = fx.size * (1.0 - t * 0.3);
-        g.poly(hexagon(center, radius));
+        g.poly(cornerPoints(center, radius * 2));
         g.fill({ color: fx.color, alpha: alpha * 0.45 });
         g.stroke({ width: 3, color: fx.color, alpha: alpha });
         break;
       }
       case 'eliminationFade': {
         const radius = fx.size * (0.4 + t * 0.8);
-        g.poly(hexagon(center, radius));
+        g.poly(cornerPoints(center, radius * 2));
         g.stroke({ width: 4 * (1 - t) + 1, color: fx.color, alpha: alpha * 0.7 });
         break;
       }
@@ -119,11 +119,3 @@ function defaultColor(kind: FxKind): number {
   return DANGER_COLOR;
 }
 
-function hexagon(center: { x: number; y: number }, size: number): number[] {
-  const points: number[] = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = ((60 * i + 30) * Math.PI) / 180;
-    points.push(center.x + size * Math.cos(angle), center.y + size * Math.sin(angle));
-  }
-  return points;
-}

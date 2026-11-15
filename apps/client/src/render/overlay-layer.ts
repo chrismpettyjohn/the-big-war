@@ -3,8 +3,8 @@
 import { Container, Graphics } from 'pixi.js';
 import type { OverlayState, SpawnPlot } from './overlay-layer.types';
 import { PLOT_BEFORE, START_PLOT } from '../game/state/setup.constants';
-import type { Axial, Pixel } from '@the-big-war/game-engine/world-tile/world-tile.types';
-import { axialToPixel, hexCorners, ring } from '@the-big-war/game-engine/world-tile/world-tile.service';
+import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
+import { axialToPixel, cornerPoints, ring } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import {
   DANGER_COLOR,
   HOVER_COLOR,
@@ -55,9 +55,9 @@ export class OverlayLayer {
 
   private drawFocus(g: Graphics, hexes: readonly Axial[], hexSize: number, now: number): void {
     const pulse = 0.5 + 0.5 * Math.sin(now / 180);
-    for (const hex of hexes) g.poly(hexPolygon(axialToPixel(hex, hexSize), hexSize * 0.98));
+    for (const hex of hexes) g.poly(cornerPoints(axialToPixel(hex, hexSize), hexSize * 0.98));
     g.fill({ color: SELECTION_COLOR, alpha: 0.15 + 0.15 * pulse });
-    for (const hex of hexes) g.poly(hexPolygon(axialToPixel(hex, hexSize), hexSize * 0.98));
+    for (const hex of hexes) g.poly(cornerPoints(axialToPixel(hex, hexSize), hexSize * 0.98));
     g.stroke({ width: SELECTION_WIDTH, color: SELECTION_COLOR, alpha: 0.6 + 0.4 * pulse });
   }
 
@@ -81,7 +81,7 @@ export class OverlayLayer {
     alpha: number,
   ): void {
     const center = axialToPixel(hex, hexSize);
-    const points = hexPolygon(center, hexSize * 0.98);
+    const points = cornerPoints(center, hexSize * 0.98);
     g.poly(points);
     g.stroke({ width, color, alpha });
   }
@@ -90,7 +90,7 @@ export class OverlayLayer {
     
     const center = axialToPixel(from, hexSize);
     for (const hex of ring(from, range)) {
-      g.poly(hexPolygon(axialToPixel(hex, hexSize), hexSize * 0.9));
+      g.poly(cornerPoints(axialToPixel(hex, hexSize), hexSize * 0.9));
     }
     g.stroke({ width: 1.5, color: INFO_COLOR, alpha: 0.35 });
     g.circle(center.x, center.y, 3);
@@ -115,9 +115,6 @@ export class OverlayLayer {
   }
 }
 
-function hexPolygon(center: Pixel, size: number): number[] {
-  return hexCorners(center, size).flatMap(corner => [corner.x, corner.y]);
-}
 
 function sameHex(a: Axial, b: Axial | null): boolean {
   return b !== null && a.q === b.q && a.r === b.r;

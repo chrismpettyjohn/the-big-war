@@ -182,7 +182,11 @@ function armyCommands(bot: Bot, state: GameState, empire: Empire, threat: readon
   trackStuck(bot, units);
   const isIdle = idleCheck(bot);
   const home = rallyPoint(state, empire);
-  if (release.length > 0 && home) return [hexOrder(state, empire, release, home)];
+  if (release.length > 0) {
+    const centre = centroid(release);
+    const ashore = nearestCell(state, centre.x, centre.y, cell => cell.owner === empire.id, new Set()) ?? home;
+    if (ashore) return [hexOrder(state, empire, release, ashore)];
+  }
   const alive = new Set(units.map(unit => unit.id));
   for (const id of bot.scouts) if (!alive.has(id)) bot.scouts.delete(id);
   for (const unit of units) {
@@ -191,15 +195,17 @@ function armyCommands(bot: Bot, state: GameState, empire: Empire, threat: readon
     bot.scouts.add(unit.id);
   }
 
+  const commands: Command[] = [];
+  const committed = new Set<number>();
   if (threat.length > 0) {
-    const centre = centroid(threat);
-    const defenders = units.filter(unit => unit.target === null);
-    return defenders.length > 0 ? [moveOrder(empire, defenders, centre.x, centre.y)] : [];
+    const defence = defenceOrder(empire, units, threat);
+    if (!defence) return [];
+    commands.push(defence.command);
+    for (const unit of defence.sent) committed.add(unit.id);
   }
 
-  const commands: Command[] = [];
   const claimed = new Set<number>();
-  const scouts = units.filter(unit => bot.scouts.has(unit.id) && isIdle(unit));
+  const scouts = units.filter(unit => bot.scouts.has(unit.id) && !committed.has(unit.id) && isIdle(unit));
   for (let at = 0; at < scouts.length; at += SCOUT_SQUAD) {
     const squad = scouts.slice(at, at + SCOUT_SQUAD);
     const centre = centroid(squad);
@@ -213,7 +219,7 @@ function armyCommands(bot: Bot, state: GameState, empire: Empire, threat: readon
     commands.push(hexOrder(state, empire, squad, goal));
   }
 
-  const army = units.filter(unit => !bot.scouts.has(unit.id));
+  const army = units.filter(unit => !bot.scouts.has(unit.id) && !committed.has(unit.id));
   const rally = rallyPoint(state, empire);
   if (bot.skill.retreat && rally) {
     const hurt = army.filter(unit => unit.hp < UNIT_STATS[unit.kind].hp * BOT_TUNING.retreatHealth && unit.target === null);
@@ -249,6 +255,15 @@ function armyCommands(bot: Bot, state: GameState, empire: Empire, threat: readon
   }
   commands.push(...spreadCommands(bot, state, empire, spare.filter(isIdle), claimed));
   return commands;
+}
+
+function defenceOrder(empire: Empire, units: readonly Unit[], threat: readonly Unit[]): { command: Command; sent: Unit[] } | null {
+  const sent = units.filter(unit => unit.target === null);
+  if (sent.length === 0) return null;
+  const centre = centroid(sent);
+  const gap = (unit: Unit): number => Math.hypot(unit.x - centre.x, unit.y - centre.y);
+  const focus = threat.reduce((best, unit) => (gap(unit) < gap(best) ? unit : best));
+  return { command: moveOrder(empire, sent, focus.x, focus.y), sent };
 }
 
 function spreadCommands(bot: Bot, state: GameState, empire: Empire, idle: readonly Unit[], claimed: Set<number>): Command[] {

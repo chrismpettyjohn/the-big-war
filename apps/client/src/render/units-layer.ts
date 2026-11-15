@@ -1,10 +1,12 @@
 import { ownerColor } from './theme';
-import { Container, Graphics } from 'pixi.js';
 import { unitStats } from '../game/unit/unit.service';
 import { UNIT_TUNING } from '../game/unit/unit.constants';
 import type { GameState } from '../game/state/state.types';
-import type { Unit, UnitEvent, UnitShape } from '../game/unit/unit.types';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
+import type { Unit, UnitEvent } from '../game/unit/unit.types';
+import { clamp01 } from '@the-big-war/game-engine/math/math.service';
 import type { UnitMark, UnitsView, UnitBody, UnitBoom, UnitShot } from './units-layer.types';
+import { INFANTRY_ANCHOR_X, INFANTRY_HEIGHT, INFANTRY_PALETTE, INFANTRY_WIDTH, infantryRows, type InfantryKind, type InfantryPose } from './infantry-sprites';
 
 export type * from './units-layer.types';
 
@@ -32,12 +34,23 @@ const RANGE_COLOR = 0xffffff;
 const BOX_COLOR = 0x7cc46a;
 const ORDER_LINE_COLOR = 0x7cc46a;
 const SETUP_COLOR = 0xffffff;
+const PERSON_PIXEL = 1.3;
+const PERSON_HEIGHT = INFANTRY_HEIGHT * PERSON_PIXEL;
+const STEP_SECONDS = 0.18;
+const FIRE_FLASH_SECONDS = 0.09;
 
 export class UnitsLayer {
   readonly container: Container;
   private readonly ground = new Graphics();
   private readonly gfx = new Graphics();
   private readonly fx = new Graphics();
+  private readonly corpses = new Container();
+  private readonly people = new Container();
+  private readonly textures = new Map<string, Texture>();
+  private readonly personPool: Sprite[] = [];
+  private readonly corpsePool: Sprite[] = [];
+  private personsUsed = 0;
+  private elapsed = 0;
   private shots: UnitShot[] = [];
   private booms: UnitBoom[] = [];
   private bodies: UnitBody[] = [];
@@ -47,7 +60,8 @@ export class UnitsLayer {
   constructor() {
     this.container = new Container();
     this.container.eventMode = 'none';
-    this.container.addChild(this.ground, this.gfx, this.fx);
+    this.people.sortableChildren = true;
+    this.container.addChild(this.ground, this.corpses, this.people, this.gfx, this.fx);
   }
 
   ping(x: number, y: number, color: number): void {
@@ -57,12 +71,15 @@ export class UnitsLayer {
   draw(state: GameState, view: UnitsView, scale: number, dt: number): void {
     this.consume(state.unitEvents);
     this.age(dt);
+    this.elapsed = state.elapsed;
     this.drawGround();
     const g = this.gfx;
     g.clear();
+    this.personsUsed = 0;
     const selected = state.units.filter(unit => view.selected.has(unit.id));
     this.drawOrders(g, selected, scale);
     for (const unit of state.units) this.drawUnit(g, unit, view.selected.has(unit.id), unit.empire === view.player);
+    for (let i = this.personsUsed; i < this.personPool.length; i++) this.personPool[i]!.visible = false;
     this.drawEffects(scale);
     if (view.box) {
       const { x0, y0, x1, y1 } = view.box;
@@ -78,6 +95,12 @@ export class UnitsLayer {
     this.bodies = [];
     this.marks = [];
     this.lastEvent = 0;
+    for (const sprite of [...this.personPool, ...this.corpsePool]) sprite.destroy();
+    this.personPool.length = 0;
+    this.corpsePool.length = 0;
+    this.personsUsed = 0;
+    for (const texture of this.textures.values()) texture.destroy(true);
+    this.textures.clear();
     this.ground.clear();
     this.gfx.clear();
     this.fx.clear();
@@ -110,6 +133,7 @@ export class UnitsLayer {
   private drawGround(): void {
     const g = this.ground;
     g.clear();
+    let corpses = 0;
     for (const body of this.bodies) {
       if (body.wreck) {
         rotatedRect(g, body.x, body.y, body.angle, -body.size * 1.3, -body.size * 0.8, body.size * 2.6, body.size * 1.6);
@@ -118,9 +142,14 @@ export class UnitsLayer {
         g.fill({ color: SCORCH_COLOR });
         continue;
       }
-      rotatedRect(g, body.x, body.y, body.angle, -5, -2, 10, 4);
-      g.fill({ color: darken(ownerColor(body.empire)) });
+      const sprite = this.corpsePool[corpses] ?? this.newSprite(this.corpses, this.corpsePool);
+      corpses++;
+      sprite.visible = true;
+      sprite.texture = this.texture('infantry', 'dead', darken(ownerColor(body.empire)));
+      sprite.scale.set(Math.cos(body.angle) < 0 ? -PERSON_PIXEL : PERSON_PIXEL, PERSON_PIXEL);
+      sprite.position.set(body.x, body.y + 3);
     }
+    for (let i = corpses; i < this.corpsePool.length; i++) this.corpsePool[i]!.visible = false;
   }
 
   private drawOrders(g: Graphics, selected: readonly Unit[], scale: number): void {
@@ -150,16 +179,15 @@ export class UnitsLayer {
     const color = ownerColor(unit.empire);
     if (stats.vehicle) this.drawVehicle(g, unit, color, selected);
     else {
-      shapePath(g, stats.shape, unit.x, unit.y, stats.size);
-      g.fill({ color });
-      g.stroke({ width: selected ? 2 : 1, color: selected ? SELECTED_COLOR : OUTLINE_COLOR, alpha: selected ? 1 : 0.5 });
-      g.moveTo(unit.x, unit.y);
-      g.lineTo(unit.x + Math.cos(unit.face) * 9, unit.y + Math.sin(unit.face) * 9);
-      g.stroke({ width: 1, color: OUTLINE_COLOR, alpha: 0.65 });
+      if (selected) {
+        g.ellipse(unit.x, unit.y + stats.size, stats.size + 2, (stats.size + 2) * 0.45);
+        g.stroke({ width: 1.5, color: SELECTED_COLOR });
+      }
+      this.drawPerson(unit, color);
     }
     if (unit.hp < stats.hp) {
       const width = stats.size * 2.8;
-      const top = unit.y - stats.size - 6;
+      const top = stats.vehicle ? unit.y - stats.size - 6 : unit.y + stats.size - PERSON_HEIGHT - 4;
       g.rect(unit.x - width / 2, top, width, 2);
       g.fill({ color: HP_BACK });
       g.rect(unit.x - width / 2, top, (width * Math.max(0, unit.hp)) / stats.hp, 2);
@@ -176,6 +204,59 @@ export class UnitsLayer {
       g.rect(unit.x + stats.size + 1, unit.y - stats.size - 3, 1.4, 4);
       g.fill({ color: PINNED_COLOR });
     }
+  }
+
+  private drawPerson(unit: Unit, color: number): void {
+    const stats = unitStats(unit.kind);
+    const kind = unit.kind as InfantryKind;
+    const fired = unit.target !== null && unit.cooldown > stats.weapon.cooldown * 0.8 - FIRE_FLASH_SECONDS;
+    const pinned = unit.suppression > UNIT_TUNING.suppressedAt;
+    const prone = !unit.moving && (stats.setupSeconds > 0 || (kind === 'sniper' && unit.target !== null) || pinned);
+    let pose: InfantryPose;
+    if (prone) pose = fired ? 'proneFire' : 'prone';
+    else if (unit.moving) pose = Math.floor(this.elapsed / STEP_SECONDS + unit.id * 0.37) % 2 === 0 ? 'walkA' : 'walkB';
+    else if (unit.target !== null) pose = fired ? 'fire' : 'aim';
+    else pose = 'stand';
+    const sprite = this.personPool[this.personsUsed] ?? this.newSprite(this.people, this.personPool);
+    this.personsUsed++;
+    sprite.visible = true;
+    sprite.texture = this.texture(kind, pose, color);
+    sprite.scale.set(Math.cos(unit.face) < 0 ? -PERSON_PIXEL : PERSON_PIXEL, PERSON_PIXEL);
+    sprite.position.set(unit.x, unit.y + stats.size);
+    sprite.zIndex = sprite.position.y;
+  }
+
+  private newSprite(parent: Container, pool: Sprite[]): Sprite {
+    const sprite = new Sprite();
+    sprite.anchor.set(INFANTRY_ANCHOR_X / INFANTRY_WIDTH, 1);
+    sprite.eventMode = 'none';
+    pool.push(sprite);
+    parent.addChild(sprite);
+    return sprite;
+  }
+
+  private texture(kind: InfantryKind, pose: InfantryPose, color: number): Texture {
+    const key = `${kind},${pose},${color}`;
+    const cached = this.textures.get(key);
+    if (cached) return cached;
+    const canvas = document.createElement('canvas');
+    canvas.width = INFANTRY_WIDTH;
+    canvas.height = INFANTRY_HEIGHT;
+    const ctx = canvas.getContext('2d')!;
+    const shade = darken(color, 0.62);
+    infantryRows(kind, pose).forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        const entry = INFANTRY_PALETTE[row[x]!];
+        if (entry === undefined) continue;
+        const value = entry === 'nation' ? color : entry === 'nationDark' ? shade : entry;
+        ctx.fillStyle = `#${value.toString(16).padStart(6, '0')}`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    });
+    const texture = Texture.from(canvas);
+    texture.source.scaleMode = 'nearest';
+    this.textures.set(key, texture);
+    return texture;
   }
 
   private drawVehicle(g: Graphics, unit: Unit, color: number, selected: boolean): void {
@@ -243,14 +324,10 @@ export class UnitsLayer {
   }
 }
 
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
-
-function darken(color: number): number {
-  const r = ((color >> 16) & 0xff) * 0.5;
-  const g = ((color >> 8) & 0xff) * 0.5;
-  const b = (color & 0xff) * 0.5;
+function darken(color: number, amount = 0.5): number {
+  const r = ((color >> 16) & 0xff) * amount;
+  const g = ((color >> 8) & 0xff) * amount;
+  const b = (color & 0xff) * amount;
   return (r << 16) | (g << 8) | b;
 }
 
@@ -271,11 +348,4 @@ function rotatedRect(g: Graphics, x: number, y: number, angle: number, left: num
       [left, top + height],
     ]),
   );
-}
-
-function shapePath(g: Graphics, shape: UnitShape, x: number, y: number, r: number): void {
-  if (shape === 'circle') g.circle(x, y, r);
-  else if (shape === 'square') g.rect(x - r, y - r, r * 2, r * 2);
-  else if (shape === 'diamond') g.poly([x, y - r - 1, x + r + 1, y, x, y + r + 1, x - r - 1, y]);
-  else g.poly([x, y - r - 1, x + r + 1, y + r, x - r - 1, y + r]);
 }

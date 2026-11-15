@@ -10,6 +10,7 @@ import type { ResearchNode } from '../research/research.types';
 import { RESEARCH_NODES } from '../research/research.constants';
 import { meetsRequirements } from '../research/research.service';
 import { populationCap, populationOf } from '../unit/unit.service';
+import { clamp01 } from '@the-big-war/game-engine/math/math.service';
 import { chance, pick } from '@the-big-war/game-engine/rng/rng.service';
 import { BOT_TUNING, EARLY_RESEARCH, OPENING_ORDER } from './bot.constants';
 import { armyShare, findCannonShot, findSite, hostileEdges, producersBusy, incomeEstimate, wantsPort, workforce } from './bot-queries.service';
@@ -80,7 +81,7 @@ function scoredPicks(bot: Bot, state: GameState, empire: Empire, placed: Readonl
   const { spare } = workforce(state, empire);
   const econ = state.config.economy;
   const picks: Pick[] = [];
-  const staffed = (rate: number): number => rate * Math.max(0, Math.min(1, spare / econ.workersPerBuilding));
+  const staffed = (rate: number): number => rate * clamp01(spare / econ.workersPerBuilding);
 
   picks.push({ kind: 'market', score: staffed(econ.marketGoldPerSecond) / cost('market') });
   picks.push({ kind: 'fishery', score: staffed(econ.fisheryGoldPerSecond) / cost('fishery') });

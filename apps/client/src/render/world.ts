@@ -14,6 +14,7 @@ import { NationLabelsLayer } from './nation-labels-layer';
 import type { GameState } from '../game/state/state.types';
 import { WORLD_BORDER_COLOR, WORLD_BORDER_WIDTH } from './theme';
 import { Application, Container, Graphics, Ticker } from 'pixi.js';
+import { clamp } from '@the-big-war/game-engine/math/math.service';
 import { DETAIL_TILE_PX, TerrainLayer, visibleHexRange } from './terrain-layer';
 import { pixelToHex } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import type { Axial, Pixel } from '@the-big-war/game-engine/world-tile/world-tile.types';
@@ -44,14 +45,14 @@ export function createWorld(options: WorldOptions): WorldRenderer {
 
   const clampZoom = (scale: number): number => {
     if (!Number.isFinite(scale)) return 1;
-    return Math.min(MAX_ZOOM, Math.max(minZoom(), scale));
+    return clamp(scale, minZoom(), MAX_ZOOM);
   };
 
   const constrainAxis = (value: number, mapExtent: number, viewExtent: number): number => {
     const overflow = mapExtent - viewExtent;
     if (overflow <= 0) return overflow / 2;
     const slack = viewExtent * PAN_SLACK;
-    return Math.min(Math.max(0, overflow) + slack, Math.max(Math.min(0, overflow) - slack, value));
+    return clamp(value, -slack, overflow + slack);
   };
 
   const constrainCamera = (): void => {

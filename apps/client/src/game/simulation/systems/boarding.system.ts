@@ -5,6 +5,7 @@ import { gridAt, gridIndex } from '@the-big-war/game-engine/world-tile/world-til
 
 const BOARD_RADIUS_HEXES = 2.5;
 const BOARD_CROWD = 10;
+const BOARD_QUORUM = 0.75;
 
 export function stepBoarding(state: GameState): void {
   const groups = new Map<number, Unit[]>();
@@ -29,7 +30,8 @@ function boardGroup(state: GameState, units: readonly Unit[]): void {
   const reach = size * BOARD_RADIUS_HEXES * Math.max(1, Math.sqrt(units.length / BOARD_CROWD));
   const px = (port.q + 0.5) * size;
   const py = (port.r + 0.5) * size;
-  if (units.some(unit => Math.hypot(unit.x - px, unit.y - py) > reach)) return;
+  const ready = units.filter(unit => Math.hypot(unit.x - px, unit.y - py) <= reach);
+  if (ready.length === 0 || ready.length < Math.ceil(units.length * BOARD_QUORUM)) return;
 
   const landmass = state.map.landmass[gridIndex(state.grid, dock.q, dock.r)]!;
   const owner = gridAt(state.grid, focus)?.owner;
@@ -44,8 +46,9 @@ function boardGroup(state: GameState, units: readonly Unit[]): void {
     return;
   }
   const ship = launchTransport(state, empire, plan, focus);
-  const aboard = new Set(units);
-  ship.cargo = units.map(unit => ({ ...unit, boarding: null, target: null, moving: false }));
+  const aboard = new Set(ready);
+  cancel(units.filter(unit => !aboard.has(unit)));
+  ship.cargo = ready.map(unit => ({ ...unit, boarding: null, target: null, moving: false }));
   state.units = state.units.filter(unit => !aboard.has(unit));
 }
 

@@ -18,7 +18,7 @@ import {
   createMenuDeck,
   difficultyHint,
   difficultyLabel,
-  factionById,
+  menuFaction,
   isBuff,
   neutralStatesHint,
   neutralStatesLabel,
@@ -134,7 +134,7 @@ export const MenuScreen = (props: MenuScreenProps) => {
   let lastWheel = 0;
 
   const promised = () => isUnlimitedName(props.playerName);
-  const faction = () => factionById(props.faction);
+  const faction = () => menuFaction(props.faction);
   const deck = createMenuDeck(() => props.settings, props.onChange);
 
   const toggle = (id: MenuDropdown, open: boolean) =>
@@ -194,6 +194,7 @@ export const MenuScreen = (props: MenuScreenProps) => {
   });
   onCleanup(() => {
     document.removeEventListener('keydown', onKey);
+    stage.removeEventListener('wheel', onWheel);
     clearTimeout(confirmTimer);
   });
 

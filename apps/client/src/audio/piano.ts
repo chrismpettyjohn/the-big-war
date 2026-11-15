@@ -1,4 +1,5 @@
 import { midiToHz, sourness } from './soundtrack';
+import { clamp01 } from '@the-big-war/game-engine/math/math.service';
 
 const LOW_MIDI = 30;
 const HIGH_MIDI = 96;
@@ -16,7 +17,7 @@ const FADE_SECONDS = 0.3;
 const ATTACK_SECONDS = 0.1;
 const ATTACK_LOUDNESS = 0.3;
 
-const registerOf = (midi: number): number => Math.min(1, Math.max(0, (midi - LOW_MIDI) / (HIGH_MIDI - LOW_MIDI)));
+const registerOf = (midi: number): number => clamp01((midi - LOW_MIDI) / (HIGH_MIDI - LOW_MIDI));
 
 function strike(length: number, random: () => number): Float32Array {
   const felt = new Float32Array(length);

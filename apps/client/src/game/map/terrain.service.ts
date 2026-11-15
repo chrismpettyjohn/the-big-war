@@ -57,17 +57,3 @@ export function terrainDefenceAt(state: GameState, hex: Axial): number {
   return state.config.combat.terrainDefence[terrainAt(state, hex)] ?? ENGINE_TUNING.defaultTerrainDefence;
 }
 
-export function terrainLabel(terrain: Terrain): string {
-  switch (terrain) {
-    case 'forest':
-      return 'Forest';
-    case 'mountain':
-      return 'Mountain';
-    case 'ore':
-      return 'Ore';
-    case 'water':
-      return 'Water';
-    default:
-      return 'Plain';
-  }
-}

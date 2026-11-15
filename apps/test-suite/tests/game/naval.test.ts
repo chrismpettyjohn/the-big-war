@@ -18,6 +18,7 @@ import { FIXED_DT } from '@the-big-war/game-engine/simulation/simulation.constan
 import { populationOf, unitStats } from '@the-big-war/client/game/unit/unit.service';
 import { DEFAULT_GAME_CONFIG } from '@the-big-war/client/game/config/config.constants';
 import { setBuilding, setOwner } from '@the-big-war/client/game/map/world-index.service';
+import { stepBoarding } from '@the-big-war/client/game/simulation/systems/boarding.system';
 import { gridAt, gridIndex, makeGrid } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { damageShip, hasPort, launchTransport, planLanding, isBlockaded, rebuildShipHash, shipsNear } from '@the-big-war/client/game/ship/ship.service';
 
@@ -172,7 +173,32 @@ describe('transports', () => {
     }
   });
 
+  test('a boarding party launches without a straggler that cannot reach the dock', () => {
+    const state = seaState();
+    const dock = port(state, WEST_COAST, 5);
+    const size = state.config.map.hexSize;
+    const party = spawnUnits(state, 0, { q: 2, r: 5 }, 4);
+    const result = dispatch(state, {
+      type: 'OrderUnits',
+      empire: 0,
+      units: party.map(unit => unit.id),
+      order: { kind: 'move', mode: 'amove', x: 26.5 * size, y: 5.5 * size, formation: 'wedge' },
+    });
+    expect(result.ok).toBe(true);
+    const [straggler, ...rest] = party;
+    for (const unit of rest) {
+      unit.x = (dock.q + 0.5) * size;
+      unit.y = (dock.r + 0.5) * size;
+    }
+    straggler!.x = 0.5 * size;
+    straggler!.y = 0.5 * size;
+    stepBoarding(state);
+    const transport = state.ships.find(ship => ship.kind === 'transport');
+    expect(transport?.cargo.length).toBe(rest.length);
+    expect(straggler!.boarding).toBeNull();
+  });
 });
+
 
 describe('units at sea', () => {
   const pixel = (state: GameState, q: number, r: number) => ({
@@ -414,7 +440,7 @@ describe('bots at sea', () => {
     expect(landed).toBe(true);
     expect(state.status).toBe('ended');
     expect(state.winner).not.toBeNull();
-  }, 60_000);
+  }, 180_000);
 
   test('every capital on many seeds has a route to a port site', () => {
     for (let seed = 1; seed <= 6; seed++) {

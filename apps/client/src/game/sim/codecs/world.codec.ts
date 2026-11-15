@@ -1,11 +1,12 @@
+import { TERRAINS } from '../../map/map.constants';
 import type { HexCell } from '../../map/map.types';
 import { orNaN, orNull, sameRow } from './codec.utility';
 import type { GameState } from '../../state/state.types';
 import { BUILDING_KINDS } from '../../building/building.constants';
 import type { BuildingsPatch, FrameChanges, SimShadow } from '../sim.types';
 import type { Building, BuildingKind, Gatherer } from '../../building/building.types';
+import { BUILDING_STRIDE, GATHERER_PHASES, GATHERER_STRIDE, TILE_STRIDE } from './codec.constants';
 import { addRoad, drainChangedTiles, markTile, setBuilding, setOwner } from '../../map/world-index.service';
-import { BUILDING_STRIDE, GATHERER_PHASES, GATHERER_STRIDE, TERRAINS, TILE_STRIDE } from './codec.constants';
 
 export function encodeTiles(state: GameState): Float64Array<ArrayBuffer> {
   const tiles = new Float64Array(state.index.changedTiles.length * TILE_STRIDE);
