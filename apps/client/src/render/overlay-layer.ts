@@ -1,6 +1,8 @@
 
 
 import { Container, Graphics } from 'pixi.js';
+import type { GameState } from '../game/state/state.types';
+import { captureSecondsFor } from '../game/unit/unit.service';
 import type { OverlayState, SpawnPlot } from './overlay-layer.types';
 import { PLOT_BEFORE, START_PLOT } from '../game/state/setup.constants';
 import type { Axial } from '@the-big-war/game-engine/world-tile/world-tile.types';
@@ -10,6 +12,8 @@ import {
   HOVER_COLOR,
   HOVER_WIDTH,
   INFO_COLOR,
+  mixColor,
+  ownerColor,
   SELECTION_COLOR,
   SELECTION_WIDTH,
 } from './theme';
@@ -50,6 +54,28 @@ export class OverlayLayer {
     if (state.cannonFrom) {
       this.drawRangeRing(g, state.cannonFrom, state.cannonRange, hexSize);
       if (state.cannonTarget) this.drawReticle(g, state.cannonTarget, hexSize);
+    }
+  }
+
+  drawCaptures(state: GameState, hexSize: number, now: number): void {
+    const g = this.gfx;
+    const seen = new Map<number, { empire: number; progress: number }>();
+    for (const unit of state.units) {
+      if (unit.captureAt < 0) continue;
+      const known = seen.get(unit.captureAt);
+      if (!known || unit.capture > known.progress) seen.set(unit.captureAt, { empire: unit.empire, progress: unit.capture });
+    }
+    const pulse = 0.5 + 0.5 * Math.sin(now / 140);
+    for (const [at, capture] of seen) {
+      const cell = state.grid.cells[at];
+      if (!cell) continue;
+      const attacker = ownerColor(capture.empire);
+      const points = cornerPoints(axialToPixel(cell, hexSize), hexSize * 0.98);
+      const filled = Math.min(1, capture.progress / captureSecondsFor(cell));
+      g.poly(points);
+      g.fill({ color: attacker, alpha: 0.1 + 0.35 * filled });
+      g.poly(points);
+      g.stroke({ width: CAPTURE_WIDTH, color: mixColor(ownerColor(cell.owner), attacker, pulse), alpha: 0.95 });
     }
   }
 
@@ -115,6 +141,8 @@ export class OverlayLayer {
   }
 }
 
+
+const CAPTURE_WIDTH = 2;
 
 function sameHex(a: Axial, b: Axial | null): boolean {
   return b !== null && a.q === b.q && a.r === b.r;

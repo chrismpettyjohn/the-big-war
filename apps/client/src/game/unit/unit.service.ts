@@ -67,6 +67,12 @@ export function isWalkable(cell: HexCell | undefined): boolean {
   return !!cell && cell.terrain !== 'water' && cell.terrain !== 'mountain';
 }
 
+export function captureSecondsFor(cell: HexCell): number {
+  const building = cell.building;
+  const factor = !building ? 1 : building.kind === 'city' ? UNIT_TUNING.captureCityFactor : UNIT_TUNING.captureBuildingFactor;
+  return UNIT_TUNING.captureSeconds * factor;
+}
+
 export function isCover(cell: HexCell | undefined): boolean {
   return !!cell && (cell.terrain === 'forest' || cell.terrain === 'mountain' || (cell.building?.kind === 'trench' && cell.building.buildRemaining <= 0));
 }

@@ -131,6 +131,35 @@ describe('unit combat', () => {
     expect(gridAt(state.grid, { q: 20, r: 4 })!.owner).toBe(0);
     expect(unit.capture).toBeLessThan(1);
   });
+
+  test('units stop at the frontier and take enemy land one block at a time', () => {
+    const state = fieldState();
+    declareWar(state, 0, 1);
+    const unit = spawn(state, 'infantry', 0, 13, 4);
+    dispatch(state, { type: 'OrderUnits', empire: 0, units: [unit.id], order: { kind: 'move', mode: 'amove', x: 25.5 * SIZE, y: 4.5 * SIZE, formation: 'wedge' } });
+    run(state, 2);
+    expect(Math.floor(unit.x / SIZE)).toBe(15);
+    expect(gridAt(state.grid, { q: 15, r: 4 })!.owner).toBe(1);
+    run(state, UNIT_TUNING.captureSeconds + 1);
+    expect(gridAt(state.grid, { q: 15, r: 4 })!.owner).toBe(0);
+    expect(Math.floor(unit.x / SIZE)).toBeLessThanOrEqual(16);
+  });
+
+  test('more troops on a block capture it faster, cities resist longer', () => {
+    const state = fieldState();
+    declareWar(state, 0, 1);
+    for (let i = 0; i < 4; i++) spawn(state, 'infantry', 0, 15, 2);
+    spawn(state, 'infantry', 0, 15, 8);
+    run(state, UNIT_TUNING.captureSeconds / 2 + 0.2);
+    expect(gridAt(state.grid, { q: 15, r: 2 })!.owner).toBe(0);
+    expect(gridAt(state.grid, { q: 15, r: 8 })!.owner).toBe(1);
+
+    const city = gridAt(state.grid, { q: 15, r: 5 })!;
+    setBuilding(state, city, createBuilding(state, 'city', 1, 0));
+    spawn(state, 'infantry', 0, 15, 5);
+    run(state, UNIT_TUNING.captureSeconds + 0.5);
+    expect(city.owner).toBe(1);
+  });
 });
 
 describe('unit orders', () => {

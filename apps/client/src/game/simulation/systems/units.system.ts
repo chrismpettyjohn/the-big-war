@@ -8,10 +8,11 @@ import { routeStep } from '../../unit/unit-route.service';
 import { NEUTRAL_OWNER } from '../../empire/empire.constants';
 import { clamp } from '@the-big-war/game-engine/math/math.service';
 import { nextFloat } from '@the-big-war/game-engine/rng/rng.service';
-import { gridIndex } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import { resolveModifier } from '@the-big-war/game-engine/modifier/modifier.service';
+import { gridAt, gridIndex } from '@the-big-war/game-engine/world-tile/world-tile.service';
 import type { ProductionQueue, Unit, UnitStats, WeaponStats } from '../../unit/unit.types';
 import {
+  captureSecondsFor,
   cellAtPixel,
   createUnit,
   hostileUnits,
@@ -99,7 +100,7 @@ export function stepUnits(state: GameState, dt: number): void {
   for (const unit of state.units) stepUnit(world, unit, dt);
   removeDead(state);
   const after = indexUnits(state);
-  for (const unit of state.units) stepCapture(after, unit, dt);
+  stepCaptures(after, dt);
   stepBoarding(state);
 }
 
@@ -281,7 +282,7 @@ function stepUnit(world: UnitWorld, unit: Unit, dt: number): void {
     const sy = step.y - unit.y;
     const leg = Math.hypot(sx, sy) || 1;
     const travel = Math.min(stats.speed * pinned * dt, leg);
-    move(state, unit, (sx / leg) * travel, (sy / leg) * travel);
+    move(world, unit, (sx / leg) * travel, (sy / leg) * travel);
     unit.face = Math.atan2(sy, sx);
     unit.hull = unit.face;
     unit.setup = stats.setupSeconds;
@@ -313,15 +314,33 @@ function stepUnit(world: UnitWorld, unit: Unit, dt: number): void {
   }
 }
 
-function move(state: GameState, unit: Unit, dx: number, dy: number): void {
-  if (isWalkable(cellAtPixel(state, unit.x + dx, unit.y + dy))) {
+function move(world: UnitWorld, unit: Unit, dx: number, dy: number): void {
+  const { state } = world;
+  if (passable(world, unit, cellAtPixel(state, unit.x + dx, unit.y + dy))) {
     unit.x += dx;
     unit.y += dy;
-  } else if (isWalkable(cellAtPixel(state, unit.x + dx, unit.y))) {
+  } else if (passable(world, unit, cellAtPixel(state, unit.x + dx, unit.y))) {
     unit.x += dx;
-  } else if (isWalkable(cellAtPixel(state, unit.x, unit.y + dy))) {
+  } else if (passable(world, unit, cellAtPixel(state, unit.x, unit.y + dy))) {
     unit.y += dy;
   }
+}
+
+function passable(world: UnitWorld, unit: Unit, cell: HexCell | undefined): boolean {
+  if (!cell || !isWalkable(cell)) return false;
+  const owner = cell.owner;
+  if (owner === NEUTRAL_OWNER || owner === unit.empire || !hostile(world, unit.empire, owner)) return true;
+  if (cellAtPixel(world.state, unit.x, unit.y) === cell) return true;
+  return bordersOwn(world.state, cell, unit.empire);
+}
+
+function bordersOwn(state: GameState, cell: HexCell, empire: number): boolean {
+  for (let dq = -1; dq <= 1; dq++) {
+    for (let dr = -1; dr <= 1; dr++) {
+      if ((dq !== 0 || dr !== 0) && gridAt(state.grid, { q: cell.q + dq, r: cell.r + dr })?.owner === empire) return true;
+    }
+  }
+  return false;
 }
 
 function separate(world: UnitWorld, unit: Unit, stats: UnitStats): void {
@@ -337,7 +356,7 @@ function separate(world: UnitWorld, unit: Unit, stats: UnitStats): void {
     const need = stats.size + otherSize - 1;
     if (gap >= need || gap <= 0) return;
     const push = (need - gap) * (otherSize > stats.size ? 0.8 : 0.5);
-    move(state, unit, (ox / gap) * push, (oy / gap) * push);
+    move(world, unit, (ox / gap) * push, (oy / gap) * push);
   });
   const width = state.grid.width * state.config.map.hexSize;
   const height = state.grid.height * state.config.map.hexSize;
@@ -382,28 +401,72 @@ function contested(world: UnitWorld, unit: Unit): boolean {
   return found;
 }
 
-function stepCapture(world: UnitWorld, unit: Unit, dt: number): void {
+function stepCaptures(world: UnitWorld, dt: number): void {
   const { state } = world;
-  const cell = cellAtPixel(state, unit.x, unit.y);
-  if (!cell || !capturable(world, unit, cell)) {
-    unit.captureAt = -1;
-    unit.capture = 0;
-    return;
+  const crews = new Map<number, Unit[]>();
+  for (const unit of state.units) {
+    const cell = cellAtPixel(state, unit.x, unit.y);
+    if (!cell || !capturable(world, unit, cell)) {
+      unit.captureAt = -1;
+      unit.capture = 0;
+      continue;
+    }
+    const at = gridIndex(state.grid, cell.q, cell.r);
+    if (unit.captureAt !== at) {
+      unit.captureAt = at;
+      unit.capture = 0;
+    }
+    const key = at * 1024 + unit.empire;
+    const crew = crews.get(key);
+    if (crew) crew.push(unit);
+    else crews.set(key, [unit]);
   }
-  const at = gridIndex(state.grid, cell.q, cell.r);
-  if (unit.captureAt !== at) {
-    unit.captureAt = at;
-    unit.capture = 0;
+  for (const crew of crews.values()) stepCrew(world, crew, dt);
+}
+
+function stepCrew(world: UnitWorld, crew: readonly Unit[], dt: number): void {
+  const { state } = world;
+  const cell = state.grid.cells[crew[0]!.captureAt]!;
+  let progress = 0;
+  for (const unit of crew) progress = Math.max(progress, unit.capture);
+  const held = crew.some(unit => contested(world, unit));
+  if (!held) {
+    progress += dt * Math.sqrt(crew.length);
+    if (cell.owner !== NEUTRAL_OWNER) for (const unit of crew) skirmish(state, unit, cell);
   }
-  if (contested(world, unit)) return;
+  const done = progress >= captureSecondsFor(cell);
+  for (const unit of crew) unit.capture = done ? 0 : progress;
+  if (!done) return;
+  const empire = crew[0]!.empire;
   const building = cell.building;
-  unit.capture += dt;
-  if (unit.capture < UNIT_TUNING.captureSeconds) return;
-  unit.capture = 0;
-  setOwner(state, cell, unit.empire);
+  setOwner(state, cell, empire);
   if (building) {
     if (building.kind === 'cannon' || building.kind === 'battery') building.cooldown = 0;
     building.demolishAt = null;
     building.shipBuild = 0;
   }
+}
+
+function skirmish(state: GameState, unit: Unit, cell: HexCell): void {
+  if (unit.moving || unit.cooldown > 0 || unit.setup > 0 || unit.boarding) return;
+  const weapon = unitStats(unit.kind).weapon;
+  const size = state.config.map.hexSize;
+  const ex = (cell.q + 0.15 + nextFloat(state.rng) * 0.7) * size;
+  const ey = (cell.r + 0.15 + nextFloat(state.rng) * 0.7) * size;
+  unit.face = Math.atan2(ey - unit.y, ex - unit.x);
+  unit.cooldown = weapon.cooldown * jitter(state) * UNIT_TUNING.captureFireSlowdown;
+  pushUnitEvent(state, {
+    kind: 'shot',
+    empire: unit.empire,
+    x: unit.x,
+    y: unit.y,
+    ex,
+    ey,
+    sound: weapon.sound,
+    heavy: false,
+    vehicle: false,
+    angle: 0,
+    size: 0,
+    radius: 0,
+  });
 }

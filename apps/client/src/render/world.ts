@@ -170,6 +170,7 @@ export function createWorld(options: WorldOptions): WorldRenderer {
     buildings.draw(state.grid, state.index.buildings, hexSize, range, tilePx, state.elapsed, state.config.buildings);
     buildings.drawGhost(overlayState.ghost, hexSize);
     overlay.draw(overlayState, hexSize);
+    overlay.drawCaptures(state, hexSize, performance.now());
     soldiers.draw(state, hexSize, range, tilePx);
     ships.draw(state, hexSize, cameraState.scale, range, overlayState.selectedShip);
     units.draw(state, unitsView, cameraState.scale, dtSeconds);
